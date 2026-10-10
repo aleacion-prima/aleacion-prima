@@ -1,0 +1,16 @@
+#backend
+apps/api
+
+#lockfiles
+pnpm-lock.yaml
+
+**/dist
+**/.quasar
+**/.astro
+apps/panel/src-capacitor/www
+apps/panel/src-capacitor/android
+
+#pruebas
+**/coverage
+e2e/test-results
+e2e/playwright-report

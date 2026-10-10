@@ -1,0 +1,143 @@
+@startuml modelo-datos-resumen
+title Aleación Prima · Modelo de datos (resumen)
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide circle
+hide empty members
+
+package "Catálogos" {
+  entity "users" as users {
+    rol (Spatie)
+    activo
+  }
+  entity "areas" as areas {
+    codigo · MOL, FUS, COL, DES, GRA, CAL, EMP
+    obligatoria
+    tarifa_mano_obra_hora
+    costo_maquina_hora
+  }
+  entity "productos" as productos {
+    codigo · DIS-FRE-G, CAJ-TRA-N…
+    especificaciones
+    precio_mayoreo / precio_menudeo
+    existencia (caché)
+  }
+  entity "insumos" as insumos {
+    codigo · CHT-FUN, NOD-FSM…
+    categoria · metal / moldeo / empaque
+    costo_unitario
+    existencia (caché)
+  }
+  entity "area_user" as area_user
+  entity "producto_area\n(recorrido por defecto)" as producto_area {
+    orden
+  }
+  entity "producto_insumo\n(receta)" as producto_insumo {
+    cantidad_por_pieza
+  }
+}
+
+package "Lotes" {
+  entity "lotes" as lotes {
+    codigo · LOT-AAAAMMDD-NN
+    estado · creado / en_proceso / por_confirmar / terminado / cancelado
+    cantidad_objetivo
+    piezas_terminadas
+    costo_material / mano_obra / maquina / total (caché)
+  }
+  entity "lote_areas\n(recorrido del lote: plan + ejecución)" as lote_areas {
+    orden
+    tarifas congeladas
+    piezas_recibidas / piezas_entregadas / merma_piezas
+    retorno_kg
+    entrada_ocurrido_en / salida_ocurrido_en
+  }
+  entity "lote_insumos\n(materia prima congelada)" as lote_insumos {
+    cantidad
+    costo_unitario congelado
+    cantidad_devuelta
+  }
+}
+
+package "Inventario (libro mayor)" {
+  entity "movimientos_insumo" as mov_insumo {
+    tipo · entrada / asignacion / devolucion / retorno / ajuste
+    cantidad (con signo)
+  }
+  entity "movimientos_producto" as mov_producto {
+    tipo · produccion / venta / ajuste
+    cantidad (con signo)
+  }
+}
+
+package "Ventas (recortable)" {
+  entity "clientes" as clientes {
+    rfc (cifrado)
+    condiciones_pago
+  }
+  entity "pedidos" as pedidos {
+    estado · estado_pago
+  }
+  entity "pedido_items" as pedido_items {
+    precio_unitario congelado
+  }
+}
+
+package "Correcciones" {
+  entity "ajustes" as ajustes {
+    campo
+    valores { anterior, nuevo }
+    motivo
+  }
+}
+
+package "MongoDB" <<Cloud>> {
+  entity "bitacora" as bitacora {
+    tipo · captura_tardia
+  }
+  entity "imprevistos" as imprevistos {
+    tipo · falla_maquina / retraso_material / pieza_defectuosa / otro
+  }
+}
+
+users ||--o{ area_user
+areas ||--o{ area_user
+productos ||--o{ producto_area
+areas ||--o{ producto_area
+productos ||--o{ producto_insumo
+insumos ||--o{ producto_insumo
+
+productos ||--o{ lotes
+pedidos |o--o{ lotes : produce para
+lotes ||--|{ lote_areas
+areas ||--o{ lote_areas
+lotes ||--o{ lote_insumos
+insumos ||--o{ lote_insumos
+
+insumos ||--o{ mov_insumo
+lotes ||--o{ mov_insumo : asignación · devolución · retorno
+productos ||--o{ mov_producto
+lotes ||--o{ mov_producto : producción
+
+clientes ||--o{ pedidos
+pedidos ||--|{ pedido_items
+productos ||--o{ pedido_items
+
+users ||--o{ ajustes : responsable
+ajustes }o..o| lote_areas
+ajustes }o..o| lote_insumos
+ajustes }o..o| insumos
+ajustes }o..o| productos
+note right of ajustes
+  Arco exclusivo: cada ajuste
+  apunta a exactamente una
+  de las cuatro entidades.
+end note
+
+lotes ..o{ bitacora : lote_id
+lotes ..o{ imprevistos : lote_id
+areas ..o{ imprevistos : area_id
+
+@enduml

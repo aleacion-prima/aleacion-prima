@@ -1,0 +1,124 @@
+@startuml der-catalogos
+title Aleación Prima · DER: usuarios, acceso y catálogos
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide circle
+hide empty members
+
+legend top left
+  <b>*</b> obligatorio · sin asterisco: admite nulo
+  <<PK>> llave primaria · <<FK>> llave foránea · <<UK>> único
+  Todas las tablas llevan además created_at y updated_at.
+  Las FK hacia users (user_id, creado_por, confirmado_por…)
+  están marcadas en cada entidad; sus líneas se omiten
+  para no saturar el diagrama.
+end legend
+
+package "Usuarios y acceso" {
+  entity "users" as users {
+    * id : bigint <<PK>>
+    --
+    * name : string
+    * email : string <<UK>>
+    * password : string
+    * activo : boolean
+  }
+  entity "area_user" as area_user {
+    * id : bigint <<PK>>
+    --
+    * area_id : bigint <<FK>>
+    * user_id : bigint <<FK>>
+    ..
+    único (area_id, user_id)
+  }
+  entity "notifications" as notifications {
+    * id : uuid <<PK>>
+    --
+    * type : string
+    * notifiable_type : string
+    * notifiable_id : bigint
+    * data : jsonb
+    read_at : timestamp
+  }
+  entity "personal_access_tokens" as tokens {
+    * id : bigint <<PK>>
+    --
+    * tokenable_type : string
+    * tokenable_id : bigint
+    * name : string
+    * token : string(64) <<UK>>
+    abilities : text
+    last_used_at : timestamp
+    expires_at : timestamp
+  }
+}
+
+package "Catálogos" {
+  entity "areas" as areas {
+    * id : bigint <<PK>>
+    --
+    * codigo : string <<UK>>
+    * nombre : string <<UK>>
+    descripcion : text
+    * tarifa_mano_obra_hora : decimal(14,4)
+    * costo_maquina_hora : decimal(14,4)
+    * obligatoria : boolean
+    * orden_catalogo : integer
+    * activo : boolean
+  }
+  entity "insumos" as insumos {
+    * id : bigint <<PK>>
+    --
+    * codigo : string <<UK>>
+    * nombre : string <<UK>>
+    * categoria : enum
+    * unidad : string
+    * costo_unitario : decimal(14,4)
+    * existencia : decimal(12,3)
+    * stock_minimo : decimal(12,3)
+    * activo : boolean
+  }
+  entity "productos" as productos {
+    * id : bigint <<PK>>
+    --
+    * codigo : string <<UK>>
+    * nombre : string
+    * especificaciones : jsonb
+    * precio_mayoreo : decimal(14,4)
+    * precio_menudeo : decimal(14,4)
+    * existencia : integer
+    * publicado : boolean
+    * activo : boolean
+  }
+  entity "producto_area" as producto_area {
+    * id : bigint <<PK>>
+    --
+    * producto_id : bigint <<FK>>
+    * area_id : bigint <<FK>>
+    * orden : integer
+    ..
+    único (producto_id, orden)
+  }
+  entity "producto_insumo" as producto_insumo {
+    * id : bigint <<PK>>
+    --
+    * producto_id : bigint <<FK>>
+    * insumo_id : bigint <<FK>>
+    * cantidad_por_pieza : decimal(12,4)
+    ..
+    único (producto_id, insumo_id)
+  }
+}
+
+users ||--o{ area_user
+areas ||--o{ area_user
+users ||--o{ notifications
+users ||--o{ tokens
+productos ||--o{ producto_area
+areas ||--o{ producto_area
+productos ||--o{ producto_insumo
+insumos ||--o{ producto_insumo
+
+@enduml

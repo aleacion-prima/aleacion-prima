@@ -1,0 +1,28 @@
+name: Tarea técnica
+description: Trabajo interno que no es una funcionalidad visible (configuración, refactor, infraestructura, documentación).
+title: '[Tarea] '
+type: Task
+projects: ['ORG/1']
+body:
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Qué hay que hacer
+    validations:
+      required: true
+  - type: textarea
+    id: motivo
+    attributes:
+      label: Por qué
+      description: Qué problema resuelve o qué historia desbloquea.
+    validations:
+      required: true
+  - type: textarea
+    id: terminado
+    attributes:
+      label: Criterios de terminado
+      placeholder: |
+        - [ ] ...
+        - [ ] `pnpm check` pasa
+    validations:
+      required: true

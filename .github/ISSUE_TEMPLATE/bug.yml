@@ -1,0 +1,57 @@
+name: Bug
+description: Algo no funciona como debería.
+title: '[Bug] '
+type: Bug
+projects: ['ORG/1']
+body:
+  - type: dropdown
+    id: pieza
+    attributes:
+      label: ¿Dónde ocurre?
+      options:
+        - API
+        - Panel web
+        - App móvil
+        - Sitio público
+        - Infraestructura / despliegue
+    validations:
+      required: true
+  - type: dropdown
+    id: entorno
+    attributes:
+      label: Entorno
+      options:
+        - Desarrollo
+        - Producción
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. Entrar a ...
+        2. Dar clic en ...
+        3. Ver el error
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+    validations:
+      required: true
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Capturas o logs
+      description: Arrastra imágenes aquí o pega el error.
+      render: shell
+    validations:
+      required: false

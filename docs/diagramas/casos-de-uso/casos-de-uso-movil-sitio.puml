@@ -1,0 +1,40 @@
+@startuml casos-de-uso-movil-sitio
+title Casos de uso · App Android y sitio público
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecaseFontSize 11
+
+actor "Encargado de área" as enc
+actor "Administrador" as admin
+actor "Invitado" as inv
+actor "Cliente registrado\n<i>(recortable)</i>" as cli
+
+admin --|> enc
+
+rectangle "App Android (solo lectura)" {
+  usecase "Iniciar y cerrar sesión\n(usuario y contraseña; solo lectura)" as UC_mlogin
+  usecase "Escanear el QR del lote" as UC_scan
+  usecase "Consultar estado, área actual\ne historial del lote" as UC_ver
+}
+
+rectangle "Sitio público" {
+  usecase "Ver catálogo con especificaciones\ny disponibilidad en tiempo real\n<i>(sin precios)</i>" as UC_cat
+  usecase "Solicitar cotización\n(contacto de ventas)" as UC_cot
+  usecase "Ir al chat de cotizaciones\n(inicia sesión en el panel)\n<i>(recortable)</i>" as UC_chat #EEEEEE
+}
+
+enc --> UC_mlogin
+enc --> UC_scan
+
+inv --> UC_cat
+inv --> UC_cot
+cli --> UC_cat
+cli --> UC_chat
+
+UC_scan ..> UC_ver : <<include>>
+UC_chat ..> UC_cot : <<extend>>
+
+@enduml

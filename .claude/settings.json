@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git tag:*)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)",
+      "Bash(git revert:*)",
+      "Bash(git stash:*)",
+      "Bash(git clean:*)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)",
+      "Bash(git remote:*)",
+      "Bash(git config:*)",
+      "Edit(.git/**)",
+      "Edit(.husky/**)",
+      "Edit(./.env)",
+      "Edit(./api.env)",
+      "Edit(./apps/api/.env)"
+    ]
+  }
+}

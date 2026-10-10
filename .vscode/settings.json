@@ -1,0 +1,21 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[php]": { "editor.defaultFormatter": "open-southeners.laravel-pint" },
+  "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.validate": ["typescript", "vue", "astro"],
+
+  "intelephense.environment.phpVersion": "8.4.0",
+
+  "search.exclude": {
+    "**/vendor": true,
+    "**/.quasar": true,
+    "**/.astro": true,
+    "**/dist": true
+  }
+}

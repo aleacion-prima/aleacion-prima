@@ -1,0 +1,73 @@
+@startuml der-ventas
+title Aleación Prima · DER: ventas (recortable)
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide circle
+hide empty members
+
+legend top left
+  <b>*</b> obligatorio · sin asterisco: admite nulo
+  <<PK>> llave primaria · <<FK>> llave foránea · <<UK>> único
+  Todas las tablas llevan además created_at y updated_at.
+  Las FK hacia users (user_id, creado_por, confirmado_por…)
+  están marcadas en cada entidad; sus líneas se omiten
+  para no saturar el diagrama.
+  En gris: tablas que se detallan en otro diagrama.
+end legend
+
+package "Ventas (recortable)" {
+  entity "clientes" as clientes {
+    * id : bigint <<PK>>
+    --
+    * razon_social : string
+    * rfc : text (cifrado)
+    * direccion_fiscal : text (cifrada)
+    * contacto_nombre : string
+    * contacto_correo : string
+    * contacto_telefono : string
+    * condiciones_pago : text
+    user_id : bigint <<FK>>
+    * activo : boolean
+  }
+  entity "pedidos" as pedidos {
+    * id : bigint <<PK>>
+    --
+    * cliente_id : bigint <<FK>>
+    * estado : enum
+    * estado_pago : enum
+    notas : text
+    * creado_por : bigint <<FK>>
+  }
+  entity "pedido_items" as pedido_items {
+    * id : bigint <<PK>>
+    --
+    * pedido_id : bigint <<FK>>
+    * producto_id : bigint <<FK>>
+    * cantidad : integer
+    * precio_unitario : decimal(14,4)
+  }
+}
+
+entity "users" as users #EEEEEE {
+  * id : bigint <<PK>>
+}
+entity "productos" as productos #EEEEEE {
+  * id : bigint <<PK>>
+}
+entity "lotes" as lotes #EEEEEE {
+  * id : bigint <<PK>>
+}
+entity "movimientos_producto" as mov_producto #EEEEEE {
+  * id : bigint <<PK>>
+}
+
+clientes ||--o{ pedidos
+pedidos ||--|{ pedido_items
+productos ||--o{ pedido_items
+pedidos |o--o{ lotes
+pedidos |o--o{ mov_producto
+users |o--o| clientes
+
+@enduml

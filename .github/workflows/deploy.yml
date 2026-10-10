@@ -1,0 +1,117 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  build:
+    name: Construir y publicar imágenes
+    if: github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      owner: ${{ steps.owner.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Dueño del repo en minúsculas
+        id: owner
+        run: echo "name=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Imagen de la API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api
+          file: ./infra/docker/api/Dockerfile
+          target: prod
+          push: true
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.name }}/aleacion-prima-api:${{ env.TAG }}
+            ghcr.io/${{ steps.owner.outputs.name }}/aleacion-prima-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Imagen de Caddy (con los fronts)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./infra/docker/caddy/Dockerfile
+          push: true
+          build-args: |
+            PUBLIC_API_URL=https://api.${{ vars.DOMAIN }}
+            PUBLIC_REVERB_HOST=api.${{ vars.DOMAIN }}
+            PUBLIC_REVERB_KEY=${{ vars.REVERB_APP_KEY }}
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.name }}/aleacion-prima-caddy:${{ env.TAG }}
+            ghcr.io/${{ steps.owner.outputs.name }}/aleacion-prima-caddy:latest
+          cache-from: type=gha,scope=caddy
+          cache-to: type=gha,mode=max,scope=caddy
+
+  deploy:
+    name: Desplegar en el servidor
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      SSH_TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+      APP_DIR: /opt/aleacion-prima
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Configurar SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Preparar y subir archivos
+        env:
+          API_ENV: ${{ secrets.API_ENV }}
+        run: |
+          printf '%s\n' "$API_ENV" > api.env
+          cat > .env <<EOF
+          DOMAIN=${{ vars.DOMAIN }}
+          ACME_EMAIL=${{ vars.ACME_EMAIL }}
+          GHCR_OWNER=${{ needs.build.outputs.owner }}
+          TAG=${{ env.TAG }}
+          EOF
+          scp compose.prod.yaml .env api.env "$SSH_TARGET:$APP_DIR/"
+
+      - name: Actualizar contenedores
+        run: |
+          ssh "$SSH_TARGET" <<EOF
+          set -e
+          cd $APP_DIR
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker compose -f compose.prod.yaml pull
+          docker compose -f compose.prod.yaml up -d --no-build --remove-orphans
+          docker compose -f compose.prod.yaml exec -T api php artisan migrate --force
+          docker compose -f compose.prod.yaml exec -T api php artisan optimize
+          docker compose -f compose.prod.yaml exec -T api php artisan queue:restart
+          docker image prune -f
+          EOF

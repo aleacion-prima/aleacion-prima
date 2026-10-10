@@ -1,0 +1,7 @@
+{
+  "extends": "@aleacion-prima/config/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["tests", "playwright.config.ts", "eslint.config.ts"]
+}

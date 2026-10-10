@@ -1,0 +1,61 @@
+x-api: &api
+  build:
+    context: ./apps/api
+    dockerfile: ../../infra/docker/api/Dockerfile
+    target: dev
+  image: aleacion-prima-api:dev
+  user: '${UID:-1000}:${GID:-1000}'
+  volumes:
+    - ./apps/api:/app
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  api:
+    <<: *api
+    ports:
+      - '8000:8000'
+    environment:
+      COMPOSER_CACHE_DIR: /tmp/composer-cache
+    volumes:
+      - ./apps/api:/app
+      - composer-cache:/tmp/composer-cache
+
+  reverb:
+    <<: *api
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080 --debug
+    ports:
+      - '8080:8080'
+
+  queue:
+    <<: *api
+    command: php artisan queue:listen --tries=1
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: aleacion_prima
+      POSTGRES_USER: aleacion
+      POSTGRES_PASSWORD: secret
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aleacion -d aleacion_prima']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  composer-cache:
+  postgres_data:
+  mongo_data:

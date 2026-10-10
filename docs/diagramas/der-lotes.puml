@@ -1,0 +1,185 @@
+@startuml der-lotes
+title Aleación Prima · DER: lotes, inventario y correcciones
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide circle
+hide empty members
+
+legend top left
+  <b>*</b> obligatorio · sin asterisco: admite nulo
+  <<PK>> llave primaria · <<FK>> llave foránea · <<UK>> único
+  Todas las tablas llevan además created_at y updated_at.
+  Las FK hacia users (user_id, creado_por, confirmado_por…)
+  están marcadas en cada entidad; sus líneas se omiten
+  para no saturar el diagrama.
+  En gris: tablas que se detallan en otro diagrama.
+end legend
+
+package "Lotes" {
+  entity "lotes" as lotes {
+    * id : bigint <<PK>>
+    --
+    * codigo : string <<UK>>
+    * producto_id : bigint <<FK>>
+    pedido_id : bigint <<FK>>
+    * cantidad_objetivo : integer
+    * estado : enum
+    area_actual_id : bigint <<FK>>
+    piezas_terminadas : integer
+    * costo_material : decimal(14,4)
+    * costo_mano_obra : decimal(14,4)
+    * costo_maquina : decimal(14,4)
+    * costo_total : decimal(14,4)
+    costo_por_pieza : decimal(14,4)
+    * creado_por : bigint <<FK>>
+    confirmado_por : bigint <<FK>>
+    confirmado_en : timestamp
+    cancelado_por : bigint <<FK>>
+    cancelado_en : timestamp
+    motivo_cancelacion : text
+  }
+  entity "lote_areas" as lote_areas {
+    * id : bigint <<PK>>
+    --
+    * lote_id : bigint <<FK>>
+    * area_id : bigint <<FK>>
+    * orden : integer
+    * tarifa_mano_obra_hora : decimal(14,4)
+    * costo_maquina_hora : decimal(14,4)
+    piezas_recibidas : integer
+    entrada_ocurrido_en : timestamp
+    entrada_registrado_en : timestamp
+    entrada_user_id : bigint <<FK>>
+    piezas_entregadas : integer
+    merma_piezas : integer
+    merma_material : decimal(12,3)
+    retorno_kg : decimal(12,3)
+    salida_ocurrido_en : timestamp
+    salida_registrado_en : timestamp
+    salida_user_id : bigint <<FK>>
+    ..
+    único (lote_id, orden)
+    CHECK piezas_entregadas ≤ piezas_recibidas
+    CHECK salida_ocurrido_en ≥ entrada_ocurrido_en
+  }
+  entity "lote_insumos" as lote_insumos {
+    * id : bigint <<PK>>
+    --
+    * lote_id : bigint <<FK>>
+    * insumo_id : bigint <<FK>>
+    * cantidad : decimal(12,3)
+    * costo_unitario : decimal(14,4)
+    * cantidad_devuelta : decimal(12,3)
+    lote_proveedor : string
+    ..
+    único (lote_id, insumo_id)
+  }
+}
+
+package "Inventario (libro mayor)" {
+  entity "movimientos_insumo" as mov_insumo {
+    * id : bigint <<PK>>
+    --
+    * insumo_id : bigint <<FK>>
+    * tipo : enum
+    * cantidad : decimal(12,3)
+    costo_unitario : decimal(14,4)
+    lote_proveedor : string
+    proveedor : string
+    lote_id : bigint <<FK>>
+    motivo : text
+    * user_id : bigint <<FK>>
+    * ocurrido_en : timestamp
+  }
+  entity "movimientos_producto" as mov_producto {
+    * id : bigint <<PK>>
+    --
+    * producto_id : bigint <<FK>>
+    * tipo : enum
+    * cantidad : integer
+    lote_id : bigint <<FK>>
+    pedido_id : bigint <<FK>>
+    motivo : text
+    * user_id : bigint <<FK>>
+    * ocurrido_en : timestamp
+  }
+}
+
+package "Correcciones" {
+  entity "ajustes" as ajustes {
+    * id : bigint <<PK>>
+    --
+    lote_area_id : bigint <<FK>>
+    lote_insumo_id : bigint <<FK>>
+    insumo_id : bigint <<FK>>
+    producto_id : bigint <<FK>>
+    * campo : string
+    * valores : jsonb
+    * motivo : text
+    * user_id : bigint <<FK>>
+    ..
+    CHECK exactamente una de las cuatro FK
+  }
+}
+
+package "MongoDB" <<Cloud>> {
+  entity "bitacora" as bitacora {
+    * _id : ObjectId <<PK>>
+    --
+    lote_id : entero
+    area_id : entero
+    * tipo : texto
+    * descripcion : texto
+    * datos : objeto
+    * user_id : entero
+    * ocurrido_en : fecha
+    * registrado_en : fecha
+    * captura_tardia : booleano
+  }
+  entity "imprevistos" as imprevistos {
+    * _id : ObjectId <<PK>>
+    --
+    * lote_id : entero
+    * area_id : entero
+    * tipo : texto
+    * descripcion : texto
+    maquina : texto
+    piezas_afectadas : entero
+    duracion_minutos : entero
+    * resuelto : booleano
+    * user_id : entero
+    * ocurrido_en : fecha
+  }
+}
+
+entity "productos" as productos #EEEEEE {
+  * id : bigint <<PK>>
+}
+entity "insumos" as insumos #EEEEEE {
+  * id : bigint <<PK>>
+}
+entity "areas" as areas #EEEEEE {
+  * id : bigint <<PK>>
+}
+
+productos ||--o{ lotes
+areas |o--o{ lotes : área actual
+lotes ||--|{ lote_areas
+areas ||--o{ lote_areas
+lotes ||--o{ lote_insumos
+insumos ||--o{ lote_insumos
+insumos ||--o{ mov_insumo
+lotes |o--o{ mov_insumo
+productos ||--o{ mov_producto
+lotes |o--o{ mov_producto
+ajustes }o..o| lote_areas
+ajustes }o..o| lote_insumos
+ajustes }o..o| insumos
+ajustes }o..o| productos
+lotes ..o{ bitacora : lote_id
+lotes ..o{ imprevistos : lote_id
+areas ..o{ imprevistos : area_id
+
+@enduml

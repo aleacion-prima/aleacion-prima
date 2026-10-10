@@ -1,0 +1,54 @@
+@startwbs mapa-navegacion
+<style>
+wbsDiagram {
+  node { FontSize 11 }
+  .recortable { BackgroundColor #EEEEEE; FontColor #555555 }
+  .movil { BackgroundColor #E8F1FB }
+  .sitio { BackgroundColor #EAF6EA }
+}
+</style>
+
+* Aleación Prima
+** Panel web (Quasar)
+*** Iniciar sesión
+*** Tablero
+**** Lotes en tiempo real (estado, área actual, alertas)
+**** Seleccionar lote → detalle
+*** Lotes
+**** Lista y búsqueda por código
+**** Nuevo lote (producto, cantidad, recorrido ajustable) · <i>ventas / admin</i>
+**** Detalle del lote
+***** Recorrido (línea de tiempo, parada en curso)
+***** Costo a la fecha / costo real
+***** Bitácora e imprevistos
+***** Etiqueta con QR (imprimir)
+***** Capturar entrada / salida · <i>encargado de esa área / admin</i>
+***** Registrar imprevisto · <i>encargado / admin</i>
+***** Confirmar cierre · Cancelar · Ajustar · <i>admin</i>
+*** Inventario
+**** Insumos (existencias, entradas, alertas de stock mínimo)
+**** Producto terminado (existencias, ajustes)
+*** Catálogos · <i>admin</i>
+**** Áreas y tarifas
+**** Productos (especificaciones, precios, recorrido por defecto, receta)
+**** Insumos (costo unitario, stock mínimo)
+**** Usuarios y roles (áreas por encargado)
+*** Notificaciones (centro de avisos)
+*** Ventas <i>(recortable)</i> <<recortable>>
+**** Clientes <<recortable>>
+**** Pedidos (estado, pago, lotes ligados) <<recortable>>
+**** Reporte de ventas <<recortable>>
+**** Cotizaciones (chat) <<recortable>>
+*** Vista de cliente registrado: solo chat <<recortable>>
+** App Android (Quasar + Capacitor) <<movil>>
+*** Iniciar sesión <<movil>>
+*** Escanear QR <<movil>>
+**** Lote: estado, área actual, recorrido vertical, historial <<movil>>
+*** Cerrar sesión <<movil>>
+** Sitio público (Astro) <<sitio>>
+*** Inicio <<sitio>>
+*** Catálogo (disponibilidad en tiempo real, sin precios) <<sitio>>
+**** Producto: especificaciones técnicas, disponibilidad <<sitio>>
+***** Botón "Cotizar" → datos de contacto de ventas <<sitio>>
+***** Botón "Cotizar" → login y chat <i>(recortable)</i> <<recortable>>
+@endwbs

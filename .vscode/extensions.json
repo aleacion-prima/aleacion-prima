@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "Vue.volar",
+    "astro-build.astro-vscode",
+    "bmewburn.vscode-intelephense-client",
+    "open-southeners.laravel-pint",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "EditorConfig.EditorConfig",
+    "jebbs.plantuml",
+    "eamodio.gitlens",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    "ms-vscode-remote.remote-wsl",
+    "redhat.vscode-yaml"
+  ]
+}

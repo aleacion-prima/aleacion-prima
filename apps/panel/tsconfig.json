@@ -1,0 +1,6 @@
+{
+  "extends": "./.quasar/tsconfig.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0"
+  }
+}

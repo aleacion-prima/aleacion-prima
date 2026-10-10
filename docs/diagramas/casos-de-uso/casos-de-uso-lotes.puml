@@ -1,0 +1,54 @@
+@startuml casos-de-uso-lotes
+title Casos de uso · Lotes y captura por área
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecaseFontSize 11
+
+actor "Administrador" as admin
+actor "Ventas" as ventas
+actor "Encargado de área" as enc
+
+admin --|> ventas
+admin --|> enc
+
+rectangle "Panel web" {
+  package "Lotes" {
+    usecase "Crear lote\n(producto, cantidad, recorrido ajustado;\nasigna insumos y congela costos)" as UC_crear
+    usecase "Generar e imprimir\netiqueta con QR" as UC_qr
+    usecase "Consultar tablero\nen tiempo real" as UC_tablero
+    usecase "Consultar historial,\nbitácora y costo del lote" as UC_hist
+    usecase "Confirmar cierre del lote\n(piezas al inventario, costo congelado)" as UC_conf
+    usecase "Cancelar lote\n(motivo; devolución solo antes de\nsalir de la primera parada)" as UC_cancel
+    usecase "Registrar ajuste\n(valor anterior, nuevo, motivo, responsable)" as UC_ajuste
+  }
+  package "Captura por área" {
+    usecase "Registrar entrada\n(piezas recibidas, hora de ocurrido)" as UC_ent
+    usecase "Registrar salida\n(entregadas, merma, retorno en desmolde, hora)" as UC_sal
+    usecase "Registrar imprevisto\n(falla, retraso, pieza defectuosa)" as UC_imp
+  }
+}
+
+admin --> UC_crear
+admin --> UC_tablero
+admin --> UC_conf
+admin --> UC_cancel
+admin --> UC_ajuste
+
+ventas --> UC_hist
+
+enc --> UC_ent
+enc --> UC_sal
+enc --> UC_imp
+
+UC_crear ..> UC_qr : <<include>>
+UC_ajuste ..> UC_hist : <<extend>>\nsolo lote terminado
+
+note right of UC_sal
+  Si es la última área, el lote
+  pasa a "por confirmar"
+end note
+
+@enduml

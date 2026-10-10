@@ -1,0 +1,42 @@
+name: Historia de usuario
+description: Funcionalidad del sistema vista desde un rol.
+title: '[HU] '
+type: Feature
+projects: ['ORG/1']
+body:
+  - type: dropdown
+    id: rol
+    attributes:
+      label: Rol
+      description: ¿Quién usa esta funcionalidad?
+      options:
+        - Administrador
+        - Personal de ventas
+        - Encargado de área
+        - Cliente / invitado
+    validations:
+      required: true
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      placeholder: Como <rol>, quiero <acción>, para <beneficio>.
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Cada criterio debe poder comprobarse.
+      placeholder: |
+        - [ ] Dado <contexto>, cuando <acción>, entonces <resultado>.
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas y referencias
+      description: Enlace al diseño en Figma, reglas de negocio, dependencias con otras historias.
+    validations:
+      required: false

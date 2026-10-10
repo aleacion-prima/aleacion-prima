@@ -1,0 +1,68 @@
+@startuml casos-de-uso-administracion
+title Casos de uso · Catálogos, inventario, notificaciones y ventas
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecaseFontSize 11
+
+actor "Administrador" as admin
+actor "Ventas" as ventas
+actor "Encargado de área" as enc
+actor "Cliente registrado\n<i>(recortable)</i>" as cli
+
+admin --|> ventas
+admin --|> enc
+
+rectangle "Panel web" {
+  package "Acceso" {
+    usecase "Iniciar y cerrar sesión" as UC_login
+  }
+  package "Catálogos" {
+    usecase "Administrar áreas y tarifas\n(mano de obra y máquina por hora)" as UC_areas
+    usecase "Administrar productos,\nrecorridos por defecto y recetas" as UC_prod
+    usecase "Administrar insumos\n(costo unitario, stock mínimo)" as UC_ins
+    usecase "Administrar usuarios, roles\ny áreas por encargado" as UC_users
+    usecase "Publicar u ocultar productos\nen el sitio público" as UC_pub
+  }
+  package "Inventario" {
+    usecase "Registrar entradas de insumos\n(proveedor, lote del proveedor)" as UC_entradas
+    usecase "Consultar existencias\nde insumos y producto terminado" as UC_stock
+    usecase "Ajustar existencias\n(auditoría física, con motivo)" as UC_ajinv
+  }
+  package "Notificaciones" {
+    usecase "Recibir alertas en tiempo real\n(imprevistos, stock mínimo, lotes por confirmar)" as UC_alerta
+    usecase "Consultar el centro\nde notificaciones" as UC_centro
+  }
+  package "Ventas <i>(recortable)</i>" #EEEEEE {
+    usecase "Administrar clientes\nempresariales (datos fiscales)" as UC_cli
+    usecase "Administrar pedidos,\nlotes ligados y estado de pago" as UC_ped
+    usecase "Consultar reporte\nbásico de ventas" as UC_rep
+    usecase "Atender chat\nde cotizaciones" as UC_chat
+  }
+}
+
+ventas --> UC_login
+enc --> UC_login
+cli --> UC_login
+
+admin --> UC_areas
+admin --> UC_prod
+admin --> UC_ins
+admin --> UC_users
+admin --> UC_entradas
+admin --> UC_ajinv
+admin --> UC_alerta
+admin --> UC_centro
+
+ventas --> UC_pub
+ventas --> UC_stock
+ventas --> UC_cli
+ventas --> UC_ped
+ventas --> UC_rep
+ventas --> UC_chat
+
+cli --> UC_chat
+
+@enduml

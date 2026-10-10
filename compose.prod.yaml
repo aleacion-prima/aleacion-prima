@@ -1,0 +1,47 @@
+x-api: &api
+  build:
+    context: ./apps/api
+    dockerfile: ../../infra/docker/api/Dockerfile
+    target: prod
+  image: ghcr.io/${GHCR_OWNER}/aleacion-prima-api:${TAG:-latest}
+  restart: unless-stopped
+  env_file: ./api.env
+  volumes:
+    - api_storage:/app/storage/app
+
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: infra/docker/caddy/Dockerfile
+    image: ghcr.io/${GHCR_OWNER}/aleacion-prima-caddy:${TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - reverb
+
+  api:
+    <<: *api
+
+  reverb:
+    <<: *api
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+
+  queue:
+    <<: *api
+    command: php artisan queue:work --tries=3 --max-time=3600
+
+volumes:
+  caddy_data:
+  caddy_config:
+  api_storage:

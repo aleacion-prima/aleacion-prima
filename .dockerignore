@@ -1,0 +1,8 @@
+**/node_modules
+.git
+apps/api
+e2e
+**/dist
+**/.quasar
+**/.astro
+apps/panel/src-capacitor

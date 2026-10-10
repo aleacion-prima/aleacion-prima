@@ -1,0 +1,54 @@
+@startuml arquitectura-aleacion-prima
+title Aleación Prima · Arquitectura del sistema
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ArrowFontSize 11
+skinparam packageStyle rectangle
+
+actor "Administrador\nVentas\nEncargado de área" as personal
+actor "Encargado de área\n(en planta)" as encargado
+actor "Cliente / invitado" as cliente
+
+package "Clientes" {
+  [Panel web\nQuasar (Vue 3)\nnavegador] as panel
+  [App Android\nQuasar + Capacitor\n<i>solo lectura · escanea QR</i>] as movil
+  [Sitio público\nAstro (estático)\n<i>catálogo sin precios</i>] as web
+}
+
+node "Droplet DigitalOcean · Docker Compose" as servidor {
+  [Caddy\nreverse proxy · TLS automático\nsirve los builds del panel y del sitio] as caddy
+  [API Laravel\nFrankenPHP · REST\nSanctum · Spatie Permission] as api
+  [Reverb\nWebSockets] as reverb
+  [Worker de cola] as queue
+}
+
+cloud "Neon" {
+  database "PostgreSQL\n<i>fuente de verdad</i>\nlotes · áreas · inventario\ncostos · pedidos · usuarios" as pg
+}
+
+cloud "MongoDB Atlas" {
+  database "MongoDB\nbitácora · imprevistos\n<i>escrita tras el commit</i>" as mongo
+}
+
+personal --> panel
+encargado --> movil
+cliente --> web
+
+panel --> caddy : HTTPS · cookie de sesión + CSRF
+movil --> caddy : HTTPS · token Bearer (lotes:read)
+web --> caddy : HTTPS · sin autenticación
+panel ..> caddy : WSS · canales privados
+web ..> caddy : WSS · canal público <i>catalogo</i>
+
+caddy --> api : /api/*
+caddy ..> reverb : /app/*
+api --> reverb : eventos de dominio
+api --> queue : trabajos en cola
+api --> pg
+api --> mongo
+queue --> pg
+queue --> mongo : afterCommit
+
+@enduml

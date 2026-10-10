@@ -1,0 +1,18 @@
+{
+  "name": "@aleacion-prima/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript http://localhost:8000/docs/api.json -o src/api.d.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@aleacion-prima/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

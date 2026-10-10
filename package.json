@@ -1,0 +1,56 @@
+{
+  "name": "aleacion-prima",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:api": "docker compose run --rm --no-deps -T api vendor/bin/pint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --if-present test",
+    "test:e2e": "pnpm --filter e2e exec playwright test",
+    "prepare": "husky",
+    "test:api": "docker compose run --rm --no-deps -T api php artisan test",
+    "analyse:api": "docker compose run --rm --no-deps -T api vendor/bin/phpstan analyse",
+    "test:e2e:report": "pnpm --filter e2e exec playwright show-report",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm test:api && pnpm analyse:api",
+    "setup": "node scripts/setup.ts",
+    "api:up": "docker compose up",
+    "api:down": "docker compose down",
+    "api:logs": "docker compose logs -f",
+    "artisan": "docker compose run --rm api php artisan",
+    "composer": "docker compose run --rm api composer",
+    "dev": "node scripts/dev.ts"
+  },
+  "prettier": "@aleacion-prima/config/prettier",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.2.2",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "@aleacion-prima/config": "workspace:*",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/types": "^21.2.3",
+    "@types/node": "^22.20.4",
+    "eslint": "^10.11.0",
+    "husky": "^9.1.7",
+    "jiti": "^2.7.0",
+    "lint-staged": "^17.5.1",
+    "prettier": "^3.9.9",
+    "prettier-plugin-astro": "^1.0.1",
+    "typescript": "^6.0.3"
+  },
+  "lint-staged": {
+    "*.{ts,vue,astro}": [
+      "eslint --fix --no-warn-ignored",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml,css}": "prettier --write",
+    "apps/api/**/*.php": "node scripts/pint.ts"
+  }
+}
