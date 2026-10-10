@@ -20,7 +20,7 @@ Qué hay en esta carpeta y cuándo leer cada cosa. Para instalar y trabajar día
 
 ## Diagramas
 
-Fuentes en PlantUML; los SVG exportados están en [`diagramas/img/`](./diagramas/img/) y son los que muestra el README de la raíz.
+Fuentes en PlantUML; se exportan a SVG en [`diagramas/img/`](./diagramas/img/) con `pnpm diagramas` (PlantUML en Docker), y esos SVG son los que muestra el README de la raíz.
 
 - [arquitectura.puml](./diagramas/arquitectura.puml)
 - [mapa-navegacion.puml](./diagramas/mapa-navegacion.puml)

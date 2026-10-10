@@ -21,7 +21,8 @@
     "api:logs": "docker compose logs -f",
     "artisan": "docker compose run --rm api php artisan",
     "composer": "docker compose run --rm api composer",
-    "dev": "node scripts/dev.ts"
+    "dev": "node scripts/dev.ts",
+    "diagramas": "node scripts/diagramas.ts"
   },
   "prettier": "@aleacion-prima/config/prettier",
   "devEngines": {

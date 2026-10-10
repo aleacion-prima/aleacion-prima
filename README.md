@@ -20,7 +20,7 @@ La documentación técnica está en [`docs/`](./docs/README.md); las decisiones 
 
 ## Unidad 1: Anteproyecto
 
-El anteproyecto se entregó el 4 de octubre de 2026 y se conserva en Google Drive, que es su versión de referencia:
+El anteproyecto se entregó el 4 de octubre de 2026 y se conserva en Google Drive, en la misma carpeta que la hoja del cronograma (Gantt); esa es su versión de referencia:
 
 **[Anteproyecto: Sistema de trazabilidad de lotes para empresa metalúrgica](https://drive.google.com/drive/u/0/folders/1AhmPgR9m7Az-N4vhDoi3fm69OVoWu3hF)**
 
@@ -331,6 +331,7 @@ pnpm setup
 
 - `pnpm install` instala las dependencias de Node de todo el monorepo y activa los hooks de Git.
 - `pnpm setup` prepara el backend: crea `apps/api/.env`, genera las llaves, construye la imagen de la API, instala las dependencias de PHP, levanta PostgreSQL y MongoDB y corre las migraciones.
+- Si `git config core.hooksPath` no imprime nada, los hooks de Git no quedaron activos (pasa si se reinicializa el repo): corre `pnpm exec husky`.
 
 La primera vez tarda varios minutos (compila extensiones de PHP). Si algo falla, corrígelo y vuelve a correr `pnpm setup`: se salta lo que ya está hecho.
 
@@ -370,20 +371,21 @@ La documentación de la API la genera **Scramble** a partir de los Form Requests
 
 #### Comandos útiles
 
-| Comando                         | Qué hace                                                                       |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `pnpm api:up` / `pnpm api:down` | Levantar / detener el backend                                                  |
-| `pnpm api:logs`                 | Ver los logs del backend                                                       |
-| `pnpm artisan <comando>`        | `php artisan` dentro del contenedor (p. ej. `pnpm artisan make:model Lote -m`) |
-| `pnpm composer <comando>`       | `composer` dentro del contenedor                                               |
-| `pnpm lint`                     | ESLint                                                                         |
-| `pnpm format`                   | Formatear con Prettier                                                         |
-| `pnpm typecheck`                | Revisar tipos de TypeScript                                                    |
-| `pnpm test`                     | Tests del panel (Vitest)                                                       |
-| `pnpm test:api`                 | Tests del backend (Pest)                                                       |
-| `pnpm analyse:api`              | Análisis estático del backend (Larastan)                                       |
-| `pnpm test:e2e`                 | Tests E2E (Playwright; requiere la app levantada)                              |
-| `pnpm check`                    | Todo lo anterior salvo E2E (lo mismo que el CI)                                |
+| Comando                         | Qué hace                                                                                                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm api:up` / `pnpm api:down` | Levantar / detener el backend                                                                                         |
+| `pnpm api:logs`                 | Ver los logs del backend                                                                                              |
+| `pnpm artisan <comando>`        | `php artisan` dentro del contenedor (p. ej. `pnpm artisan make:model Lote -m`)                                        |
+| `pnpm composer <comando>`       | `composer` dentro del contenedor                                                                                      |
+| `pnpm lint`                     | ESLint                                                                                                                |
+| `pnpm format`                   | Formatear con Prettier                                                                                                |
+| `pnpm typecheck`                | Revisar tipos de TypeScript                                                                                           |
+| `pnpm test`                     | Tests del panel (Vitest)                                                                                              |
+| `pnpm test:api`                 | Tests del backend (Pest)                                                                                              |
+| `pnpm analyse:api`              | Análisis estático del backend (Larastan)                                                                              |
+| `pnpm test:e2e`                 | Tests E2E (Playwright; requiere la app levantada)                                                                     |
+| `pnpm check`                    | Todo lo anterior salvo E2E (lo mismo que el CI)                                                                       |
+| `pnpm diagramas`                | Exporta `docs/diagramas/` a SVG en `docs/diagramas/img/` (PlantUML en Docker; `--borrar-imagen` la quita al terminar) |
 
 Para un solo proyecto se usa `--filter` con su nombre: `panel`, `web`, `e2e`, `@aleacion-prima/types`, `@aleacion-prima/config`.
 
@@ -520,5 +522,6 @@ Zed también funciona con WSL. La consistencia de formato la garantizan EditorCo
 | El hook `pre-commit` falla sin mensaje                                             | Corre `HUSKY=2 git commit ...` para ver el detalle.                                                                                                                                 |
 | Un commit es rechazado por el mensaje                                              | No sigue Conventional Commits. Revisa la [sección 8](#8-git-commits-y-pull-requests).                                                                                               |
 | La app Android no encuentra la API                                                 | `localhost` es el celular. Pasa `PUBLIC_API_URL` y `PUBLIC_REVERB_HOST` con `10.0.2.2` (emulador) o la IP de tu máquina (físico). Ver [sección 6](#6-app-móvil-android).            |
+| Un commit o un push pasa sin correr los hooks                                      | `git config core.hooksPath` está vacío. Corre `pnpm exec husky` y vuelve a intentar.                                                                                                |
 
 </details>
