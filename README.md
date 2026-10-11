@@ -111,7 +111,7 @@ Los hooks se instalan solos con `pnpm install` y hacen cumplir lo anterior en ca
 | Pull Requests fusionados     | <https://github.com/aleacion-prima/aleacion-prima/pulls?q=is%3Amerged> |
 | Ejecuciones del CI           | <https://github.com/aleacion-prima/aleacion-prima/actions>             |
 | Participación por integrante | <https://github.com/aleacion-prima/aleacion-prima/graphs/contributors> |
-| Tablero del equipo           | _Pendiente: enlace al Project_                                         |
+| Tablero del equipo           | <https://github.com/orgs/aleacion-prima/projects/1>                    |
 
 ### Diagramas del sistema
 
