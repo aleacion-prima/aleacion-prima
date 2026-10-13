@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wireframes Móviles - Aleación Prima</title>
+    <style>
+      body {
+        background-color: #f3f4f6;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      .phone-mockup {
+        border: 3px solid #1f2937;
+        background: #ffffff;
+        border-radius: 36px;
+        width: 320px;
+        height: 640px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+      }
+      .status-bar {
+        height: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 16px;
+        font-size: 11px;
+        font-weight: bold;
+        color: #1f2937;
+      }
+      .wire-block {
+        background: #e5e7eb;
+        border-radius: 6px;
+      }
+      .wire-block-dark {
+        background: #9ca3af;
+        border-radius: 6px;
+      }
+
+      /* Utilidades estilo Tailwind v3 (subconjunto usado en este archivo), incluidas aquí para que el
+           wireframe abra sin red. Si agregas una clase nueva, agrega también su regla. */
+      *,
+      ::before,
+      ::after {
+        box-sizing: border-box;
+        border-width: 0;
+        border-style: solid;
+        border-color: #e5e7eb;
+      }
+      html {
+        line-height: 1.5;
+        -webkit-text-size-adjust: 100%;
+        tab-size: 4;
+        font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+      }
+      body {
+        margin: 0;
+        line-height: inherit;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-size: inherit;
+        font-weight: inherit;
+      }
+      blockquote,
+      dl,
+      dd,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      hr,
+      figure,
+      p,
+      pre {
+        margin: 0;
+      }
+      ol,
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      a {
+        color: inherit;
+        text-decoration: inherit;
+      }
+      table {
+        text-indent: 0;
+        border-color: inherit;
+        border-collapse: collapse;
+      }
+      button,
+      input,
+      optgroup,
+      select,
+      textarea {
+        font-family: inherit;
+        font-size: 100%;
+        font-weight: inherit;
+        line-height: inherit;
+        color: inherit;
+        margin: 0;
+        padding: 0;
+      }
+      button,
+      select {
+        text-transform: none;
+      }
+      button,
+      [type='button'],
+      [type='submit'] {
+        -webkit-appearance: button;
+        background-color: transparent;
+        background-image: none;
+      }
+      button {
+        cursor: pointer;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        opacity: 1;
+        color: #9ca3af;
+      }
+      img,
+      svg,
+      video,
+      canvas,
+      audio,
+      iframe,
+      embed,
+      object {
+        display: block;
+        vertical-align: middle;
+      }
+      img,
+      video {
+        max-width: 100%;
+        height: auto;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .absolute {
+        position: absolute;
+      }
+      .bg-blue-200 {
+        background-color: #bfdbfe;
+      }
+      .bg-emerald-200 {
+        background-color: #a7f3d0;
+      }
+      .bg-gray-200 {
+        background-color: #e5e7eb;
+      }
+      .bg-gray-300 {
+        background-color: #d1d5db;
+      }
+      .bg-gray-700 {
+        background-color: #374151;
+      }
+      .bg-gray-800 {
+        background-color: #1f2937;
+      }
+      .bg-gray-900 {
+        background-color: #111827;
+      }
+      .bg-red-500 {
+        background-color: #ef4444;
+      }
+      .border {
+        border-width: 1px;
+      }
+      .border-2 {
+        border-width: 2px;
+      }
+      .border-b-4 {
+        border-bottom-width: 4px;
+      }
+      .border-dashed {
+        border-style: dashed;
+      }
+      .border-gray-200 {
+        border-color: #e5e7eb;
+      }
+      .border-gray-300 {
+        border-color: #d1d5db;
+      }
+      .border-gray-400 {
+        border-color: #9ca3af;
+      }
+      .border-gray-500 {
+        border-color: #6b7280;
+      }
+      .border-l-4 {
+        border-left-width: 4px;
+      }
+      .border-r-4 {
+        border-right-width: 4px;
+      }
+      .border-t {
+        border-top-width: 1px;
+      }
+      .border-t-4 {
+        border-top-width: 4px;
+      }
+      .border-white {
+        border-color: #ffffff;
+      }
+      .bottom-3 {
+        bottom: 0.75rem;
+      }
+      .cursor-pointer {
+        cursor: pointer;
+      }
+      .flex {
+        display: flex;
+      }
+      .flex-col {
+        flex-direction: column;
+      }
+      .flex-wrap {
+        flex-wrap: wrap;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .gap-10 {
+        gap: 2.5rem;
+      }
+      .h-0\.5 {
+        height: 0.125rem;
+      }
+      .h-1 {
+        height: 0.25rem;
+      }
+      .h-10 {
+        height: 2.5rem;
+      }
+      .h-11 {
+        height: 2.75rem;
+      }
+      .h-12 {
+        height: 3rem;
+      }
+      .h-2 {
+        height: 0.5rem;
+      }
+      .h-20 {
+        height: 5rem;
+      }
+      .h-3 {
+        height: 0.75rem;
+      }
+      .h-4 {
+        height: 1rem;
+      }
+      .h-44 {
+        height: 11rem;
+      }
+      .h-5 {
+        height: 1.25rem;
+      }
+      .h-6 {
+        height: 1.5rem;
+      }
+      .h-72 {
+        height: 18rem;
+      }
+      .h-8 {
+        height: 2rem;
+      }
+      .h-9 {
+        height: 2.25rem;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .justify-around {
+        justify-content: space-around;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+      .justify-center {
+        justify-content: center;
+      }
+      .mt-1 {
+        margin-top: 0.25rem;
+      }
+      .mx-2 {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+      }
+      .mx-auto {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .my-1 {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+      }
+      .my-auto {
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+      .opacity-80 {
+        opacity: 0.8;
+      }
+      .overflow-hidden {
+        overflow: hidden;
+      }
+      .overflow-y-auto {
+        overflow-y: auto;
+      }
+      .p-2 {
+        padding: 0.5rem;
+      }
+      .p-3 {
+        padding: 0.75rem;
+      }
+      .p-4 {
+        padding: 1rem;
+      }
+      .p-8 {
+        padding: 2rem;
+      }
+      .pb-2 {
+        padding-bottom: 0.5rem;
+      }
+      .pt-3 {
+        padding-top: 0.75rem;
+      }
+      .px-1 {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+      }
+      .px-2 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+      .px-3 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+      .py-2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+      }
+      .relative {
+        position: relative;
+      }
+      .ring-4 {
+        --tw-ring-shadow: 0 0 0 4px var(--tw-ring-color);
+        box-shadow:
+          var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+          var(--tw-shadow, 0 0 #0000);
+      }
+      .ring-gray-300 {
+        --tw-ring-color: #d1d5db;
+      }
+      .rounded {
+        border-radius: 0.25rem;
+      }
+      .rounded-2xl {
+        border-radius: 1rem;
+      }
+      .rounded-full {
+        border-radius: 9999px;
+      }
+      .rounded-lg {
+        border-radius: 0.5rem;
+      }
+      .rounded-sm {
+        border-radius: 0.25rem;
+      }
+      .rounded-xl {
+        border-radius: 0.75rem;
+      }
+      .shadow-\[0_0_8px_rgba\(239\,68\,68\,0\.8\)\] {
+        --tw-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+        box-shadow:
+          var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+          var(--tw-shadow, 0 0 #0000);
+      }
+      .shadow-md {
+        --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        box-shadow:
+          var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+          var(--tw-shadow, 0 0 #0000);
+      }
+      .space-x-1 > :not([hidden]) ~ :not([hidden]) {
+        margin-left: 0.25rem;
+      }
+      .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0.25rem;
+      }
+      .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0.5rem;
+      }
+      .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0.75rem;
+      }
+      .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 1.5rem;
+      }
+      .text-\[10px\] {
+        font-size: 10px;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .text-gray-400 {
+        color: #9ca3af;
+      }
+      .text-gray-600 {
+        color: #4b5563;
+      }
+      .text-white {
+        color: #ffffff;
+      }
+      .text-xs {
+        font-size: 0.75rem;
+        line-height: 1rem;
+      }
+      .tracking-wider {
+        letter-spacing: 0.05em;
+      }
+      .w-1\/2 {
+        width: 50%;
+      }
+      .w-12 {
+        width: 3rem;
+      }
+      .w-14 {
+        width: 3.5rem;
+      }
+      .w-16 {
+        width: 4rem;
+      }
+      .w-2 {
+        width: 0.5rem;
+      }
+      .w-20 {
+        width: 5rem;
+      }
+      .w-24 {
+        width: 6rem;
+      }
+      .w-28 {
+        width: 7rem;
+      }
+      .w-3 {
+        width: 0.75rem;
+      }
+      .w-3\/4 {
+        width: 75%;
+      }
+      .w-36 {
+        width: 9rem;
+      }
+      .w-4 {
+        width: 1rem;
+      }
+      .w-44 {
+        width: 11rem;
+      }
+      .w-5 {
+        width: 1.25rem;
+      }
+      .w-6 {
+        width: 1.5rem;
+      }
+      .w-8 {
+        width: 2rem;
+      }
+      .w-full {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body class="p-8 flex flex-wrap justify-center gap-10">
+    <!-- ================= WIREFRAME 1: LOGIN TRABAJADOR ================= -->
+    <div class="phone-mockup p-4">
+      <!-- Barra de estado simulada -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex space-x-1 items-center">
+          <div class="w-2 h-2 bg-gray-800 rounded-full"></div>
+          <div class="w-3 h-2 bg-gray-800 rounded-sm"></div>
+        </div>
+      </div>
+
+      <!-- Contenido Central del Login -->
+      <div class="space-y-6 my-auto px-2">
+        <!-- Título simulado -->
+        <div class="space-y-2 flex flex-col items-center">
+          <div class="wire-block-dark w-28 h-5"></div>
+          <div class="wire-block w-20 h-3"></div>
+        </div>
+
+        <!-- Avatar / Icono circular estilo wireframe -->
+        <div class="flex justify-center py-2">
+          <div
+            class="w-20 h-20 rounded-full bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-400 text-xs font-bold"
+          >
+            USER
+          </div>
+        </div>
+
+        <!-- Campos de texto simulados -->
+        <div class="space-y-3">
+          <div class="space-y-1">
+            <div class="wire-block w-24 h-3"></div>
+            <div class="wire-block w-full h-10 border border-gray-300"></div>
+          </div>
+          <div class="space-y-1">
+            <div class="wire-block w-20 h-3"></div>
+            <div class="wire-block w-full h-10 border border-gray-300"></div>
+          </div>
+        </div>
+
+        <!-- Botón de acción principal -->
+        <div
+          class="wire-block-dark w-full h-11 rounded-lg flex items-center justify-center text-white text-xs font-bold tracking-wider"
+        >
+          ACCEDER
+        </div>
+      </div>
+
+      <!-- Barra de navegación inferior abstracta -->
+      <div class="pt-3 border-t border-gray-200 flex justify-around items-center pb-2">
+        <div class="w-6 h-6 rounded-full bg-gray-300"></div>
+        <div class="w-8 h-2 bg-gray-800 rounded-full"></div>
+        <div class="w-6 h-6 rounded-full bg-gray-300"></div>
+      </div>
+    </div>
+
+    <!-- ================= WIREFRAME 2: SEGUIMIENTO DE LOTES & QR ================= -->
+    <div class="phone-mockup p-4">
+      <!-- Barra de estado simulada -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex space-x-1 items-center">
+          <div class="w-2 h-2 bg-gray-800 rounded-full"></div>
+          <div class="w-3 h-2 bg-gray-800 rounded-sm"></div>
+        </div>
+      </div>
+
+      <!-- Header y Buscador de Lotes -->
+      <div class="space-y-3 mt-1">
+        <div class="flex justify-between items-center">
+          <div class="wire-block-dark w-24 h-4"></div>
+          <div class="wire-block w-16 h-4 rounded-full"></div>
+        </div>
+        <!-- Barra de búsqueda -->
+        <div class="wire-block w-full h-9 border border-gray-300 rounded-lg flex items-center px-3">
+          <div class="w-3 h-3 rounded-full border-2 border-gray-400"></div>
+        </div>
+      </div>
+
+      <!-- Lista de Tarjetas de Lotes (Estilo esquemático de la imagen) -->
+      <div class="space-y-3 my-auto overflow-y-auto">
+        <!-- Tarjeta Lote 1 -->
+        <div class="wire-block p-3 space-y-2 border border-gray-300">
+          <div class="flex justify-between">
+            <div class="wire-block-dark w-20 h-3"></div>
+            <div class="wire-block w-14 h-3 bg-blue-200"></div>
+          </div>
+          <div class="wire-block w-full h-2"></div>
+          <div class="wire-block w-3/4 h-2"></div>
+        </div>
+
+        <!-- Tarjeta Lote 2 -->
+        <div class="wire-block p-3 space-y-2 border border-gray-300">
+          <div class="flex justify-between">
+            <div class="wire-block-dark w-20 h-3"></div>
+            <div class="wire-block w-14 h-3 bg-emerald-200"></div>
+          </div>
+          <div class="wire-block w-full h-2"></div>
+          <div class="wire-block w-1/2 h-2"></div>
+        </div>
+      </div>
+
+      <!-- Barra de Navegación Inferior con Botón QR Destacado -->
+      <div class="pt-3 border-t border-gray-200 flex justify-around items-center">
+        <div class="flex flex-col items-center space-y-1">
+          <div class="w-5 h-5 rounded-full bg-gray-300"></div>
+          <div class="w-6 h-1 bg-gray-300 rounded"></div>
+        </div>
+        <!-- Botón Central de Escáner QR -->
+        <div
+          class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center shadow-md cursor-pointer text-white text-xs font-bold"
+        >
+          📷
+        </div>
+        <div class="flex flex-col items-center space-y-1">
+          <div class="w-5 h-5 rounded-full bg-gray-300"></div>
+          <div class="w-6 h-1 bg-gray-300 rounded"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= WIREFRAME 3: VISTA ESCÁNER QR ACTIVADO ================= -->
+    <div class="phone-mockup p-4">
+      <!-- Barra de estado simulada -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex space-x-1 items-center">
+          <div class="w-2 h-2 bg-gray-800 rounded-full"></div>
+          <div class="w-3 h-2 bg-gray-800 rounded-sm"></div>
+        </div>
+      </div>
+
+      <!-- Header de la vista de cámara -->
+      <div class="flex justify-between items-center mt-1 px-1">
+        <div
+          class="wire-block w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-gray-600"
+        >
+          ✕
+        </div>
+        <div class="wire-block-dark w-28 h-4"></div>
+        <div
+          class="wire-block w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-gray-600"
+        >
+          ⚡
+        </div>
+      </div>
+
+      <!-- Área Central de la Cámara con el Visor QR / Retícula -->
+      <div
+        class="relative my-auto mx-2 h-72 bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-dashed border-gray-500"
+      >
+        <!-- Simulación de la retícula de escaneo QR -->
+        <div
+          class="absolute w-44 h-44 border-2 border-white rounded-xl flex flex-col justify-between p-2 opacity-80"
+        >
+          <div class="flex justify-between">
+            <div class="w-4 h-4 border-t-4 border-l-4 border-white"></div>
+            <div class="w-4 h-4 border-t-4 border-r-4 border-white"></div>
+          </div>
+          <!-- Línea de escaneo láser simulada -->
+          <div class="w-full h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+          <div class="flex justify-between">
+            <div class="w-4 h-4 border-b-4 border-l-4 border-white"></div>
+            <div class="w-4 h-4 border-b-4 border-r-4 border-white"></div>
+          </div>
+        </div>
+        <span class="text-[10px] text-gray-400 absolute bottom-3 tracking-wider"
+          >Apunta al código QR del lote</span
+        >
+      </div>
+
+      <!-- Texto de instrucción esquemático inferior -->
+      <div class="text-center space-y-1 my-1">
+        <div class="wire-block w-36 h-3 mx-auto"></div>
+      </div>
+
+      <!-- Barra de Navegación Inferior con el botón activo -->
+      <div class="pt-3 border-t border-gray-200 flex justify-around items-center">
+        <div class="flex flex-col items-center space-y-1">
+          <div class="w-5 h-5 rounded-full bg-gray-300"></div>
+          <div class="w-6 h-1 bg-gray-300 rounded"></div>
+        </div>
+        <!-- Botón Central resaltado indicando que la cámara/QR está activa -->
+        <div
+          class="w-12 h-12 bg-gray-700 ring-4 ring-gray-300 rounded-2xl flex items-center justify-center shadow-md text-white text-xs font-bold"
+        >
+          📷
+        </div>
+        <div class="flex flex-col items-center space-y-1">
+          <div class="w-5 h-5 rounded-full bg-gray-300"></div>
+          <div class="w-6 h-1 bg-gray-300 rounded"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
