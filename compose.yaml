@@ -7,6 +7,7 @@ x-api: &api
   user: '${UID:-1000}:${GID:-1000}'
   volumes:
     - ./apps/api:/app
+    - ./packages/types:/packages/types:ro
   depends_on:
     postgres:
       condition: service_healthy
@@ -20,6 +21,7 @@ services:
       COMPOSER_CACHE_DIR: /tmp/composer-cache
     volumes:
       - ./apps/api:/app
+      - ./packages/types:/packages/types:ro
       - composer-cache:/tmp/composer-cache
 
   reverb:
