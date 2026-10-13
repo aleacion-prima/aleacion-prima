@@ -13,9 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('lote_id')->constrained()->cascadeOnDelete();
             $table->foreignId('area_id')->constrained();
-            // La misma área puede repetirse con otro orden (retrabajo).
             $table->integer('orden');
-            // Tarifas copiadas de `areas` al crear el lote (ADR-0009).
             $table->decimal('tarifa_mano_obra_hora', 14, 4);
             $table->decimal('costo_maquina_hora', 14, 4);
             $table->integer('piezas_recibidas')->nullable();
@@ -34,7 +32,6 @@ return new class extends Migration
             $table->unique(['lote_id', 'orden']);
         });
 
-        // Los CHECK son de Postgres; los tests corren en SQLite y la API aplica las mismas reglas.
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE lote_areas ADD CONSTRAINT lote_areas_piezas_entregadas_check CHECK (piezas_entregadas IS NULL OR piezas_recibidas IS NULL OR piezas_entregadas <= piezas_recibidas)');
             DB::statement('ALTER TABLE lote_areas ADD CONSTRAINT lote_areas_salida_check CHECK (salida_ocurrido_en IS NULL OR entrada_ocurrido_en IS NULL OR salida_ocurrido_en >= entrada_ocurrido_en)');

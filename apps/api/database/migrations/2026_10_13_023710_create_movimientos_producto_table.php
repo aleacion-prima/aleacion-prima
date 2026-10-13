@@ -8,13 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Libro mayor de producto terminado; productos.existencia es su suma.
         Schema::create('movimientos_producto', function (Blueprint $table) {
             $table->id();
             $table->foreignId('producto_id')->constrained();
-            // Valores de App\Enums\TipoMovimientoProducto.
             $table->string('tipo');
-            // Con signo: produccion +; venta −; ajuste ±.
             $table->integer('cantidad');
             $table->foreignId('lote_id')->nullable()->constrained();
             $table->foreignId('pedido_id')->nullable()->constrained();

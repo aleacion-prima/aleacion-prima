@@ -13,7 +13,6 @@ return new class extends Migration
             $table->foreignId('pedido_id')->constrained()->cascadeOnDelete();
             $table->foreignId('producto_id')->constrained();
             $table->integer('cantidad');
-            // Congelado al confirmar el pedido.
             $table->decimal('precio_unitario', 14, 4);
             $table->timestamps();
         });

@@ -13,7 +13,6 @@ return new class extends Migration
             $table->string('codigo')->unique();
             $table->string('nombre');
             $table->jsonb('especificaciones')->nullable();
-            // Nunca salen por la API pública ni por el canal `catalogo` (RNF-04).
             $table->decimal('precio_mayoreo', 14, 4);
             $table->decimal('precio_menudeo', 14, 4);
             $table->integer('existencia')->default(0);

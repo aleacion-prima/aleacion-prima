@@ -9,7 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Arco exclusivo: cuatro FK nulas y exactamente una con valor (decisión 8 de modelo-datos.md).
         Schema::create('ajustes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lote_area_id')->nullable()->constrained('lote_areas');
@@ -17,7 +16,6 @@ return new class extends Migration
             $table->foreignId('insumo_id')->nullable()->constrained();
             $table->foreignId('producto_id')->nullable()->constrained();
             $table->string('campo');
-            // { "anterior": 48, "nuevo": 47 }; conserva el tipo del valor.
             $table->jsonb('valores');
             $table->text('motivo');
             $table->foreignId('user_id')->constrained();

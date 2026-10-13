@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->string('codigo')->unique();
             $table->string('nombre')->unique();
-            // Valores de App\Enums\CategoriaInsumo; se valida en PHP, no con un tipo enum de la BD.
             $table->string('categoria');
             $table->string('unidad');
             $table->decimal('costo_unitario', 14, 4);

@@ -8,13 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Libro mayor de materia prima: fuente de verdad; insumos.existencia es su suma (RNF-06).
         Schema::create('movimientos_insumo', function (Blueprint $table) {
             $table->id();
             $table->foreignId('insumo_id')->constrained();
-            // Valores de App\Enums\TipoMovimientoInsumo.
             $table->string('tipo');
-            // Con signo: entrada, devolucion y retorno +; asignacion −; ajuste ±.
             $table->decimal('cantidad', 12, 3);
             $table->decimal('costo_unitario', 14, 4)->nullable();
             $table->string('lote_proveedor')->nullable();

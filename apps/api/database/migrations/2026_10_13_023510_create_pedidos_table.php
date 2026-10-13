@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('pedidos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cliente_id')->constrained();
-            // Valores de App\Enums\EstadoPedido y App\Enums\EstadoPago.
             $table->string('estado');
             $table->string('estado_pago');
             $table->text('notas')->nullable();

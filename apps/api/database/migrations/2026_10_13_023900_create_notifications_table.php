@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tabla estándar de Laravel; es el centro de notificaciones (RF-38).
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('type');

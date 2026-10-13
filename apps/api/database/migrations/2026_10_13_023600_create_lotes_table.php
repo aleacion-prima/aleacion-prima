@@ -10,16 +10,13 @@ return new class extends Migration
     {
         Schema::create('lotes', function (Blueprint $table) {
             $table->id();
-            // LOT-AAAAMMDD-NN; inmutable.
             $table->string('codigo')->unique();
             $table->foreignId('producto_id')->constrained();
             $table->foreignId('pedido_id')->nullable()->constrained()->nullOnDelete();
             $table->integer('cantidad_objetivo');
-            // Valores de App\Enums\EstadoLote.
             $table->string('estado');
             $table->foreignId('area_actual_id')->nullable()->constrained('areas');
             $table->integer('piezas_terminadas')->nullable();
-            // Cache que solo escribe CalculadorCostoLote.
             $table->decimal('costo_material', 14, 4)->default(0);
             $table->decimal('costo_mano_obra', 14, 4)->default(0);
             $table->decimal('costo_maquina', 14, 4)->default(0);
