@@ -2,6 +2,8 @@
 
 Colores, tipografías y reglas de uso compartidas por el panel, la app móvil y el sitio público. El maquetado en Figma y el código usan los mismos nombres y valores: en Figma como Variables de color, en el panel en `apps/panel/src/css/quasar.variables.scss` y en el sitio como variables CSS.
 
+El maquetado vive en el archivo de Figma [Maquetado](https://www.figma.com/design/GLTcrY3WSW5avgfKLDU5Y8/Maquetado): la página "Sistema de diseño" tiene las variables, los estilos de texto y los componentes; la página "Pantallas" tiene las pantallas y el prototipo.
+
 ## Idea
 
 Neutros fríos de acero y grafito, como las pantallas de control de una planta, y un solo color caliente: el del hierro fundido. El naranja se reserva para lo que importa (acciones principales y lotes en proceso); todo lo demás se mantiene en grises para que el color caliente se note.
