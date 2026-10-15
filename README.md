@@ -151,13 +151,13 @@ Está en [`docs/modelo-datos.md`](./docs/modelo-datos.md): cada tabla de Postgre
 
 Pantallas del panel, la app Android y el sitio público, con los datos de demostración de [`docs/empresa.md`](./docs/empresa.md) (áreas, productos, insumos, personas y los tres lotes de ejemplo). Siguen el mapa de navegación del anteproyecto y los wireframes de la sección 12, que fueron su primera iteración.
 
-**[Maquetado en Figma](https://www.figma.com/design/fIYxdDQGEAPQQrFiLIBiy7/WIREFRAMES?node-id=0-1&p=f&t=rhz9Pzd70A8xOZmu-0)**
+**[Maquetado en Figma](https://www.figma.com/design/GLTcrY3WSW5avgfKLDU5Y8/Maquetado?node-id=9-34)** · los componentes, colores y tipografías que usan las pantallas están en la página "Sistema de diseño" del mismo archivo y se documentan en [`docs/diseno.md`](./docs/diseno.md).
 
 ### Prototipado
 
 Prototipo navegable sobre el maquetado: desde el inicio de sesión hasta la confirmación de un lote en el panel, el escaneo de un QR en la app y el catálogo con el botón de cotizar en el sitio. La navegación es la de [`docs/diagramas/mapa-navegacion.puml`](./docs/diagramas/mapa-navegacion.puml).
 
-**[Prototipo navegable en Figma](https://www.figma.com/design/fIYxdDQGEAPQQrFiLIBiy7/WIREFRAMES?node-id=0-1&p=f&t=rhz9Pzd70A8xOZmu-0)**
+**[Prototipo navegable en Figma](https://www.figma.com/proto/GLTcrY3WSW5avgfKLDU5Y8/Maquetado?page-id=9%3A34&node-id=48-162)**
 
 ## Guía de instalación y trabajo diario
 
