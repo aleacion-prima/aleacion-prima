@@ -17,3 +17,7 @@ $blanco-humo: #f8fafc;
 $typography-font-family: 'Roboto', sans-serif;
 $fuente-titulos: 'Barlow Semi Condensed', sans-serif;
 $fuente-codigo: 'IBM Plex Mono', monospace;
+
+$duracion-rapida: 0.15s;
+$duracion-media: 0.35s;
+$curva-salida: cubic-bezier(0.2, 0.8, 0.2, 1);

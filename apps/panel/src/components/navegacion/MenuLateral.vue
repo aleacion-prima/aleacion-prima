@@ -4,7 +4,7 @@
       <q-item-label
         v-if="seccion.titulo"
         header
-        class="text-uppercase text-caption text-secundario"
+        class="text-uppercase text-caption text-secundario q-pt-md q-pb-xs q-mini-drawer-hide"
       >
         {{ seccion.titulo }}
       </q-item-label>
@@ -14,13 +14,17 @@
         :to="elemento.ruta"
         exact
         clickable
+        dense
+        class="rounded-borders q-mx-sm"
         active-class="bg-grey-2 text-primary text-weight-medium"
-        :inset-level="elemento.icono ? 0 : 1"
       >
-        <q-item-section v-if="elemento.icono" avatar>
+        <q-item-section avatar>
           <q-icon :name="elemento.icono" />
         </q-item-section>
         <q-item-section>{{ elemento.etiqueta }}</q-item-section>
+        <q-tooltip anchor="center right" self="center left" class="q-mini-drawer-only">
+          {{ elemento.etiqueta }}
+        </q-tooltip>
       </q-item>
     </template>
   </q-list>
