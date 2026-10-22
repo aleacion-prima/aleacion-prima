@@ -64,6 +64,10 @@ Toda combinación de texto y fondo cumple WCAG AA (4.5:1 para texto normal). Med
 
 Las tres son gratuitas (Google Fonts). Los códigos (`LOT-20260924-01`, `CHT-FUN`) siempre en monoespaciada: alinean en tablas y se leen en la etiqueta con QR.
 
+## En el panel
+
+Ya está aplicado en `apps/panel`: los colores son las variables de Quasar (`color="positive"`, `text-negative`, `bg-warning`), las clases `text-h1` a `text-h6` usan Barlow, la clase `codigo` pone IBM Plex Mono y `text-secundario` pinta en Grafito medio. Los componentes del Figma que Quasar no trae viven en `src/components` por dominio: `ChipEstado`, `ParadaRecorrido`, `RecorridoLote`, `PasoRecorrido`, `EtiquetaLote`, `EstadoVacio`, `AvisoSistema` y `MenuLateral`. Las animaciones están en `src/css/animaciones.scss` y se desactivan con `prefers-reduced-motion`. La ruta `/muestrario`, solo en desarrollo, los enseña todos.
+
 ## Sitio público
 
 Misma paleta y mismas fuentes. La disponibilidad usa `$positive` (disponible) y Grafito medio (sin existencia). Nunca se muestran precios ni costos, así que no hay color para ellos.
