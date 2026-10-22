@@ -1,5 +1,5 @@
 <template>
-  <q-page padding class="column q-gutter-y-lg">
+  <q-page padding class="column q-gutter-y-xl">
     <div class="text-h4">Muestrario</div>
 
     <section>
@@ -34,6 +34,21 @@
     </section>
 
     <section>
+      <div class="text-h6 q-mb-sm">Áreas en curso</div>
+      <div class="row q-gutter-md">
+        <ParadaRecorrido
+          v-for="(a, i) in areas"
+          :key="a.codigo"
+          :orden="i + 1"
+          :codigo="a.codigo"
+          :nombre="a.nombre"
+          estado="en_curso"
+          tiempo="Desde 07:00"
+        />
+      </div>
+    </section>
+
+    <section>
       <div class="text-h6 q-mb-sm">Pasos de recorrido</div>
       <div class="row items-center q-gutter-xs">
         <PasoRecorrido v-for="p in paradas" :key="p.codigo" :area="p.codigo" :estado="p.estado" />
@@ -53,10 +68,13 @@
     <section>
       <div class="text-h6 q-mb-sm">Avisos</div>
       <div class="column q-gutter-y-sm" style="max-width: 560px">
-        <q-banner dense class="bg-info text-white" inline-actions>Lote creado</q-banner>
-        <q-banner dense class="bg-positive text-white">Cierre confirmado</q-banner>
-        <q-banner dense class="bg-warning text-white">Captura tardía</q-banner>
-        <q-banner dense class="bg-negative text-white">No se pudo guardar</q-banner>
+        <AvisoSistema tipo="informacion" mensaje="Lote creado" />
+        <AvisoSistema tipo="exito" mensaje="Cierre confirmado" />
+        <AvisoSistema
+          tipo="advertencia"
+          mensaje="Captura tardía: la salida se registró 45 min después"
+        />
+        <AvisoSistema tipo="error" mensaje="No se pudo guardar" :cerrable="false" />
       </div>
     </section>
   </q-page>
@@ -66,7 +84,9 @@
 import { ESTADOS_LOTE } from '@aleacion-prima/types';
 import type { ParadaLote } from '@/catalogos/areas';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
+import AvisoSistema from '@/components/comunes/AvisoSistema.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+import ParadaRecorrido from '@/components/lotes/ParadaRecorrido.vue';
 import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 
@@ -102,6 +122,16 @@ const paradas: ParadaLote[] = [
   },
   { codigo: 'GRA', nombre: 'Granallado', estado: 'pendiente', tiempo: 'Pendiente' },
   { codigo: 'CAL', nombre: 'Calidad', estado: 'pendiente', tiempo: 'Pendiente' },
+];
+
+const areas = [
+  { codigo: 'MOL', nombre: 'Moldeo' },
+  { codigo: 'FUS', nombre: 'Fusión' },
+  { codigo: 'COL', nombre: 'Colada' },
+  { codigo: 'DES', nombre: 'Desmolde' },
+  { codigo: 'GRA', nombre: 'Granallado' },
+  { codigo: 'CAL', nombre: 'Calidad' },
+  { codigo: 'EMP', nombre: 'Empaque' },
 ];
 
 const plan: ParadaLote[] = paradas.map((p) => ({

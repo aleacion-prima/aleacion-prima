@@ -2,15 +2,7 @@
   <q-layout view="lHh Lpr lFf">
     <q-header class="bg-secondary">
       <q-toolbar class="q-px-md" style="min-height: 64px">
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menú"
-          class="lt-md"
-          @click="menuAbierto = !menuAbierto"
-        />
+        <q-btn flat dense round icon="menu" aria-label="Menú" @click="alternarMenu" />
         <q-toolbar-title shrink class="text-h6 text-uppercase" style="letter-spacing: 0.08em">
           Aleación Prima
         </q-toolbar-title>
@@ -49,18 +41,30 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="menuAbierto" show-if-above bordered :width="240">
+    <q-drawer
+      v-model="menuAbierto"
+      :mini="menuMini"
+      show-if-above
+      bordered
+      :width="232"
+      :mini-width="64"
+    >
       <MenuLateral :rol="rol" />
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <router-view #default="{ Component }">
+        <transition name="q-transition--fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
 import MenuLateral from '@/components/navegacion/MenuLateral.vue';
@@ -73,10 +77,17 @@ const ETIQUETAS_ROL: Record<Rol, string> = {
   cliente: 'Cliente',
 };
 
+const $q = useQuasar();
 const router = useRouter();
 const sesion = useSesionStore();
 
 const menuAbierto = ref(false);
+const menuMini = ref(false);
+
+const alternarMenu = (): void => {
+  if ($q.screen.lt.md) menuAbierto.value = !menuAbierto.value;
+  else menuMini.value = !menuMini.value;
+};
 const busqueda = ref('');
 const pendientes = ref(0);
 const rol = computed<Rol>(() => 'administrador');
