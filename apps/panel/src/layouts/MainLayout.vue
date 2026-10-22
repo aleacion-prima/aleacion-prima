@@ -6,7 +6,7 @@
 
         <q-toolbar-title> Quasar App </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn flat round icon="logout" aria-label="Cerrar sesión" @click="salir" />
       </q-toolbar>
     </q-header>
 
@@ -26,7 +26,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import EssentialLink, { type EssentialLinkProps } from '@/components/EssentialLink.vue';
+import { useSesionStore } from '@/stores/sesion';
+
+const router = useRouter();
+const sesion = useSesionStore();
+
+const salir = async (): Promise<void> => {
+  await sesion.cerrar();
+  await router.push('/login');
+};
 
 const linksList: EssentialLinkProps[] = [
   {

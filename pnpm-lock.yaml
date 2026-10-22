@@ -246,6 +246,9 @@ importers:
 
   apps/panel:
     dependencies:
+      '@aleacion-prima/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@quasar/extras':
         specifier: ^2.1.0
         version: 2.1.0
