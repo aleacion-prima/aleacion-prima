@@ -4,6 +4,7 @@ use App\Models\User;
 
 use function Pest\Laravel\assertAuthenticatedAs;
 use function Pest\Laravel\assertGuest;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 
 it('inicia sesión con credenciales válidas', function () {
@@ -57,4 +58,19 @@ it('bloquea el sexto intento fallido en un minuto', function () {
         ->assertJsonPath('message', fn (string $m) => str_starts_with($m, 'Demasiados intentos'));
 
     assertGuest();
+});
+
+it('cierra la sesión de un usuario desactivado', function () {
+    $user = User::factory()->create();
+
+    postJson('/login', ['email' => $user->email, 'password' => 'password'])->assertNoContent();
+    $user->forceFill(['activo' => false])->save();
+    app('auth')->forgetGuards();
+
+    getJson('/api/user')
+        ->assertUnauthorized()
+        ->assertJsonPath('message', 'Tu cuenta está desactivada.');
+
+    app('auth')->forgetGuards();
+    getJson('/api/user')->assertUnauthorized();
 });
