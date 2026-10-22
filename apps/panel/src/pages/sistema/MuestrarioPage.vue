@@ -1,3 +1,65 @@
+<script setup lang="ts">
+import { ESTADOS_LOTE } from '@aleacion-prima/types';
+import type { ParadaLote } from '@/catalogos/areas';
+import ChipEstado from '@/components/lotes/ChipEstado.vue';
+import AvisoSistema from '@/components/comunes/AvisoSistema.vue';
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+import ParadaRecorrido from '@/components/lotes/ParadaRecorrido.vue';
+import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
+import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
+
+const paradas: ParadaLote[] = [
+  {
+    codigo: 'MOL',
+    nombre: 'Moldeo',
+    estado: 'terminada',
+    tiempo: '07:00 a 10:00 · 3.0 h',
+    piezas: '20 pzas entregadas',
+  },
+  {
+    codigo: 'FUS',
+    nombre: 'Fusión',
+    estado: 'terminada',
+    tiempo: '10:00 a 12:30 · 2.5 h',
+    piezas: '20 pzas entregadas',
+    aviso: 'Falla de máquina · 40 min',
+  },
+  {
+    codigo: 'COL',
+    nombre: 'Colada',
+    estado: 'terminada',
+    tiempo: '12:30 a 17:30 · 5.0 h',
+    piezas: '20 pzas entregadas',
+  },
+  {
+    codigo: 'DES',
+    nombre: 'Desmolde',
+    estado: 'en_curso',
+    tiempo: 'Desde 29 sep 07:00',
+    piezas: '20 pzas recibidas',
+  },
+  { codigo: 'GRA', nombre: 'Granallado', estado: 'pendiente', tiempo: 'Pendiente' },
+  { codigo: 'CAL', nombre: 'Calidad', estado: 'pendiente', tiempo: 'Pendiente' },
+];
+
+const areas = [
+  { codigo: 'MOL', nombre: 'Moldeo' },
+  { codigo: 'FUS', nombre: 'Fusión' },
+  { codigo: 'COL', nombre: 'Colada' },
+  { codigo: 'DES', nombre: 'Desmolde' },
+  { codigo: 'GRA', nombre: 'Granallado' },
+  { codigo: 'CAL', nombre: 'Calidad' },
+  { codigo: 'EMP', nombre: 'Empaque' },
+];
+
+const plan: ParadaLote[] = paradas.map((p) => ({
+  codigo: p.codigo,
+  nombre: p.nombre,
+  estado: 'planeada',
+  obligatoria: ['MOL', 'FUS', 'COL', 'DES'].includes(p.codigo),
+}));
+</script>
+
 <template>
   <q-page padding class="column q-gutter-y-xl">
     <div class="text-h4">Muestrario</div>
@@ -79,65 +141,3 @@
     </section>
   </q-page>
 </template>
-
-<script setup lang="ts">
-import { ESTADOS_LOTE } from '@aleacion-prima/types';
-import type { ParadaLote } from '@/catalogos/areas';
-import ChipEstado from '@/components/lotes/ChipEstado.vue';
-import AvisoSistema from '@/components/comunes/AvisoSistema.vue';
-import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
-import ParadaRecorrido from '@/components/lotes/ParadaRecorrido.vue';
-import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
-import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
-
-const paradas: ParadaLote[] = [
-  {
-    codigo: 'MOL',
-    nombre: 'Moldeo',
-    estado: 'terminada',
-    tiempo: '07:00 a 10:00 · 3.0 h',
-    piezas: '20 pzas entregadas',
-  },
-  {
-    codigo: 'FUS',
-    nombre: 'Fusión',
-    estado: 'terminada',
-    tiempo: '10:00 a 12:30 · 2.5 h',
-    piezas: '20 pzas entregadas',
-    aviso: 'Falla de máquina · 40 min',
-  },
-  {
-    codigo: 'COL',
-    nombre: 'Colada',
-    estado: 'terminada',
-    tiempo: '12:30 a 17:30 · 5.0 h',
-    piezas: '20 pzas entregadas',
-  },
-  {
-    codigo: 'DES',
-    nombre: 'Desmolde',
-    estado: 'en_curso',
-    tiempo: 'Desde 29 sep 07:00',
-    piezas: '20 pzas recibidas',
-  },
-  { codigo: 'GRA', nombre: 'Granallado', estado: 'pendiente', tiempo: 'Pendiente' },
-  { codigo: 'CAL', nombre: 'Calidad', estado: 'pendiente', tiempo: 'Pendiente' },
-];
-
-const areas = [
-  { codigo: 'MOL', nombre: 'Moldeo' },
-  { codigo: 'FUS', nombre: 'Fusión' },
-  { codigo: 'COL', nombre: 'Colada' },
-  { codigo: 'DES', nombre: 'Desmolde' },
-  { codigo: 'GRA', nombre: 'Granallado' },
-  { codigo: 'CAL', nombre: 'Calidad' },
-  { codigo: 'EMP', nombre: 'Empaque' },
-];
-
-const plan: ParadaLote[] = paradas.map((p) => ({
-  codigo: p.codigo,
-  nombre: p.nombre,
-  estado: 'planeada',
-  obligatoria: ['MOL', 'FUS', 'COL', 'DES'].includes(p.codigo),
-}));
-</script>

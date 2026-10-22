@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+</script>
+
 <template>
   <q-page padding>
     <div class="text-h4">Estado general de la planta</div>
@@ -8,7 +12,3 @@
     />
   </q-page>
 </template>
-
-<script setup lang="ts">
-import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
-</script>

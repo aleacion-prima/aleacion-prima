@@ -152,7 +152,7 @@ Si algo falla y no es por tu cambio, repórtalo en lugar de "arreglarlo" por tu 
 
 - El panel usa **`@quasar/app-vite` v3**: la configuración se importa desde `#q-app` y las variables de entorno se leen con `import.meta.env` (no `process.env`).
 - Variables públicas (`PUBLIC_API_URL`, `PUBLIC_REVERB_*`) se definen en `build.define` de `quasar.config.ts` y se tipan en `src/env.d.ts` (`interface ImportMetaEnv`). Llegan como `string`; convierte el puerto con `Number()`.
-- Componentes con `<script setup lang="ts">` y Composition API.
+- Componentes con `<script setup lang="ts">` y Composition API. Orden de bloques: `script`, `template`, `style` (lo exige ESLint). Un componente por archivo y pequeño: los catálogos de etiquetas van en `src/catalogos`, la lógica reutilizable en composables o stores, no en el componente.
 - Usa los componentes de Quasar antes de crear los propios.
 - Estado global en Pinia; peticiones HTTP con el cliente propio basado en VueUse (`createFetch`, en `src/services/api.ts`).
 - Tiempo real con Laravel Echo + Reverb (`src/services/echo.ts`): `obtenerEcho()` es perezoso (no antes del login) y `desconectarEcho()` se llama al cerrar sesión. Los transportes se limitan según `PUBLIC_REVERB_SCHEME` (`ws` en http, `wss` en https).

@@ -75,6 +75,7 @@ export default defineConfigWithVueTs(
       'prefer-promise-reject-errors': 'off',
       // slots use the "#" shorthand everywhere, as in the Quasar docs
       'vue/v-slot-style': ['warn', 'shorthand'],
+      'vue/block-order': ['error', { order: ['script', 'template', 'style'] }],
 
       // allow debugger during development only
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
