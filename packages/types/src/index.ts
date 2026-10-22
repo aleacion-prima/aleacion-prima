@@ -83,3 +83,9 @@ export interface Lote {
   costo_total: string;
   created_at: string;
 }
+
+export interface Usuario {
+  id: number;
+  name: string;
+  email: string;
+}

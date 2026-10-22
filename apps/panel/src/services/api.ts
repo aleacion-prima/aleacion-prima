@@ -3,7 +3,7 @@ import { createFetch } from '@vueuse/core';
 export const API_URL = import.meta.env.PUBLIC_API_URL;
 
 const leerCookie = (nombre: string): string | undefined => {
-  const cookie = document.cookie.split(': ').find((c) => c.startsWith(`${nombre}=`));
+  const cookie = document.cookie.split('; ').find((c) => c.startsWith(`${nombre}=`));
   return cookie ? decodeURIComponent(cookie.slice(nombre.length + 1)) : undefined;
 };
 
@@ -32,3 +32,14 @@ export const useApi = createFetch({
     },
   },
 });
+
+export const peticionSesion = async (
+  ruta: '/login' | '/logout',
+  cuerpo?: object,
+): Promise<Response> =>
+  fetch(`${API_URL}${ruta}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: cabecerasApi({ 'content-type': 'application/json' }),
+    body: cuerpo ? JSON.stringify(cuerpo) : null,
+  });
