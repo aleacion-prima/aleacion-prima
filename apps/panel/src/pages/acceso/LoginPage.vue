@@ -1,3 +1,31 @@
+<script setup lang="ts">
+import { reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useSesionStore } from '@/stores/sesion';
+
+const router = useRouter();
+const route = useRoute();
+const sesion = useSesionStore();
+
+const credenciales = reactive({ email: '', password: '' });
+const verClave = ref(false);
+const error = ref('');
+const cargando = ref(false);
+
+const entrar = async (): Promise<void> => {
+  error.value = '';
+  cargando.value = true;
+  try {
+    await sesion.iniciar(credenciales.email, credenciales.password);
+    await router.push(typeof route.query.volver === 'string' ? route.query.volver : '/');
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'No se pudo iniciar sesión';
+  } finally {
+    cargando.value = false;
+  }
+};
+</script>
+
 <template>
   <q-page class="flex flex-center">
     <q-card flat bordered class="q-pa-xl" style="width: 400px">
@@ -41,31 +69,3 @@
     </q-card>
   </q-page>
 </template>
-
-<script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useSesionStore } from '@/stores/sesion';
-
-const router = useRouter();
-const route = useRoute();
-const sesion = useSesionStore();
-
-const credenciales = reactive({ email: '', password: '' });
-const verClave = ref(false);
-const error = ref('');
-const cargando = ref(false);
-
-const entrar = async (): Promise<void> => {
-  error.value = '';
-  cargando.value = true;
-  try {
-    await sesion.iniciar(credenciales.email, credenciales.password);
-    await router.push(typeof route.query.volver === 'string' ? route.query.volver : '/');
-  } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'No se pudo iniciar sesión';
-  } finally {
-    cargando.value = false;
-  }
-};
-</script>

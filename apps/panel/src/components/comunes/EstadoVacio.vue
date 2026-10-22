@@ -1,3 +1,10 @@
+<script setup lang="ts">
+withDefaults(defineProps<{ titulo: string; descripcion?: string; icono?: string }>(), {
+  descripcion: '',
+  icono: 'inbox',
+});
+</script>
+
 <template>
   <div class="column items-center text-center q-pa-xl">
     <q-icon :name="icono" size="48px" class="text-secundario" />
@@ -8,10 +15,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-withDefaults(defineProps<{ titulo: string; descripcion?: string; icono?: string }>(), {
-  descripcion: '',
-  icono: 'inbox',
-});
-</script>

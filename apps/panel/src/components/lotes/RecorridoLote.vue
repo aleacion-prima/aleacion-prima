@@ -1,21 +1,3 @@
-<template>
-  <div class="recorrido" :class="{ 'recorrido--vertical': vertical || $q.screen.lt.sm }">
-    <template v-for="(parada, i) in paradas" :key="`${parada.codigo}-${i}`">
-      <div v-if="i > 0" class="recorrido__enlace" :class="`recorrido__enlace--${enlace(i)}`" />
-      <ParadaRecorrido
-        :orden="i + 1"
-        :codigo="parada.codigo"
-        :nombre="parada.nombre"
-        :estado="parada.estado"
-        :tiempo="parada.tiempo ?? ''"
-        :piezas="parada.piezas ?? ''"
-        :aviso="parada.aviso ?? ''"
-        :obligatoria="parada.obligatoria ?? false"
-      />
-    </template>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useQuasar } from 'quasar';
 import type { ParadaLote } from '@/catalogos/areas';
@@ -35,6 +17,24 @@ const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' => {
   return 'pendiente';
 };
 </script>
+
+<template>
+  <div class="recorrido" :class="{ 'recorrido--vertical': vertical || $q.screen.lt.sm }">
+    <template v-for="(parada, i) in paradas" :key="`${parada.codigo}-${i}`">
+      <div v-if="i > 0" class="recorrido__enlace" :class="`recorrido__enlace--${enlace(i)}`" />
+      <ParadaRecorrido
+        :orden="i + 1"
+        :codigo="parada.codigo"
+        :nombre="parada.nombre"
+        :estado="parada.estado"
+        :tiempo="parada.tiempo ?? ''"
+        :piezas="parada.piezas ?? ''"
+        :aviso="parada.aviso ?? ''"
+        :obligatoria="parada.obligatoria ?? false"
+      />
+    </template>
+  </div>
+</template>
 
 <style scoped lang="scss">
 .recorrido {
