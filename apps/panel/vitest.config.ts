@@ -12,6 +12,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      '@': fromRoot('./src'),
       src: fromRoot('./src'),
       components: fromRoot('./src/components'),
       layouts: fromRoot('./src/layouts'),
