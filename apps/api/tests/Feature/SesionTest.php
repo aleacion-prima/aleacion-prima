@@ -20,8 +20,8 @@ it('no inicia sesión con credenciales inválidas', function () {
 
     postJson('/login', ['email' => $user->email, 'password' => 'otra'])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('email')
-        ->assertJsonPath('errors.email.0', 'Estas credenciales no coinciden con nuestros registros.');
+        ->assertJsonValidationErrors('credenciales')
+        ->assertJsonPath('errors.credenciales.0', 'Correo o contraseña incorrectos.');
 
     assertGuest();
 });
@@ -31,7 +31,7 @@ it('rechaza a un usuario inactivo', function () {
 
     postJson('/login', ['email' => $user->email, 'password' => 'password'])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('email');
+        ->assertJsonValidationErrors('credenciales');
 
     assertGuest();
 });
@@ -41,6 +41,20 @@ it('cierra la sesión', function () {
 
     postJson('/login', ['email' => $user->email, 'password' => 'password']);
     postJson('/logout')->assertNoContent();
+
+    assertGuest();
+});
+
+it('bloquea el sexto intento fallido en un minuto', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 5) as $intento) {
+        postJson('/login', ['email' => $user->email, 'password' => 'otra'])->assertUnprocessable();
+    }
+
+    postJson('/login', ['email' => $user->email, 'password' => 'password'])
+        ->assertStatus(429)
+        ->assertJsonPath('message', fn (string $m) => str_starts_with($m, 'Demasiados intentos'));
 
     assertGuest();
 });

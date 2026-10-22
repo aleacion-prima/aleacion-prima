@@ -34,7 +34,7 @@ class LoginRequest extends FormRequest
 
         if (! Auth::attempt($credenciales, $this->boolean('recordar'))) {
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'credenciales' => __('auth.failed'),
             ]);
         }
     }
