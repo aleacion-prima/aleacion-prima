@@ -157,6 +157,7 @@ Si algo falla y no es por tu cambio, repórtalo en lugar de "arreglarlo" por tu 
 - Estado global en Pinia; peticiones HTTP con el cliente propio basado en VueUse (`createFetch`, en `src/services/api.ts`).
 - Tiempo real con Laravel Echo + Reverb (`src/services/echo.ts`): `obtenerEcho()` es perezoso (no antes del login) y `desconectarEcho()` se llama al cerrar sesión. Los transportes se limitan según `PUBLIC_REVERB_SCHEME` (`ws` en http, `wss` en https).
 - Tests junto al componente: `NombreComponente.spec.ts`, montando con `global: { plugins: [Quasar] }`.
+- Carpetas por dominio, no por tipo: `components/lotes`, `components/comunes`, `components/navegacion`; `pages/acceso`, `pages/tablero`, `pages/lotes`, `pages/sistema`. Los catálogos de etiquetas, colores e iconos que solo usa la interfaz van en `src/catalogos`. Nombres de componente compuestos (`ChipEstado`, no `Chip`), por la regla `vue/multi-word-component-names`.
 
 ### Etiquetas y QR de los lotes
 

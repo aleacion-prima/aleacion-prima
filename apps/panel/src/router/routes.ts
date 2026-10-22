@@ -12,18 +12,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/MainLayout.vue'),
     meta: { requiereSesion: true },
     children: [
-      { path: '', component: () => import('@/pages/IndexPage.vue') },
-      { path: 'second', component: () => import('@/pages/SecondPage.vue') },
+      { path: '', component: () => import('@/pages/tablero/TableroPage.vue') },
+      ...(import.meta.env.DEV
+        ? [{ path: 'muestrario', component: () => import('@/pages/sistema/MuestrarioPage.vue') }]
+        : []),
     ],
   },
   {
     path: '/login',
     component: () => import('@/layouts/AccesoLayout.vue'),
-    children: [{ path: '', component: () => import('@/pages/LoginPage.vue') }],
+    children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
   },
   {
     path: '/:catchAll(.*)*',
-    component: () => import('@/pages/ErrorNotFound.vue'),
+    component: () => import('@/pages/sistema/ErrorNotFound.vue'),
   },
 ];
 

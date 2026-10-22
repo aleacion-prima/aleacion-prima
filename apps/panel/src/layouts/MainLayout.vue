@@ -1,91 +1,100 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-
-        <q-toolbar-title> Quasar App </q-toolbar-title>
-
-        <q-btn flat round icon="logout" aria-label="Cerrar sesión" @click="salir" />
+    <q-header class="bg-secondary">
+      <q-toolbar class="q-px-md" style="min-height: 64px">
+        <q-btn flat dense round icon="menu" aria-label="Menú" @click="alternarMenu" />
+        <q-toolbar-title shrink class="text-h6 text-uppercase" style="letter-spacing: 0.08em">
+          Aleación Prima
+        </q-toolbar-title>
+        <q-space />
+        <q-input
+          v-model="busqueda"
+          dense
+          dark
+          standout="bg-grey-9"
+          placeholder="Buscar lote, producto o insumo…"
+          class="gt-sm"
+          style="width: 560px"
+        >
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
+        <q-space />
+        <q-btn flat round icon="notifications" aria-label="Notificaciones" to="/notificaciones">
+          <q-badge v-if="pendientes" color="accent" text-color="dark" floating rounded>{{
+            pendientes
+          }}</q-badge>
+        </q-btn>
+        <div class="column items-end q-mx-sm">
+          <span class="text-weight-medium">{{ sesion.usuario?.name }}</span>
+          <span class="text-caption">{{ rolEtiqueta }}</span>
+        </div>
+        <q-btn flat round icon="account_circle" aria-label="Cuenta">
+          <q-menu>
+            <q-list>
+              <q-item v-close-popup clickable @click="salir">
+                <q-item-section avatar><q-icon name="logout" /></q-item-section>
+                <q-item-section>Cerrar sesión</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Essential Links </q-item-label>
-
-        <EssentialLink v-for="link in linksList" :key="link.label" v-bind="link" />
-      </q-list>
+    <q-drawer
+      v-model="menuAbierto"
+      :mini="menuMini"
+      show-if-above
+      bordered
+      :width="232"
+      :mini-width="64"
+    >
+      <MenuLateral :rol="rol" />
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <router-view #default="{ Component }">
+        <transition name="q-transition--fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
-import EssentialLink, { type EssentialLinkProps } from '@/components/EssentialLink.vue';
+import type { Rol } from '@aleacion-prima/types';
+import MenuLateral from '@/components/navegacion/MenuLateral.vue';
 import { useSesionStore } from '@/stores/sesion';
 
+const ETIQUETAS_ROL: Record<Rol, string> = {
+  administrador: 'Administrador',
+  ventas: 'Ventas',
+  encargado: 'Encargado',
+  cliente: 'Cliente',
+};
+
+const $q = useQuasar();
 const router = useRouter();
 const sesion = useSesionStore();
+
+const menuAbierto = ref(false);
+const menuMini = ref(false);
+
+const alternarMenu = (): void => {
+  if ($q.screen.lt.md) menuAbierto.value = !menuAbierto.value;
+  else menuMini.value = !menuMini.value;
+};
+const busqueda = ref('');
+const pendientes = ref(0);
+const rol = computed<Rol>(() => 'administrador');
+const rolEtiqueta = computed(() => ETIQUETAS_ROL[rol.value]);
 
 const salir = async (): Promise<void> => {
   await sesion.cerrar();
   await router.push('/login');
 };
-
-const linksList: EssentialLinkProps[] = [
-  {
-    label: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
-  },
-  {
-    label: 'GitHub',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
-  },
-  {
-    label: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
-  },
-  {
-    label: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    label: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    label: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    label: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
-  },
-];
-
-const leftDrawerOpen = ref(false);
-
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
 </script>

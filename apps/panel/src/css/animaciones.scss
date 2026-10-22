@@ -1,0 +1,157 @@
+@keyframes pulso {
+  0% {
+    box-shadow: 0 0 0 0 rgba($accent, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba($accent, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba($accent, 0);
+  }
+}
+
+@keyframes entrar-desde-izquierda {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fluir-horizontal {
+  to {
+    background-position-x: 16px;
+  }
+}
+
+@keyframes fluir-vertical {
+  to {
+    background-position-y: 16px;
+  }
+}
+
+@keyframes area-moldeo {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.88);
+  }
+}
+
+@keyframes area-fusion {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 1;
+  }
+  35% {
+    transform: scaleY(1.12) scaleX(0.94);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scaleY(0.94) scaleX(1.06);
+  }
+}
+
+@keyframes area-colada {
+  0% {
+    transform: translateY(-3px);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateY(1px);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-1px) scaleX(1.1);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes area-desmolde {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+  65% {
+    transform: rotate(-22deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes area-granallado {
+  0%,
+  40%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  5% {
+    transform: translate(-1px, 1px);
+  }
+  10% {
+    transform: translate(1px, -1px);
+  }
+  15% {
+    transform: translate(-1px, -1px);
+  }
+  20% {
+    transform: translate(1px, 1px);
+  }
+  25% {
+    transform: translate(-1px, 0);
+  }
+  30% {
+    transform: translate(1px, 0) scale(1.12);
+    opacity: 0.6;
+  }
+  35% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes area-calidad {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-8deg);
+  }
+  70% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes area-empaque {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

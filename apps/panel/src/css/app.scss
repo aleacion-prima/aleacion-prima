@@ -1,3 +1,5 @@
+@import './animaciones';
+
 body.body--light {
   background: $blanco-humo;
   color: $dark;
@@ -11,6 +13,10 @@ body.body--light {
 .text-h6 {
   font-family: $fuente-titulos;
   font-weight: 600;
+}
+
+.q-btn {
+  text-transform: none;
 }
 
 .codigo {
