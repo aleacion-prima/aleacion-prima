@@ -27,9 +27,9 @@
 	}
 }
 
-# p anel administrativo
+# panel administrativo
 
-panel.{$DOMAIN}{
+panel.{$DOMAIN} {
     import comun
 	root * /srv/panel
 
