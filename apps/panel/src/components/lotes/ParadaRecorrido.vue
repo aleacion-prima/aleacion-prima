@@ -1,3 +1,21 @@
+<script setup lang="ts">
+import { iconoArea, type EstadoParada } from '@/catalogos/areas';
+
+withDefaults(
+  defineProps<{
+    orden: number;
+    codigo: string;
+    nombre: string;
+    estado: EstadoParada;
+    tiempo?: string;
+    piezas?: string;
+    aviso?: string;
+    obligatoria?: boolean;
+  }>(),
+  { tiempo: '', piezas: '', aviso: '', obligatoria: false },
+);
+</script>
+
 <template>
   <div class="parada column q-pa-md q-gutter-y-xs" :class="`parada--${estado}`">
     <div class="row items-center no-wrap q-gutter-x-sm">
@@ -45,24 +63,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { iconoArea, type EstadoParada } from '@/catalogos/areas';
-
-withDefaults(
-  defineProps<{
-    orden: number;
-    codigo: string;
-    nombre: string;
-    estado: EstadoParada;
-    tiempo?: string;
-    piezas?: string;
-    aviso?: string;
-    obligatoria?: boolean;
-  }>(),
-  { tiempo: '', piezas: '', aviso: '', obligatoria: false },
-);
-</script>
 
 <style scoped lang="scss">
 .parada {

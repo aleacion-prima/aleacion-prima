@@ -1,11 +1,14 @@
 <?php
 
+use App\Enums\Rol;
 use App\Models\User;
+use Database\Seeders\RolesSeeder;
 
 use function Pest\Laravel\assertAuthenticatedAs;
 use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\seed;
 
 it('inicia sesión con credenciales válidas', function () {
     $user = User::factory()->create();
@@ -14,6 +17,18 @@ it('inicia sesión con credenciales válidas', function () {
         ->assertNoContent();
 
     assertAuthenticatedAs($user);
+});
+
+it('devuelve el usuario con su rol y sin contraseña', function () {
+    seed(RolesSeeder::class);
+    $user = User::factory()->create();
+    $user->assignRole(Rol::Ventas);
+
+    postJson('/login', ['email' => $user->email, 'password' => 'password']);
+
+    getJson('/api/user')
+        ->assertOk()
+        ->assertExactJson(['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'rol' => 'ventas']);
 });
 
 it('no inicia sesión con credenciales inválidas', function () {

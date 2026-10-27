@@ -1,8 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router';
+import type { Rol } from '@aleacion-prima/types';
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiereSesion?: boolean;
+    roles?: Rol[];
   }
 }
 
