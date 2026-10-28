@@ -88,4 +88,5 @@ export interface Usuario {
   id: number;
   name: string;
   email: string;
+  rol: Rol | null;
 }

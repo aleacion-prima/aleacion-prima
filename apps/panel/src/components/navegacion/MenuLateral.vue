@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { Rol } from '@aleacion-prima/types';
+import { MENU_POR_ROL } from '@/catalogos/menu';
+
+const props = withDefaults(defineProps<{ rol?: Rol }>(), { rol: 'administrador' });
+
+const secciones = computed(() => MENU_POR_ROL[props.rol]);
+</script>
+
 <template>
   <q-list padding>
     <template v-for="(seccion, i) in secciones" :key="i">
@@ -29,13 +39,3 @@
     </template>
   </q-list>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-import type { Rol } from '@aleacion-prima/types';
-import { MENU_POR_ROL } from '@/catalogos/menu';
-
-const props = withDefaults(defineProps<{ rol?: Rol }>(), { rol: 'administrador' });
-
-const secciones = computed(() => MENU_POR_ROL[props.rol]);
-</script>

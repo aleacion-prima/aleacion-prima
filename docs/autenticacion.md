@@ -65,7 +65,10 @@ No se autentica. Solo consume rutas públicas de lectura (catálogo, disponibili
 
 - Enum `App\Enums\Rol` (string): `administrador`, `ventas`, `encargado`, `cliente`. Spatie acepta enums: `$user->assignRole(Rol::Ventas)`.
 - `User` usa el trait `HasRoles`. `RolesSeeder` crea los cuatro con `Role::findOrCreate($rol->value, 'web')` y es idempotente.
-- Alias en `bootstrap/app.php`: `role`, `permission`, `role_or_permission`.
+- Alias en `bootstrap/app.php`: `role`, `permission`, `role_or_permission` (Spatie), `abilities` y `ability` (Sanctum) y `activo` (propio: si el usuario tiene `activo = false`, borra sus tokens, cierra la sesión y responde 401).
+- Toda ruta protegida lleva `['auth:sanctum', 'activo', 'role:...']`. Tres grupos según la tabla de arriba: `role:administrador|ventas` para ventas y catálogo interno, `role:administrador|encargado` para captura y lotes, `role:administrador` para catálogos y usuarios. El administrador siempre va en la lista; así "hereda" sin lógica extra. `tests/Feature/ControlAccesoTest.php` cubre los tres grupos.
+- `GET /api/user` responde con `UsuarioResource`: `id`, `name`, `email`, `rol`. Las respuestas de la API no van envueltas en `data` (`JsonResource::withoutWrapping()`).
+- `POST /login` limita a 5 intentos por minuto por correo e IP (`throttle:login`) y responde 429 con `auth.throttle`.
 - Tipo compartido: `Rol` en `@aleacion-prima/types`, derivado de su arreglo `as const` con los mismos cuatro valores.
 - **Por ahora solo roles.** Los permisos finos se agregan con cada historia de usuario: enum/constante → seeder → tipo en `types` → test, en el mismo PR.
 

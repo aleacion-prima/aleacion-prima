@@ -25,6 +25,9 @@ export default defineRouter(({ store }) => {
   Router.beforeEach(async (to) => {
     const sesion = useSesionStore(store);
     if (!sesion.cargada) await sesion.cargar();
+    if (to.meta.roles && (!sesion.usuario?.rol || !to.meta.roles.includes(sesion.usuario.rol))) {
+      return '/';
+    }
     if (to.meta.requiereSesion && !sesion.usuario) {
       return { path: '/login', query: { volver: to.fullPath } };
     }
