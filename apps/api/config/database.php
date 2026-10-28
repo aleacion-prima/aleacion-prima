@@ -115,7 +115,7 @@ return [
         ],
         'mongodb' => [
             'driver' => 'mongodb',
-            'dsn' => env('MONGO_URI', 'mongodb://mongo:27017'),
+            'dsn' => env('MONGODB_URI', 'mongodb://mongo:27017'),
             'database' => env('MONGODB_DATABASE', 'aleacion_prima'),
         ],
 
