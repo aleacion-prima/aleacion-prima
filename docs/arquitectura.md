@@ -88,14 +88,14 @@ sequenceDiagram
 
 ## Entornos
 
-| Entorno         | Dónde corre                                  | PostgreSQL             | MongoDB            | URLs                                                                                           |
-| --------------- | -------------------------------------------- | ---------------------- | ------------------ | ---------------------------------------------------------------------------------------------- |
-| **Desarrollo**  | Docker local (backend) + `pnpm dev` (fronts) | Docker (`postgres:18`) | Docker (`mongo:7`) | API `:8000`, Reverb `:8080`, panel `:9000`, sitio `:4321`                                      |
-| **Integración** | Solo las bases, para pruebas conjuntas       | Neon                   | Atlas              | Se apunta desde local cambiando `DB_*` / `MONGODB_URI` (solo lectura de pruebas; nunca migrar) |
-| **Producción**  | Droplet de DigitalOcean, Docker Compose      | Neon (otra instancia)  | Atlas              | `tudominio.com` (sitio), `panel.tudominio.com`, `api.tudominio.com`                            |
-| **Tests**       | CI y local                                   | SQLite en memoria      | Ninguno            | —                                                                                              |
+| Entorno         | Dónde corre                                    | PostgreSQL                                           | MongoDB            | URLs                                                                                           |
+| --------------- | ---------------------------------------------- | ---------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------- |
+| **Desarrollo**  | Docker local (backend) + `pnpm dev` (fronts)   | Docker (`postgres:18`)                               | Docker (`mongo:7`) | API `:8000`, Reverb `:8080`, panel `:9000`, sitio `:4321`                                      |
+| **Integración** | Solo las bases, para pruebas conjuntas         | Neon                                                 | Atlas              | Se apunta desde local cambiando `DB_*` / `MONGODB_URI` (solo lectura de pruebas; nunca migrar) |
+| **Producción**  | VM de Azure (North Central US), Docker Compose | Neon (en el despliegue de prueba, la de integración) | Atlas              | `20-80-56-138.sslip.io` (sitio), `panel.20-80-56-138.sslip.io`, `api.20-80-56-138.sslip.io`    |
+| **Tests**       | CI y local                                     | SQLite en memoria                                    | Ninguno            | —                                                                                              |
 
-No hay ambiente de staging (ADR-0007): el CI es el filtro y el rollback se hace cambiando el tag de la imagen.
+No hay ambiente de staging (ADR-0007): el CI es el filtro y el rollback se hace cambiando el tag de la imagen. Por qué el servidor está en Azure y el dominio en sslip.io: ADR-0015.
 
 ## Despliegue
 
@@ -105,8 +105,8 @@ flowchart LR
     ci -- verde + 1 revisión --> merge[Squash and merge]
     merge --> deploy[deploy.yml]
     deploy --> ghcr[(GHCR<br/>api:TAG · caddy:TAG)]
-    deploy -- SSH --> droplet[Droplet<br/>docker compose pull && up -d]
-    ghcr --> droplet
+    deploy -- SSH --> vm[VM de Azure<br/>docker compose pull && up -d]
+    ghcr --> vm
 ```
 
 - Dos imágenes: `aleacion-prima-api` (FrankenPHP con Laravel) y `aleacion-prima-caddy` (Caddy con los builds del panel y el sitio ya dentro).
