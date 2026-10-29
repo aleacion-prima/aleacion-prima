@@ -19,6 +19,38 @@ export type TipoMovimientoProducto = (typeof TIPOS_MOVIMIENTO_PRODUCTO)[number];
 export const CATEGORIAS_INSUMO = ['metal', 'moldeo', 'empaque'] as const;
 export type CategoriaInsumo = (typeof CATEGORIAS_INSUMO)[number];
 
+export interface Insumo {
+  id: number;
+  codigo: string;
+  nombre: string;
+  categoria: CategoriaInsumo;
+  unidad: string;
+  costo_unitario: string;
+  existencia: string;
+  stock_minimo: string;
+  activo: boolean;
+}
+
+export interface ProductoInventario {
+  id: number;
+  codigo: string;
+  nombre: string;
+  existencia: number;
+  activo: boolean;
+}
+
+export interface MovimientoInsumo {
+  id: number;
+  insumo_id: number;
+  tipo: TipoMovimientoInsumo;
+  cantidad: string;
+  costo_unitario: string | null;
+  proveedor: string | null;
+  lote_proveedor: string | null;
+  user_id: number;
+  ocurrido_en: string | null;
+}
+
 // Ventas (recortable)
 export const ESTADOS_PEDIDO = ['borrador', 'confirmado', 'entregado', 'cancelado'] as const;
 export type EstadoPedido = (typeof ESTADOS_PEDIDO)[number];
