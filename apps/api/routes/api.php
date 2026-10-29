@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AjusteInsumoController;
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\MovimientoInsumoController;
@@ -14,6 +15,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()));
 
     Route::middleware('role:administrador')->group(function () {
+        Route::apiResource('areas', AreaController::class);
         Route::post('/insumos/{insumo}/ajustes', [AjusteInsumoController::class, 'store']);
     });
 

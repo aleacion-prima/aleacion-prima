@@ -16,6 +16,11 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', component: () => import('@/pages/tablero/TableroPage.vue') },
       {
+        path: 'areas',
+        component: () => import('@/pages/area/AreasPage.vue'),
+        meta: { roles: ['administrador'] },
+      },
+      {
         path: 'usuarios',
         component: () => import('@/pages/usuarios/UsuariosPage.vue'),
         meta: { roles: ['administrador'] },
