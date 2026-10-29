@@ -121,4 +121,12 @@ export interface Usuario {
   name: string;
   email: string;
   rol: Rol | null;
+  activo: boolean;
+  areas?: AreaAsignada[];
+}
+
+export interface AreaAsignada {
+  id: number;
+  codigo: string;
+  nombre: string;
 }
