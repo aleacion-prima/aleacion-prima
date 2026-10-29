@@ -8,6 +8,7 @@ use App\Http\Resources\UsuarioResource;
 use App\Models\Area;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
@@ -44,8 +45,17 @@ class UsuarioController extends Controller
 
     public function update(GuardarUsuarioRequest $request, User $usuario): JsonResponse
     {
-        return DB::transaction(function () use ($request, $usuario): JsonResponse {
-            $datos = $request->validated();
+        $datos = $request->validated();
+
+        abort_if(
+            array_key_exists('activo', $datos)
+                && ! $request->boolean('activo')
+                && $this->esElUsuarioAutenticado($request, $usuario),
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'No puedes desactivarte a ti mismo.'
+        );
+
+        return DB::transaction(function () use ($datos, $usuario): JsonResponse {
             $usuario->update($this->atributos($datos, false));
             $usuario->syncRoles($datos['rol']);
             $usuario->areas()->sync($this->idsDeAreas($datos));
@@ -54,14 +64,25 @@ class UsuarioController extends Controller
         });
     }
 
-    public function destroy(User $usuario): Response
+    public function destroy(Request $request, User $usuario): Response
     {
+        abort_if(
+            $this->esElUsuarioAutenticado($request, $usuario),
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'No puedes darte de baja a ti mismo.'
+        );
+
         DB::transaction(function () use ($usuario): void {
             $usuario->forceFill(['activo' => false])->save();
             $usuario->tokens()->delete();
         });
 
         return response()->noContent();
+    }
+
+    private function esElUsuarioAutenticado(Request $request, User $usuario): bool
+    {
+        return $request->user()?->getAuthIdentifier() === $usuario->getKey();
     }
 
     /**

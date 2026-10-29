@@ -3,7 +3,8 @@ import { onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import type { AreaAsignada, Rol, Usuario } from '@aleacion-prima/types';
 import { ROLES } from '@aleacion-prima/types';
-import { API_URL, cabecerasApi } from '@/services/api';
+import { useApi } from '@/services/api';
+import { useSesionStore } from '@/stores/sesion';
 
 interface FormularioUsuario {
   name: string;
@@ -14,6 +15,7 @@ interface FormularioUsuario {
 }
 
 const $q = useQuasar();
+const sesion = useSesionStore();
 const usuarios = ref<Usuario[]>([]);
 const areas = ref<AreaAsignada[]>([]);
 const dialogo = ref(false);
@@ -29,25 +31,19 @@ const formulario = reactive<FormularioUsuario>({
 
 const cargar = async (): Promise<void> => {
   cargando.value = true;
-  try {
-    const [usuariosRes, areasRes] = await Promise.all([
-      fetch(`${API_URL}/api/usuarios`, { credentials: 'include', headers: cabecerasApi() }),
-      fetch(`${API_URL}/api/areas-disponibles`, {
-        credentials: 'include',
-        headers: cabecerasApi(),
-      }),
-    ]);
-    if (!usuariosRes.ok || !areasRes.ok) throw new Error('No se pudieron cargar los usuarios');
-    usuarios.value = (await usuariosRes.json()) as Usuario[];
-    areas.value = (await areasRes.json()) as AreaAsignada[];
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error instanceof Error ? error.message : 'Error de red',
-    });
-  } finally {
-    cargando.value = false;
+  const [usuariosRes, areasRes] = await Promise.all([
+    useApi<Usuario[]>('/usuarios').json<Usuario[]>(),
+    useApi<AreaAsignada[]>('/areas-disponibles').json<AreaAsignada[]>(),
+  ]);
+  cargando.value = false;
+
+  if (usuariosRes.error.value || areasRes.error.value) {
+    $q.notify({ type: 'negative', message: 'No se pudieron cargar los usuarios' });
+    return;
   }
+
+  usuarios.value = usuariosRes.data.value ?? [];
+  areas.value = areasRes.data.value ?? [];
 };
 
 const abrir = (usuario?: Usuario): void => {
@@ -62,9 +58,6 @@ const abrir = (usuario?: Usuario): void => {
 
 const guardar = async (): Promise<void> => {
   const esEdicion = editando.value !== null;
-  const url = esEdicion
-    ? `${API_URL}/api/usuarios/${editando.value?.id ?? ''}`
-    : `${API_URL}/api/usuarios`;
   const cuerpo = {
     name: formulario.name,
     email: formulario.email,
@@ -73,13 +66,13 @@ const guardar = async (): Promise<void> => {
     area_ids: formulario.rol === 'encargado' ? formulario.area_ids : [],
   };
 
-  const res = await fetch(url, {
-    method: esEdicion ? 'PUT' : 'POST',
-    credentials: 'include',
-    headers: cabecerasApi({ 'content-type': 'application/json' }),
-    body: JSON.stringify(cuerpo),
-  });
-  if (!res.ok) {
+  const { error } = esEdicion
+    ? await useApi(`/usuarios/${editando.value?.id ?? ''}`)
+        .put(cuerpo)
+        .json<Usuario>()
+    : await useApi('/usuarios').post(cuerpo).json<Usuario>();
+
+  if (error.value) {
     $q.notify({ type: 'negative', message: 'No se pudo guardar el usuario' });
     return;
   }
@@ -88,27 +81,66 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Usuario actualizado' : 'Usuario creado' });
 };
 
-const desactivarConfirmado = async (usuario: Usuario): Promise<void> => {
-  const res = await fetch(`${API_URL}/api/usuarios/${usuario.id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: cabecerasApi(),
-  });
-  if (!res.ok) {
-    $q.notify({ type: 'negative', message: 'No se pudo dar de baja al usuario' });
+const esUnoMismo = (usuario: Usuario): boolean => usuario.id === sesion.usuario?.id;
+
+const alternarActivo = async (usuario: Usuario): Promise<void> => {
+  const { error } = await useApi(`/usuarios/${usuario.id}`)
+    .put({
+      name: usuario.name,
+      email: usuario.email,
+      rol: usuario.rol,
+      area_ids: usuario.areas?.map((area) => area.id) ?? [],
+      activo: !usuario.activo,
+    })
+    .json<Usuario>();
+
+  if (error.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo cambiar el estado del usuario' });
     return;
   }
   await cargar();
+  $q.notify({
+    type: 'positive',
+    message: usuario.activo ? 'Usuario desactivado' : 'Usuario activado',
+  });
 };
 
-const desactivar = (usuario: Usuario): void => {
+const alternarEstado = (usuario: Usuario): void => {
+  if (esUnoMismo(usuario)) {
+    $q.notify({ type: 'warning', message: 'No puedes desactivarte a ti mismo' });
+    return;
+  }
+
+  const activar = !usuario.activo;
   $q.dialog({
-    title: 'Dar de baja',
-    message: `¿Desactivar a ${usuario.name}?`,
+    title: activar ? 'Activar usuario' : 'Desactivar usuario',
+    message: activar ? `¿Activar a ${usuario.name}?` : `¿Desactivar a ${usuario.name}?`,
     cancel: true,
     persistent: true,
   }).onOk(() => {
-    void desactivarConfirmado(usuario);
+    void alternarActivo(usuario);
+  });
+};
+
+const eliminarConfirmado = async (usuario: Usuario): Promise<void> => {
+  const { error } = await useApi(`/usuarios/${usuario.id}`).delete().text();
+
+  if (error.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo eliminar al usuario' });
+    return;
+  }
+  await cargar();
+  $q.notify({ type: 'positive', message: 'Usuario eliminado' });
+};
+
+const eliminar = (usuario: Usuario): void => {
+  $q.dialog({
+    title: 'Eliminar usuario',
+    message: `¿Eliminar a ${usuario.name}? Su cuenta quedará inactiva y se cerrarán sus sesiones.`,
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    void eliminarConfirmado(usuario);
   });
 };
 
@@ -150,15 +182,26 @@ onMounted(cargar);
       </template>
       <template #body-cell-acciones="{ row }">
         <q-td class="text-right">
+          <q-btn
+            flat
+            round
+            :color="row.activo ? 'positive' : 'grey'"
+            :icon="row.activo ? 'toggle_on' : 'toggle_off'"
+            :aria-label="row.activo ? 'Desactivar' : 'Activar'"
+            :disable="esUnoMismo(row)"
+            @click="alternarEstado(row)"
+          >
+            <q-tooltip v-if="esUnoMismo(row)">No puedes desactivarte a ti mismo</q-tooltip>
+          </q-btn>
           <q-btn flat round icon="edit" aria-label="Editar" @click="abrir(row)" />
           <q-btn
-            v-if="row.activo"
+            v-if="!esUnoMismo(row)"
             flat
             round
             color="negative"
-            icon="person_off"
-            aria-label="Dar de baja"
-            @click="desactivar(row)"
+            icon="delete"
+            aria-label="Eliminar"
+            @click="eliminar(row)"
           />
         </q-td>
       </template>
