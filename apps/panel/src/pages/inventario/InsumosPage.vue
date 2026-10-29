@@ -12,17 +12,27 @@ interface FormularioEntrada {
   lote_proveedor: string;
 }
 
+interface FormularioAjuste {
+  cantidad_real: string;
+  motivo: string;
+}
+
 const $q = useQuasar();
 const sesion = useSesionStore();
 const insumos = ref<Insumo[]>([]);
 const cargando = ref(true);
 const dialogo = ref(false);
+const dialogoAjuste = ref(false);
 const insumoSeleccionado = ref<Insumo | null>(null);
 const formulario = reactive<FormularioEntrada>({
   cantidad: '',
   costo_unitario: '',
   proveedor: '',
   lote_proveedor: '',
+});
+const formularioAjuste = reactive<FormularioAjuste>({
+  cantidad_real: '',
+  motivo: '',
 });
 
 const cargar = async (): Promise<void> => {
@@ -70,6 +80,34 @@ const registrarEntrada = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: 'Entrada registrada' });
 };
 
+const abrirAjuste = (insumo: Insumo): void => {
+  insumoSeleccionado.value = insumo;
+  formularioAjuste.cantidad_real = insumo.existencia;
+  formularioAjuste.motivo = '';
+  dialogoAjuste.value = true;
+};
+
+const registrarAjuste = async (): Promise<void> => {
+  const insumo = insumoSeleccionado.value;
+  if (!insumo) return;
+
+  const { error } = await useApi(`/insumos/${insumo.id}/ajustes`)
+    .post({
+      cantidad_real: Number(formularioAjuste.cantidad_real),
+      motivo: formularioAjuste.motivo,
+    })
+    .json();
+
+  if (error.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo registrar el ajuste' });
+    return;
+  }
+
+  dialogoAjuste.value = false;
+  await cargar();
+  $q.notify({ type: 'positive', message: 'Ajuste registrado' });
+};
+
 onMounted(cargar);
 </script>
 
@@ -107,6 +145,14 @@ onMounted(cargar);
             label="Registrar entrada"
             @click="abrirEntrada(row)"
           />
+          <q-btn
+            v-if="sesion.usuario?.rol === 'administrador'"
+            color="secondary"
+            flat
+            icon="fact_check"
+            label="Ajustar"
+            @click="abrirAjuste(row)"
+          />
         </q-td>
       </template>
     </q-table>
@@ -130,6 +176,28 @@ onMounted(cargar);
         <q-card-actions align="right">
           <q-btn v-close-popup flat label="Cancelar" />
           <q-btn color="primary" unelevated label="Guardar entrada" @click="registrarEntrada" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dialogoAjuste">
+      <q-card style="width: 520px; max-width: 90vw">
+        <q-card-section class="text-h6">
+          Ajustar existencia de {{ insumoSeleccionado?.nombre }}
+        </q-card-section>
+        <q-card-section class="column q-gutter-md">
+          <q-input
+            v-model="formularioAjuste.cantidad_real"
+            label="Cantidad real"
+            type="number"
+            min="0"
+            outlined
+          />
+          <q-input v-model="formularioAjuste.motivo" label="Motivo" type="textarea" outlined />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat label="Cancelar" />
+          <q-btn color="secondary" unelevated label="Guardar ajuste" @click="registrarAjuste" />
         </q-card-actions>
       </q-card>
     </q-dialog>

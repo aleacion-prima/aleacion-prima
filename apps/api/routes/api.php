@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\MovimientoInsumoController;
@@ -9,6 +10,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()));
+
+    Route::middleware('role:administrador')->group(function () {
+        Route::post('/insumos/{insumo}/ajustes', [AjusteInsumoController::class, 'store']);
+    });
 
     Route::middleware('role:administrador')->group(function () {
         Route::post('/insumos/{insumo}/entradas', [EntradaInsumoController::class, 'store']);
