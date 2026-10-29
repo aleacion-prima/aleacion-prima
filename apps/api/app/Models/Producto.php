@@ -43,6 +43,6 @@ class Producto extends Model
     public function insumos(): BelongsToMany
     {
         return $this->belongsToMany(Insumo::class, 'producto_insumo')
-            ->withPivot('cantidad');
+            ->withPivot('cantidad_por_pieza');
     }
 }
