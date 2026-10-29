@@ -182,3 +182,15 @@ export interface OpcionesProducto {
   areas: AreaOpcion[];
   insumos: InsumoOpcion[];
 }
+
+export interface Area {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  tarifa_mano_obra_hora: string;
+  costo_maquina_hora: string;
+  obligatoria: boolean;
+  orden_catalogo: number;
+  activo: boolean;
+}
