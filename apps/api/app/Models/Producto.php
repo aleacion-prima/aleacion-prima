@@ -34,7 +34,7 @@ class Producto extends Model
     /** @return BelongsToMany<Area, $this> */
     public function areas(): BelongsToMany
     {
-        return $this->belongsToMany(Area::class, 'producto_area')  
+        return $this->belongsToMany(Area::class, 'producto_area')
             ->withPivot('orden')
             ->orderByPivot('orden');
     }
