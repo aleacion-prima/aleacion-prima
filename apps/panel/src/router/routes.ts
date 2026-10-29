@@ -20,6 +20,21 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/area/AreasPage.vue'),
         meta: { roles: ['administrador'] },
       },
+      {
+        path: 'usuarios',
+        component: () => import('@/pages/usuarios/UsuariosPage.vue'),
+        meta: { roles: ['administrador'] },
+      },
+      {
+        path: 'inventario/insumos',
+        component: () => import('@/pages/inventario/InsumosPage.vue'),
+        meta: { roles: ['administrador', 'ventas'] },
+      },
+      {
+        path: 'inventario/productos',
+        component: () => import('@/pages/inventario/ProductosPage.vue'),
+        meta: { roles: ['administrador', 'ventas'] },
+      },
       ...(import.meta.env.DEV
         ? [{ path: 'muestrario', component: () => import('@/pages/sistema/MuestrarioPage.vue') }]
         : []),
