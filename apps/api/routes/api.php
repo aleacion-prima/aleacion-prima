@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\EntradaInsumoController;
+use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
 use Illuminate\Http\Request;
@@ -12,5 +15,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('/areas-disponibles', [UsuarioController::class, 'areas']);
         Route::apiResource('usuarios', UsuarioController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+        Route::post('/insumos/{insumo}/entradas', [EntradaInsumoController::class, 'store']);
+        Route::get('/insumos/{insumo}/movimientos', [MovimientoInsumoController::class, 'index']);
+    });
+
+    Route::middleware('role:administrador|ventas')->group(function () {
+        Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
+        Route::get('/inventario/productos', [InventarioController::class, 'productos']);
     });
 });
