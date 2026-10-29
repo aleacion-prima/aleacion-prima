@@ -28,7 +28,13 @@ it('devuelve el usuario con su rol y sin contraseña', function () {
 
     getJson('/api/user')
         ->assertOk()
-        ->assertExactJson(['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'rol' => 'ventas']);
+        ->assertExactJson([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'rol' => 'ventas',
+            'activo' => true,
+        ]);
 });
 
 it('no inicia sesión con credenciales inválidas', function () {
