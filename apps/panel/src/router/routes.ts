@@ -15,6 +15,11 @@ const routes: RouteRecordRaw[] = [
     meta: { requiereSesion: true },
     children: [
       { path: '', component: () => import('@/pages/tablero/TableroPage.vue') },
+      {
+        path: 'areas',
+        component: () => import('@/pages/area/AreasPage.vue'),
+        meta: { roles: ['administrador'] },
+      },
       ...(import.meta.env.DEV
         ? [{ path: 'muestrario', component: () => import('@/pages/sistema/MuestrarioPage.vue') }]
         : []),
