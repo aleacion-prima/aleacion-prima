@@ -131,6 +131,58 @@ export interface AreaAsignada {
   nombre: string;
 }
 
+export interface ProductoArea {
+  id: number;
+  codigo: string;
+  nombre: string;
+  obligatoria: boolean;
+  orden: number;
+}
+
+export interface ProductoInsumo {
+  insumo_id: number;
+  codigo: string;
+  nombre: string;
+  unidad: string;
+  categoria: string;
+  cantidad_por_pieza: string;
+}
+
+export interface Producto {
+  id: number;
+  codigo: string;
+  nombre: string;
+  especificaciones: Record<string, string | number>;
+  precio_mayoreo: string;
+  precio_menudeo: string;
+  existencia: number;
+  publicado: boolean;
+  activo: boolean;
+  recorrido: ProductoArea[];
+  receta: ProductoInsumo[];
+}
+
+export interface AreaOpcion {
+  id: number;
+  codigo: string;
+  nombre: string;
+  obligatoria: boolean;
+  orden_catalogo: number;
+}
+
+export interface InsumoOpcion {
+  id: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  unidad: string;
+}
+
+export interface OpcionesProducto {
+  areas: AreaOpcion[];
+  insumos: InsumoOpcion[];
+}
+
 export interface Area {
   id: number;
   codigo: string;

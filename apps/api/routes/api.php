@@ -5,6 +5,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
 use Illuminate\Http\Request;
@@ -29,5 +30,10 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::middleware('role:administrador|ventas')->group(function () {
         Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
         Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+    });
+
+    Route::middleware('role:administrador')->group(function () {
+        Route::get('productos/opciones', [ProductoController::class, 'opciones']);
+        Route::apiResource('productos', ProductoController::class);
     });
 });
