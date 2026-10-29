@@ -90,3 +90,15 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
 }
+
+export interface Area {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  tarifa_mano_obra_hora: string;
+  costo_maquina_hora: string;
+  obligatoria: boolean;
+  orden_catalogo: number;
+  activo: boolean;
+}
