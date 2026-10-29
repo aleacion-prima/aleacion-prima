@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Rol;
+use App\Models\Ajuste;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use App\Models\User;
@@ -104,3 +105,47 @@ it('solo expone lectura de movimientos y no rutas de edición o borrado', functi
     putJson("/api/insumos/{$insumo->id}/movimientos/1")->assertNotFound();
     deleteJson("/api/insumos/{$insumo->id}/movimientos/1")->assertNotFound();
 });
+
+it('registra un ajuste positivo con motivo, valores y movimiento firmado', function () {
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $insumo = insumoInventario(['existencia' => 10]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 13.5,
+        'motivo' => 'Conteo físico de auditoría',
+    ])
+        ->assertCreated()
+        ->assertJsonPath('campo', 'existencia')
+        ->assertJsonPath('valores.anterior', 10)
+        ->assertJsonPath('valores.nuevo', 13.5)
+        ->assertJsonPath('motivo', 'Conteo físico de auditoría')
+        ->assertJsonPath('movimiento.tipo', 'ajuste')
+        ->assertJsonPath('movimiento.cantidad', '3.500');
+
+    expect($insumo->fresh()->existencia)->toBe('13.500');
+    expect(Ajuste::query()->where('insumo_id', $insumo->id)->count())->toBe(1);
+});
+
+it('registra un ajuste negativo y deja la existencia en la cantidad real', function () {
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $insumo = insumoInventario(['existencia' => 10]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 6.25,
+        'motivo' => 'Merma detectada en auditoría',
+    ])->assertCreated();
+
+    expect($insumo->fresh()->existencia)->toBe('6.250');
+    expect(MovimientoInsumo::query()->where('insumo_id', $insumo->id)->first()?->cantidad)
+        ->toBe('-3.750');
+});
+
+it('solo permite ajustes al administrador', function (Rol $rol) {
+    Sanctum::actingAs(usuarioInventario($rol));
+    $insumo = insumoInventario(['existencia' => 10]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 12,
+        'motivo' => 'No autorizado',
+    ])->assertForbidden();
+})->with([Rol::Ventas, Rol::Encargado]);
