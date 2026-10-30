@@ -17,7 +17,7 @@ package "Clientes" {
   [Sitio público\nAstro (estático)\n<i>catálogo sin precios</i>] as web
 }
 
-node "Droplet DigitalOcean · Docker Compose" as servidor {
+node "VM de Azure (North Central US) · Docker Compose" as servidor {
   [Caddy\nreverse proxy · TLS automático\nsirve los builds del panel y del sitio] as caddy
   [API Laravel\nFrankenPHP · REST\nSanctum · Spatie Permission] as api
   [Reverb\nWebSockets] as reverb
