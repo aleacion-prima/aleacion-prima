@@ -29,6 +29,7 @@ export interface Insumo {
   existencia: string;
   stock_minimo: string;
   activo: boolean;
+  bajo_minimo: boolean;
 }
 
 export interface ProductoInventario {
