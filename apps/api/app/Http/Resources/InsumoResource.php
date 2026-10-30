@@ -26,6 +26,7 @@ class InsumoResource extends JsonResource
             'existencia' => $this->existencia,
             'stock_minimo' => $this->stock_minimo,
             'activo' => $this->activo,
+            'bajo_minimo' => (float) $this->existencia <= (float) $this->stock_minimo,
         ];
     }
 }

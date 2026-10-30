@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\InsumoFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -18,6 +20,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Insumo extends Model
 {
+    /** @use HasFactory<InsumoFactory> */
+    use HasFactory;
+
+    public const CATEGORIAS = ['metal', 'moldeo', 'empaque'];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'existencia' => 0,
+        'activo' => true,
+    ];
+
     protected function casts(): array
     {
         return [
