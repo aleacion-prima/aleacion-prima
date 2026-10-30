@@ -1,12 +1,12 @@
 # API
 
-Contrato inicial de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público) para el Sprint 1. Scramble generará la documentación OpenAPI real cuando exista código.
+Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
 
 Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles y el middleware de [autenticacion.md](autenticacion.md) y las operaciones sobre un lote de [flujo-lote.md](flujo-lote.md).
 
 ## Convenciones
 
-- Prefijo `/api`, cuerpo y respuestas en JSON. Solo hay dos rutas fuera de `/api`: `/sanctum/csrf-cookie` y `/broadcasting/auth`.
+- Prefijo `/api`, cuerpo y respuestas en JSON. Las rutas fuera de `/api` son `/sanctum/csrf-cookie`, `/login`, `/logout` y `/broadcasting/auth`: el inicio y cierre de sesión del panel van en `routes/web.php` porque usan la sesión con cookie de Sanctum.
 - En la columna **Rol** aparecen todos los roles que pueden usar la ruta. El administrador hereda las acciones de Ventas y de Encargado de área, por eso aparece también en sus rutas.
 - `{codigo}` es el código del lote (`LOT-AAAAMMDD-NN`). `{parada}` es el identificador de la parada dentro del recorrido del lote, no el del área, porque un recorrido puede repetir un área.
 - Las rutas del panel usan cookie de sesión y `auth:sanctum`. Las de la app móvil usan token Bearer con `auth:sanctum` y `ability:lotes:read`. Las del sitio público no llevan autenticación.
@@ -20,38 +20,43 @@ Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en
 | Método | Ruta                   | Rol                                           | RF                              |
 | ------ | ---------------------- | --------------------------------------------- | ------------------------------- |
 | `GET`  | `/sanctum/csrf-cookie` | Todos (sin sesión)                            | RF-01                           |
-| `POST` | `/api/login`           | Todos (sin sesión)                            | RF-01                           |
+| `POST` | `/login`               | Todos (sin sesión)                            | RF-01                           |
 | `POST` | `/api/movil/login`     | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                    |
-| `POST` | `/api/logout`          | Todos                                         | RF-05                           |
-| `GET`  | `/api/usuario`         | Todos                                         | RF-03 (devuelve rol y permisos) |
+| `POST` | `/logout`              | Todos                                         | RF-05                           |
+| `GET`  | `/api/user`            | Todos                                         | RF-03 (devuelve rol y `activo`) |
 
 ## Catálogos
 
-Middleware: `auth:sanctum` y `role:administrador`, salvo las lecturas y la publicación que se indican.
+Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lecturas (ver Pendiente: lectura de catálogos para Ventas). La publicación de productos está planeada para Ventas y Administrador.
 
-| Método   | Ruta                                    | Rol                                      | RF           |
-| -------- | --------------------------------------- | ---------------------------------------- | ------------ |
-| `GET`    | `/api/areas`                            | Administrador, Ventas, Encargado de área | RF-06        |
-| `POST`   | `/api/areas`                            | Administrador                            | RF-06        |
-| `PUT`    | `/api/areas/{area}`                     | Administrador                            | RF-06        |
-| `DELETE` | `/api/areas/{area}`                     | Administrador                            | RF-06        |
-| `GET`    | `/api/productos`                        | Administrador, Ventas                    | RF-07        |
-| `GET`    | `/api/productos/{producto}`             | Administrador, Ventas                    | RF-07        |
-| `POST`   | `/api/productos`                        | Administrador                            | RF-07        |
-| `PUT`    | `/api/productos/{producto}`             | Administrador                            | RF-07        |
-| `DELETE` | `/api/productos/{producto}`             | Administrador                            | RF-07        |
-| `PATCH`  | `/api/productos/{producto}/publicacion` | Ventas, Administrador                    | RF-52        |
-| `GET`    | `/api/insumos`                          | Administrador, Ventas                    | RF-08        |
-| `POST`   | `/api/insumos`                          | Administrador                            | RF-08        |
-| `PUT`    | `/api/insumos/{insumo}`                 | Administrador                            | RF-08        |
-| `DELETE` | `/api/insumos/{insumo}`                 | Administrador                            | RF-08        |
-| `GET`    | `/api/usuarios`                         | Administrador                            | RF-09        |
-| `POST`   | `/api/usuarios`                         | Administrador                            | RF-09        |
-| `PUT`    | `/api/usuarios/{usuario}`               | Administrador                            | RF-09        |
-| `DELETE` | `/api/usuarios/{usuario}`               | Administrador                            | RF-09        |
-| `PUT`    | `/api/usuarios/{usuario}/areas`         | Administrador                            | RF-09, RF-48 |
+| Método   | Ruta                                    | Rol                   | RF           |
+| -------- | --------------------------------------- | --------------------- | ------------ |
+| `GET`    | `/api/areas`                            | Administrador         | RF-06        |
+| `GET`    | `/api/areas/{area}`                     | Administrador         | RF-06        |
+| `POST`   | `/api/areas`                            | Administrador         | RF-06        |
+| `PUT`    | `/api/areas/{area}`                     | Administrador         | RF-06        |
+| `DELETE` | `/api/areas/{area}`                     | Administrador         | RF-06        |
+| `GET`    | `/api/productos`                        | Administrador         | RF-07        |
+| `GET`    | `/api/productos/opciones`               | Administrador         | RF-07        |
+| `GET`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
+| `POST`   | `/api/productos`                        | Administrador         | RF-07        |
+| `PUT`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
+| `DELETE` | `/api/productos/{producto}`             | Administrador         | RF-07        |
+| `PATCH`  | `/api/productos/{producto}/publicacion` | Ventas, Administrador | RF-52        |
+| `GET`    | `/api/insumos`                          | Administrador         | RF-08        |
+| `GET`    | `/api/insumos/{insumo}`                 | Administrador         | RF-08        |
+| `POST`   | `/api/insumos`                          | Administrador         | RF-08        |
+| `PUT`    | `/api/insumos/{insumo}`                 | Administrador         | RF-08        |
+| `DELETE` | `/api/insumos/{insumo}`                 | Administrador         | RF-08        |
+| `GET`    | `/api/usuarios`                         | Administrador         | RF-09        |
+| `GET`    | `/api/areas-disponibles`                | Administrador         | RF-09, RF-48 |
+| `POST`   | `/api/usuarios`                         | Administrador         | RF-09, RF-48 |
+| `PUT`    | `/api/usuarios/{usuario}`               | Administrador         | RF-09, RF-48 |
+| `DELETE` | `/api/usuarios/{usuario}`               | Administrador         | RF-09        |
 
-El recorrido por defecto y la receta de insumos de un producto viajan dentro de `/api/productos` (RF-07); no tienen ruta propia.
+- `DELETE` no borra en ningún catálogo: desactiva (`activo = false`). En usuarios, además, revoca sus tokens.
+- El recorrido por defecto y la receta de insumos de un producto viajan dentro de `/api/productos` (RF-07); no tienen ruta propia. `GET /api/productos/opciones` devuelve las áreas e insumos activos para armarlos.
+- Las áreas de un encargado viajan como `area_ids` dentro de `POST` y `PUT /api/usuarios` (RF-48); `GET /api/areas-disponibles` devuelve las áreas activas para elegirlas.
 
 ## Inventario
 
@@ -172,6 +177,9 @@ Se recorta en este orden si el tiempo no alcanza: chat de cotizaciones, clientes
 - RF-53 sigue pendiente de decisión ([requerimientos.md](requerimientos.md)); si entra, necesita una ruta de corrección de capturas de un lote por confirmar.
 
 ## Pendiente
+
+- **Lectura de catálogos para Ventas.** El contrato inicial daba a Ventas la lectura de productos e insumos, y a Ventas y Encargado la de áreas; en el Sprint 1 se implementaron solo para Administrador. Se decide en la planeación del Sprint 2 si se abre el `GET` a esos roles.
+- **`/api/areas-disponibles` contra `/api/areas?activo=1`.** Devuelven lo mismo para elegir áreas activas; conviene dejar solo una.
 
 - **Quién crea lotes.** RF-16 dice Administrador; [flujo-lote.md](flujo-lote.md) y el diagrama de estados dicen Ventas o Administrador. Aquí se sigue el RF. Si ventas también crea, `POST /api/lotes` pasa a `role:ventas|administrador` y se actualizan RF-16 y autenticacion.md.
 - **Costos para el encargado.** Se propone que `historial` y `GET /api/lotes/{codigo}` no devuelvan costos al encargado de área ni a la app móvil; solo `costo` y `bitacora` los exponen, y solo a Ventas y Administrador. Confirmar con el equipo.
