@@ -21,7 +21,7 @@ const principal: SeccionMenu = {
 const inventario: SeccionMenu = {
   titulo: 'Inventario',
   elementos: [
-    { etiqueta: 'insumos', ruta: '/inventario/insumos', icono: 'inventory_2' },
+    { etiqueta: 'Insumos', ruta: '/inventario/insumos', icono: 'inventory_2' },
     { etiqueta: 'Producto terminado', ruta: '/inventario/productos', icono: 'warehouse' },
   ],
 };
@@ -31,7 +31,7 @@ const catalogos: SeccionMenu = {
   elementos: [
     { etiqueta: 'Áreas y tarifas', ruta: '/areas', icono: 'factory' },
     { etiqueta: 'Productos', ruta: '/productos', icono: 'category' },
-    { etiqueta: 'insumos', ruta: '/insumos', icono: 'grain' },
+    { etiqueta: 'Insumos', ruta: '/insumos', icono: 'grain' },
     { etiqueta: 'Usuarios y roles', ruta: '/usuarios', icono: 'manage_accounts' },
   ],
 };

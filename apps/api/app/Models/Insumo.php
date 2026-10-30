@@ -23,8 +23,6 @@ class Insumo extends Model
     /** @use HasFactory<InsumoFactory> */
     use HasFactory;
 
-    public const CATEGORIAS = ['metal', 'moldeo', 'empaque'];
-
     /**
      * @var array<string, mixed>
      */

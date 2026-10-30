@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\CategoriaInsumo;
 use App\Models\Insumo;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -56,7 +57,7 @@ class InsumoRequest extends FormRequest
         return [
             'codigo' => $codigo,
             'nombre' => ['required', 'string', 'max:120', Rule::unique('insumos', 'nombre')->ignore($insumo)],
-            'categoria' => ['required', Rule::in($esRetorno ? ['metal'] : Insumo::CATEGORIAS)],
+            'categoria' => ['required', $esRetorno ? Rule::in([CategoriaInsumo::Metal->value]) : Rule::enum(CategoriaInsumo::class)],
             'unidad' => ['required', 'string', 'max:20'],
             'costo_unitario' => ['required', 'numeric', 'min:0', 'max:9999999999', 'decimal:0,4'],
             'stock_minimo' => ['required', 'numeric', 'min:0', 'max:999999999', 'decimal:0,3'],
@@ -70,9 +71,8 @@ class InsumoRequest extends FormRequest
         return [
             'codigo.regex' => 'El código solo admite mayúsculas, números y guiones (por ejemplo, CHT-FUN).',
             'codigo.in' => 'El código del insumo de retorno no se puede cambiar.',
-            'categoria.in' => $this->esRetorno()
-                ? 'El insumo de retorno debe seguir siendo de categoría metal.'
-                : 'La categoría debe ser metal, moldeo o empaque.',
+            'categoria.in' => 'El insumo de retorno debe seguir siendo de categoría metal.',
+            'categoria.enum' => 'La categoría debe ser metal, moldeo o empaque.',
             'activo.accepted' => 'El insumo de retorno no se puede desactivar.',
             'costo_unitario.decimal' => 'El costo unitario admite hasta 4 decimales.',
             'stock_minimo.decimal' => 'El stock mínimo admite hasta 3 decimales.',

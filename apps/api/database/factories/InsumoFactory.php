@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CategoriaInsumo;
 use App\Models\Insumo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +17,7 @@ class InsumoFactory extends Factory
         return [
             'codigo' => strtoupper(fake()->unique()->bothify('???-###')),
             'nombre' => fake()->unique()->words(3, true),
-            'categoria' => fake()->randomElement(Insumo::CATEGORIAS),
+            'categoria' => fake()->randomElement(CategoriaInsumo::cases())->value,
             'unidad' => fake()->randomElement(['kg', 'pieza']),
             'costo_unitario' => fake()->randomFloat(4, 1, 100),
             'stock_minimo' => fake()->randomFloat(3, 0, 500),
