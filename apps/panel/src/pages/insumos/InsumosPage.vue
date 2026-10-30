@@ -42,6 +42,9 @@ const editando = ref<Insumo | null>(null);
 const cargando = ref(true);
 const guardando = ref(false);
 const errores = ref<Record<string, string[]>>({});
+const dialogoDesactivar = ref(false);
+const porDesactivar = ref<Insumo | null>(null);
+const desactivando = ref(false);
 const formulario = reactive<FormularioInsumo>({
   codigo: '',
   nombre: '',
@@ -142,27 +145,30 @@ const guardar = async (): Promise<void> => {
 
 /* ---------- Desactivar ---------- */
 
-const desactivar = (insumo: Insumo): void => {
-  $q.dialog({
-    title: 'Desactivar insumo',
-    message: `${insumo.codigo} · ${insumo.nombre} dejará de ofrecerse en recetas nuevas. Podrás reactivarlo editándolo.`,
-    cancel: { label: 'Cancelar', flat: true },
-    ok: { label: 'Desactivar', color: 'negative', unelevated: true },
-    persistent: true,
-  }).onOk(() => {
-    void (async () => {
-      const { error, data } = await useApi(`/insumos/${insumo.id}`).delete().json<Insumo>();
-      if (error.value) {
-        $q.notify({
-          type: 'negative',
-          message: textoError(data.value, 'No se pudo desactivar el insumo'),
-        });
-        return;
-      }
-      await cargar();
-      $q.notify({ type: 'positive', message: 'Insumo desactivado' });
-    })();
-  });
+const pedirDesactivar = (insumo: Insumo): void => {
+  porDesactivar.value = insumo;
+  dialogoDesactivar.value = true;
+};
+
+const confirmarDesactivar = async (): Promise<void> => {
+  const insumo = porDesactivar.value;
+  if (insumo === null) return;
+
+  desactivando.value = true;
+  const { error, data } = await useApi(`/insumos/${insumo.id}`).delete().json<Insumo>();
+  desactivando.value = false;
+
+  if (error.value) {
+    $q.notify({
+      type: 'negative',
+      message: textoError(data.value, 'No se pudo desactivar el insumo'),
+    });
+    return;
+  }
+  dialogoDesactivar.value = false;
+  porDesactivar.value = null;
+  await cargar();
+  $q.notify({ type: 'positive', message: 'Insumo desactivado' });
 };
 
 onMounted(cargar);
@@ -239,7 +245,7 @@ onMounted(cargar);
               flat
               color="negative"
               label="Desactivar"
-              @click="desactivar(insumo)"
+              @click="pedirDesactivar(insumo)"
             />
             <q-btn outline color="primary" label="Editar insumo" @click="abrir(insumo)" />
           </q-card-actions>
@@ -358,6 +364,28 @@ onMounted(cargar);
             :label="editando ? 'Guardar cambios' : 'Registrar insumo'"
             :loading="guardando"
             @click="guardar"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dialogoDesactivar" persistent>
+      <q-card style="width: 420px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">Desactivar insumo</div>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          {{ porDesactivar?.codigo }} · {{ porDesactivar?.nombre }} dejará de ofrecerse en recetas
+          nuevas. Podrás reactivarlo editándolo.
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat label="Cancelar" />
+          <q-btn
+            color="negative"
+            unelevated
+            label="Desactivar"
+            :loading="desactivando"
+            @click="confirmarDesactivar"
           />
         </q-card-actions>
       </q-card>
