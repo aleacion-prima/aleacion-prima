@@ -19,6 +19,39 @@ export type TipoMovimientoProducto = (typeof TIPOS_MOVIMIENTO_PRODUCTO)[number];
 export const CATEGORIAS_INSUMO = ['metal', 'moldeo', 'empaque'] as const;
 export type CategoriaInsumo = (typeof CATEGORIAS_INSUMO)[number];
 
+export interface Insumo {
+  id: number;
+  codigo: string;
+  nombre: string;
+  categoria: CategoriaInsumo;
+  unidad: string;
+  costo_unitario: string;
+  existencia: string;
+  stock_minimo: string;
+  activo: boolean;
+  bajo_minimo: boolean;
+}
+
+export interface ProductoInventario {
+  id: number;
+  codigo: string;
+  nombre: string;
+  existencia: number;
+  activo: boolean;
+}
+
+export interface MovimientoInsumo {
+  id: number;
+  insumo_id: number;
+  tipo: TipoMovimientoInsumo;
+  cantidad: string;
+  costo_unitario: string | null;
+  proveedor: string | null;
+  lote_proveedor: string | null;
+  user_id: number;
+  ocurrido_en: string | null;
+}
+
 // Ventas (recortable)
 export const ESTADOS_PEDIDO = ['borrador', 'confirmado', 'entregado', 'cancelado'] as const;
 export type EstadoPedido = (typeof ESTADOS_PEDIDO)[number];
@@ -89,4 +122,76 @@ export interface Usuario {
   name: string;
   email: string;
   rol: Rol | null;
+  activo: boolean;
+  areas?: AreaAsignada[];
+}
+
+export interface AreaAsignada {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
+export interface ProductoArea {
+  id: number;
+  codigo: string;
+  nombre: string;
+  obligatoria: boolean;
+  orden: number;
+}
+
+export interface ProductoInsumo {
+  insumo_id: number;
+  codigo: string;
+  nombre: string;
+  unidad: string;
+  categoria: string;
+  cantidad_por_pieza: string;
+}
+
+export interface Producto {
+  id: number;
+  codigo: string;
+  nombre: string;
+  especificaciones: Record<string, string | number>;
+  precio_mayoreo: string;
+  precio_menudeo: string;
+  existencia: number;
+  publicado: boolean;
+  activo: boolean;
+  recorrido: ProductoArea[];
+  receta: ProductoInsumo[];
+}
+
+export interface AreaOpcion {
+  id: number;
+  codigo: string;
+  nombre: string;
+  obligatoria: boolean;
+  orden_catalogo: number;
+}
+
+export interface InsumoOpcion {
+  id: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  unidad: string;
+}
+
+export interface OpcionesProducto {
+  areas: AreaOpcion[];
+  insumos: InsumoOpcion[];
+}
+
+export interface Area {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  tarifa_mano_obra_hora: string;
+  costo_maquina_hora: string;
+  obligatoria: boolean;
+  orden_catalogo: number;
+  activo: boolean;
 }

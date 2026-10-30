@@ -28,5 +28,9 @@ class DatabaseSeeder extends Seeder
             );
             $usuario->syncRoles([$datos['rol']]);
         }
+
+        $this->call(AreaSeeder::class);
+        $this->call(InsumosSeeder::class);
+        $this->call(ProductoSeeder::class);
     }
 }

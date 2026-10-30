@@ -12,7 +12,7 @@
     "test:e2e": "pnpm --filter e2e exec playwright test",
     "prepare": "husky",
     "test:api": "docker compose run --rm --no-deps -T api php artisan test",
-    "analyse:api": "docker compose run --rm --no-deps -T api vendor/bin/phpstan analyse",
+    "analyse:api": "docker compose run --rm --no-deps -T api vendor/bin/phpstan analyse --memory-limit=1G",
     "test:e2e:report": "pnpm --filter e2e exec playwright show-report",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm test:api && pnpm analyse:api",
     "setup": "node scripts/setup.ts",
