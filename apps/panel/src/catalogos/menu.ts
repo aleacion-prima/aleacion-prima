@@ -46,13 +46,17 @@ const ventas: SeccionMenu = {
   ],
 };
 
+const cuenta: SeccionMenu = {
+  elementos: [{ etiqueta: 'Mi cuenta', ruta: '/mi-cuenta', icono: 'account_circle' }],
+};
+
 const notificaciones: SeccionMenu = {
   elementos: [{ etiqueta: 'Notificaciones', ruta: '/notificaciones', icono: 'notifications' }],
 };
 
 export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
-  administrador: [principal, inventario, catalogos, notificaciones, ventas],
-  ventas: [principal, inventario, notificaciones, ventas],
+  administrador: [principal, inventario, catalogos, notificaciones, ventas, cuenta],
+  ventas: [principal, inventario, notificaciones, ventas, cuenta],
   encargado: [
     {
       elementos: [
@@ -61,6 +65,10 @@ export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
       ],
     },
     notificaciones,
+    cuenta,
   ],
-  cliente: [{ elementos: [{ etiqueta: 'Cotizaciones', ruta: '/cotizaciones', icono: 'chat' }] }],
+  cliente: [
+    { elementos: [{ etiqueta: 'Cotizaciones', ruta: '/cotizaciones', icono: 'chat' }] },
+    cuenta,
+  ],
 };

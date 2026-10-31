@@ -45,6 +45,18 @@ class AppServiceProvider extends ServiceProvider
                 ));
         });
 
+        RateLimiter::for('pregunta-secreta', function (Request $request) {
+            $correo = mb_strtolower($request->string('email')->toString());
+
+            return Limit::perMinute(5)
+                ->by($correo.'|'.$request->ip())
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
         RateLimiter::for('recuperacion', function (Request $request) {
             $correo = mb_strtolower($request->string('email')->toString());
 

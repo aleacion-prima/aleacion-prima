@@ -75,6 +75,12 @@ onUnmounted(() => {
         />
 
         <div class="text-center">
+          <router-link to="/recuperar-pregunta" class="text-primary"
+            >¿No tienes acceso al correo? Usa tu pregunta de seguridad</router-link
+          >
+        </div>
+
+        <div class="text-center">
           <router-link to="/login" class="text-primary">Volver al inicio de sesión</router-link>
         </div>
       </q-form>

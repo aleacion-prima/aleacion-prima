@@ -51,6 +51,27 @@ export const useSesionStore = defineStore('sesion', () => {
     return cuerpo.message ?? 'Contraseña restablecida.';
   };
 
+  const obtenerPregunta = async (email: string): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/forgot-password/pregunta', { email });
+    const cuerpo = (await res.json()) as { pregunta?: string; message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo obtener la pregunta');
+    return cuerpo.pregunta ?? '';
+  };
+
+  const restablecerPorPregunta = async (datos: {
+    email: string;
+    respuesta: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/reset-password/pregunta', datos);
+    const cuerpo = (await res.json()) as { message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo restablecer la contraseña');
+    return cuerpo.message ?? 'Contraseña restablecida.';
+  };
+
   return {
     usuario,
     cargada,
@@ -59,5 +80,7 @@ export const useSesionStore = defineStore('sesion', () => {
     cerrar,
     recuperar,
     restablecer,
+    obtenerPregunta,
+    restablecerPorPregunta,
   };
 });
