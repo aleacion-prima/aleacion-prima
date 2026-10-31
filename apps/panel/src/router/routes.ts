@@ -21,6 +21,21 @@ const routes: RouteRecordRaw[] = [
         meta: { roles: ['administrador'] },
       },
       {
+        path: 'lotes',
+        component: () => import('@/pages/lotes/LotesPage.vue'),
+        meta: { roles: ['administrador', 'ventas', 'encargado'] },
+      },
+      {
+        path: 'lotes/nuevo',
+        component: () => import('@/pages/lotes/CrearLotePage.vue'),
+        meta: { roles: ['administrador'] },
+      },
+      {
+        path: 'lotes/:codigo',
+        component: () => import('@/pages/lotes/DetalleLotePage.vue'),
+        meta: { roles: ['administrador', 'ventas', 'encargado'] },
+      },
+      {
         path: 'usuarios',
         component: () => import('@/pages/usuarios/UsuariosPage.vue'),
         meta: { roles: ['administrador'] },
