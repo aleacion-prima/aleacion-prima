@@ -5,6 +5,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UsuarioController;
@@ -41,4 +42,11 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('productos/opciones', [ProductoController::class, 'opciones']);
         Route::apiResource('productos', ProductoController::class);
     });
+
+    Route::middleware('role:administrador|ventas|encargado')->group(function () {
+        Route::get('/lotes', [LoteController::class, 'index']);
+        Route::get('/lotes/{lote}', [LoteController::class, 'show']);
+    });
+
+    Route::post('/lotes', [LoteController::class, 'store'])->middleware('role:administrador');
 });

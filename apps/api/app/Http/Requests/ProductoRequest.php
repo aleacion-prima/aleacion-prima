@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Area;
+use App\Recorridos\ValidadorRecorrido;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -60,46 +60,19 @@ class ProductoRequest extends FormRequest
         ];
     }
 
-    /**
-     * Recibe la lista de ids de área en el orden del recorrido.
-     */
     private function validarRecorrido(mixed $valor, Closure $fail): void
     {
-        // Si la forma es inválida, ya la reportan las reglas de arreglo y de enteros.
         if (! is_array($valor) || collect($valor)->contains(fn ($id) => ! is_numeric($id))) {
             return;
         }
 
-        $ids = array_map('intval', array_values($valor));
-        $areas = Area::query()->whereIn('id', $ids)->get()->keyBy('id');
+        $error = app(ValidadorRecorrido::class)->error(
+            array_map('intval', array_values($valor)),
+            permitirRepetir: false,
+        );
 
-        $inactivas = collect($ids)
-            ->map(fn (int $id) => $areas->get($id))
-            ->filter(fn (?Area $area) => $area !== null && ! $area->activo);
-
-        if ($inactivas->isNotEmpty()) {
-            $fail('Las áreas '.$inactivas->pluck('codigo')->implode(', ').' están inactivas y no pueden entrar en un recorrido nuevo.');
-
-            return;
-        }
-
-        $obligatorias = Area::query()->activas()->where('obligatoria', true)->orderBy('orden_catalogo')->get();
-        $enRecorrido = collect($ids)
-            ->map(fn (int $id) => $areas->get($id))
-            ->filter(fn (?Area $area) => $area !== null && $area->obligatoria)
-            ->values();
-
-        $faltantes = $obligatorias->pluck('codigo')->diff($enRecorrido->pluck('codigo'));
-        if ($faltantes->isNotEmpty()) {
-            $fail($faltantes->count() === 1
-                ? 'Falta el área obligatoria '.$faltantes->first().'.'
-                : 'Faltan las áreas obligatorias '.$faltantes->implode(', ').'.');
-
-            return;
-        }
-
-        if ($enRecorrido->pluck('id')->all() !== $obligatorias->pluck('id')->all()) {
-            $fail('Las áreas obligatorias van en este orden: '.$obligatorias->pluck('codigo')->implode(' → ').'.');
+        if ($error !== null) {
+            $fail($error);
         }
     }
 
