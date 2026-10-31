@@ -1,6 +1,6 @@
 # API
 
-Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
+Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, y en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes` y `GET /api/lotes/{codigo}`; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
 
 Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles y el middleware de [autenticacion.md](autenticacion.md) y las operaciones sobre un lote de [flujo-lote.md](flujo-lote.md).
 
@@ -73,6 +73,8 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 ## Lotes
 
 Middleware: `auth:sanctum`. Rol según la fila. La lectura de un lote (`GET /api/lotes/{codigo}` y su historial) la comparten el panel y la app móvil.
+
+Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas.
 
 | Método | Ruta                            | Rol                                      | RF                                |
 | ------ | ------------------------------- | ---------------------------------------- | --------------------------------- |
