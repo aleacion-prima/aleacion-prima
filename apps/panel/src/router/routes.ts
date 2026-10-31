@@ -56,6 +56,16 @@ const routes: RouteRecordRaw[] = [
     children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
   },
   {
+    path: '/olvide-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/OlvideContrasenaPage.vue') }],
+  },
+  {
+    path: '/nueva-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/NuevaContrasenaPage.vue') }],
+  },
+  {
     path: '/:catchAll(.*)*',
     component: () => import('@/pages/sistema/ErrorNotFound.vue'),
   },

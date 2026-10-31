@@ -42,7 +42,7 @@ it('permite al administrador crear un encargado con áreas', function () {
     postJson('/api/usuarios', [
         'name' => 'Encargado nuevo',
         'email' => 'nuevo@example.com',
-        'password' => 'password123',
+        'password' => 'Password123',
         'rol' => Rol::Encargado->value,
         'area_ids' => [$areas[0]->id, $areas[1]->id],
     ])

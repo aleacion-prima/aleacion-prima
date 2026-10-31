@@ -6,6 +6,7 @@ use App\Enums\Rol;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class GuardarUsuarioRequest extends FormRequest
 {
@@ -30,7 +31,7 @@ class GuardarUsuarioRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($usuarioId),
             ],
-            'password' => [$this->isMethod('POST') ? 'required' : 'nullable', 'string', 'min:8'],
+            'password' => [$this->isMethod('POST') ? 'required' : 'nullable', 'string', 'max:72', Password::defaults()],
             'rol' => ['required', Rule::enum(Rol::class)],
             'activo' => ['sometimes', 'boolean'],
             'area_ids' => [
