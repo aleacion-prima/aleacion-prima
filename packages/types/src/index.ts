@@ -119,8 +119,29 @@ export interface LoteParada {
   piezas_recibidas: number | null;
   piezas_entregadas: number | null;
   merma_piezas: number | null;
+  merma_material: string | null;
+  retorno_kg: string | null;
+  discrepancia: number | null;
   entrada_ocurrido_en: string | null;
+  entrada_registrado_en: string | null;
+  entrada_tardia: boolean;
   salida_ocurrido_en: string | null;
+  salida_registrado_en: string | null;
+  salida_tardia: boolean;
+  admite_retorno: boolean;
+  puede_capturar: boolean;
+}
+
+export interface RegistrarEntradaParada {
+  piezas_recibidas: number;
+  ocurrido_en?: string;
+}
+
+export interface RegistrarSalidaParada {
+  piezas_entregadas: number;
+  merma_material?: number;
+  retorno_kg?: number;
+  ocurrido_en?: string;
 }
 
 export interface LoteInsumoAsignado {
