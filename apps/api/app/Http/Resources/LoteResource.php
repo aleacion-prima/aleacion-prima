@@ -37,7 +37,9 @@ class LoteResource extends JsonResource
             ]),
             'costo_total' => $this->when($veCostos, $this->costo_total),
             'costo_por_pieza' => $this->when($veCostos, $this->costo_por_pieza),
-            'paradas' => ParadaLoteResource::collection($this->whenLoaded('paradas')),
+            'paradas' => $this->whenLoaded('paradas', fn () => $this->paradas->values()->map(
+                fn ($parada, int $indice) => (new ParadaLoteResource($parada))->conAnterior($this->paradas->values()->get($indice - 1)),
+            )),
             'insumos' => InsumoLoteResource::collection($this->whenLoaded('insumos')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
