@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoLote;
+use App\Enums\Rol;
 use App\Http\Requests\CrearLoteRequest;
 use App\Http\Resources\LoteResource;
 use App\Lotes\CreadorLote;
@@ -21,6 +22,10 @@ class LoteController extends Controller
         return LoteResource::collection(
             Lote::query()
                 ->with(['producto', 'areaActual', 'paradas.area'])
+                ->when($this->soloSusAreas($request), fn ($consulta, User $usuario) => $consulta->whereHas(
+                    'paradas',
+                    fn ($paradas) => $paradas->whereIn('area_id', $usuario->areas()->select('areas.id')),
+                ))
                 ->when($request->boolean('activos'), fn ($consulta) => $consulta->where(
                     fn ($activos) => $activos
                         ->whereIn('estado', [EstadoLote::Creado, EstadoLote::EnProceso])
@@ -29,6 +34,15 @@ class LoteController extends Controller
                 ->latest('id')
                 ->get(),
         );
+    }
+
+    private function soloSusAreas(Request $request): ?User
+    {
+        $usuario = $request->user();
+
+        return $usuario instanceof User && ! $usuario->hasAnyRole([Rol::Administrador, Rol::Ventas])
+            ? $usuario
+            : null;
     }
 
     public function show(Lote $lote): LoteResource

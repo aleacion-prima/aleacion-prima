@@ -80,7 +80,7 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 
 Middleware: `auth:sanctum`. Rol según la fila. La lectura de un lote (`GET /api/lotes/{codigo}` y su historial) la comparten el panel y la app móvil.
 
-Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas.
+Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy.
 
 | Método | Ruta                            | Rol                                      | RF                                |
 | ------ | ------------------------------- | ---------------------------------------- | --------------------------------- |
