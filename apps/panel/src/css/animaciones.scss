@@ -184,6 +184,20 @@
   }
 }
 
+@keyframes destello {
+  0% {
+    background-color: rgba($accent, 0.28);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.destello,
+.destello > td {
+  animation: destello 1.6s ease-out;
+}
+
 .entrada-escalonada > * {
   animation: aparecer $duracion-media $curva-salida backwards;
 

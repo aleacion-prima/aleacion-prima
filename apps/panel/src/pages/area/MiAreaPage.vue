@@ -6,6 +6,7 @@ import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
 import { iconoArea } from '@/catalogos/areas';
 import { lotesEnArea, lotesPorLlegar, movimientosDeHoy } from '@/composables/miArea';
+import { actualizarEnLista, useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -96,9 +97,13 @@ const detallePorLlegar = (
 };
 
 const cargar = async (): Promise<void> => {
-  const { data, error } = await useApi<Lote[]>('/lotes').json<Lote[]>();
+  const { data, error } = await useApi<Lote[]>('/lotes?activos=1').json<Lote[]>();
   cargando.value = false;
   if (!error.value) lotes.value = data.value ?? [];
+};
+
+const reemplazar = (nuevo: Lote): void => {
+  lotes.value = lotes.value.map((lote) => (lote.codigo === nuevo.codigo ? nuevo : lote));
 };
 
 const capturar = (lote: Lote, parada: LoteParada, tipo: 'entrada' | 'salida'): void => {
@@ -106,7 +111,11 @@ const capturar = (lote: Lote, parada: LoteParada, tipo: 'entrada' | 'salida'): v
   dialogo.value = true;
 };
 
-useIntervalFn(() => void cargar(), 30_000);
+const { recientes } = useLotesEnVivo(useCanalesDeLotes(), (evento) =>
+  actualizarEnLista(lotes, evento.codigo),
+);
+
+useIntervalFn(() => void cargar(), 120_000);
 onMounted(cargar);
 </script>
 
@@ -161,6 +170,7 @@ onMounted(cargar);
                   v-for="item in enArea"
                   :key="`ahora-${item.lote.id}`"
                   class="tarjeta row items-center q-pa-md"
+                  :class="{ destello: recientes.includes(item.lote.codigo) }"
                 >
                   <div class="col">
                     <div class="row items-center q-gutter-x-sm">
@@ -207,6 +217,7 @@ onMounted(cargar);
                   v-for="item in porLlegar"
                   :key="`llegar-${item.lote.id}`"
                   class="tarjeta row items-center q-pa-md"
+                  :class="{ destello: recientes.includes(item.lote.codigo) }"
                 >
                   <div class="col">
                     <div class="row items-center q-gutter-x-sm">
@@ -277,7 +288,7 @@ onMounted(cargar);
       :lote="seleccion.lote"
       :parada="seleccion.parada"
       :tipo="seleccion.tipo"
-      @guardado="cargar"
+      @guardado="reemplazar"
     />
   </q-page>
 </template>
