@@ -4,15 +4,31 @@ import { useRoute } from 'vue-router';
 import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { formatearMoneda } from '@/composables/formato';
-import { estadoDeParada, paradasDeLote } from '@/composables/recorridoLote';
+import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
+import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
 
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
+const capturando = ref(false);
+
+const captura = computed(() => {
+  if (!lote.value) return null;
+  const siguiente = siguienteCaptura(lote.value);
+  return siguiente?.parada.puede_capturar ? siguiente : null;
+});
+
+const etiquetaCaptura = computed(() => {
+  if (!captura.value) return '';
+  const area = captura.value.parada.area.nombre;
+  return captura.value.tipo === 'entrada'
+    ? `Registrar entrada a ${area}`
+    : `Registrar salida de ${area}`;
+});
 const cargando = ref(true);
 const noEncontrado = ref(false);
 
@@ -21,6 +37,18 @@ const fecha = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle:
 const paradaActual = computed(() =>
   lote.value?.paradas.find((parada) => estadoDeParada(parada) === 'en_curso'),
 );
+
+const ubicacion = computed(() => {
+  if (!lote.value) return '';
+  if (paradaActual.value) return paradaActual.value.area.nombre;
+  if (lote.value.estado === 'creado') return 'Sin iniciar';
+  if (lote.value.estado === 'cancelado') return 'Cancelado';
+  if (lote.value.estado === 'en_proceso') {
+    const siguiente = lote.value.paradas.find((parada) => !parada.entrada_ocurrido_en);
+    return siguiente ? `En tránsito a ${siguiente.area.nombre}` : 'En tránsito';
+  }
+  return 'Recorrido completo';
+});
 
 const ordenActual = computed(() => {
   if (!lote.value) return 0;
@@ -78,9 +106,23 @@ onMounted(cargar);
     </EstadoVacio>
 
     <div v-else class="entrada-escalonada">
-      <div class="row items-center q-gutter-x-md">
-        <h1 class="text-h4 q-my-none codigo">{{ lote.codigo }}</h1>
-        <ChipEstado :estado="lote.estado" />
+      <div class="row items-center justify-between q-gutter-y-sm">
+        <div class="row items-center q-gutter-x-md">
+          <h1 class="text-h4 q-my-none codigo">{{ lote.codigo }}</h1>
+          <ChipEstado :key="lote.estado" :estado="lote.estado" class="rebotar" />
+        </div>
+        <transition name="pagina" mode="out-in">
+          <q-btn
+            v-if="captura"
+            :key="etiquetaCaptura"
+            unelevated
+            no-caps
+            color="primary"
+            :icon="captura.tipo === 'entrada' ? 'login' : 'check'"
+            :label="etiquetaCaptura"
+            @click="capturando = true"
+          />
+        </transition>
       </div>
       <div class="text-secundario q-mb-lg">
         {{ lote.producto.nombre }} · <span class="codigo">{{ lote.producto.codigo }}</span> ·
@@ -94,7 +136,7 @@ onMounted(cargar);
             <q-card-section>
               <div class="text-overline text-secundario">Área actual</div>
               <div class="text-h6">
-                {{ paradaActual?.area.nombre ?? lote.area_actual?.nombre ?? 'Sin iniciar' }}
+                {{ ubicacion }}
               </div>
               <div class="text-caption text-secundario">
                 Parada {{ ordenActual }} de {{ lote.paradas.length }}
@@ -162,5 +204,14 @@ onMounted(cargar);
         </q-card-section>
       </q-card>
     </div>
+
+    <DialogoCaptura
+      v-if="lote && captura"
+      v-model="capturando"
+      :lote="lote"
+      :parada="captura.parada"
+      :tipo="captura.tipo"
+      @guardado="lote = $event"
+    />
   </q-page>
 </template>
