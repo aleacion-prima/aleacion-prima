@@ -59,11 +59,13 @@ Fuera del diagrama: `roles`, `permissions` y sus pivotes (Spatie), `personal_acc
 
 Valores que describen a la planta y no cambian en operación; van en `config/planta.php` (con `.env` opcional), no en tablas:
 
-| Clave                          | Valor     | Uso                                                                      |
-| ------------------------------ | --------- | ------------------------------------------------------------------------ |
-| `planta.umbral_captura_tardia` | 30 (min)  | `registrado_en − ocurrido_en` mayor → `captura_tardia` en bitácora       |
-| `planta.capacidad_colada_kg`   | 750       | Un lote es una colada: `cantidad_objetivo × metal por pieza ≤ capacidad` |
-| `planta.insumo_retorno`        | `CHT-FUN` | Insumo al que regresan los retornos de metal (decisión 14)               |
+| Clave                          | Valor                 | Uso                                                                      |
+| ------------------------------ | --------------------- | ------------------------------------------------------------------------ |
+| `planta.umbral_captura_tardia` | 30 (min)              | `registrado_en − ocurrido_en` mayor → `captura_tardia` en bitácora       |
+| `planta.capacidad_colada_kg`   | 750                   | Un lote es una colada: `cantidad_objetivo × metal por pieza ≤ capacidad` |
+| `planta.insumo_retorno`        | `CHT-FUN`             | Insumo al que regresan los retornos de metal (decisión 14)               |
+| `planta.area_retorno`          | `DES`                 | Única área donde se captura el retorno de metal                          |
+| `planta.zona_horaria`          | `America/Mexico_City` | Zona de la planta; de ella sale la fecha del código del lote             |
 
 Si algún día hay dos hornos o dos plantas, esto se convierte en columnas de `areas`; ese día se escribe un ADR.
 
