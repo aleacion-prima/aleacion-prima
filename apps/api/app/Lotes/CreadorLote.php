@@ -5,6 +5,7 @@ namespace App\Lotes;
 use App\Enums\CategoriaInsumo;
 use App\Enums\EstadoLote;
 use App\Enums\TipoMovimientoInsumo;
+use App\Events\LoteActualizado;
 use App\Inventario\DetectorStockMinimo;
 use App\Models\Area;
 use App\Models\Insumo;
@@ -51,6 +52,8 @@ class CreadorLote
 
             $this->crearParadas($lote, $idsRecorrido);
             $this->asignarInsumos($lote, $insumos, $necesidades, $usuario);
+
+            LoteActualizado::dispatch($lote);
 
             return $lote->load(['producto', 'areaActual', 'paradas.area', 'insumos.insumo']);
         });

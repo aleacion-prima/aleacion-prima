@@ -7,6 +7,7 @@ use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
@@ -49,4 +50,9 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     });
 
     Route::post('/lotes', [LoteController::class, 'store'])->middleware('role:administrador');
+
+    Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
+        Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);
+        Route::post('/lotes/{lote}/paradas/{parada}/salida', [ParadaLoteController::class, 'salida']);
+    });
 });

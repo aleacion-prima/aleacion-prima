@@ -19,4 +19,6 @@ return [
 
     // Código del insumo al que regresan los retornos de metal (ADR-0012).
     'insumo_retorno' => env('PLANTA_INSUMO_RETORNO', 'CHT-FUN'),
+
+    'area_retorno' => env('PLANTA_AREA_RETORNO', 'DES'),
 ];

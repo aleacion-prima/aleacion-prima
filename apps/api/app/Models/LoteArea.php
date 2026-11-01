@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\LoteAreaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property CarbonImmutable|null $entrada_ocurrido_en
+ * @property CarbonImmutable|null $entrada_registrado_en
+ * @property CarbonImmutable|null $salida_ocurrido_en
+ * @property CarbonImmutable|null $salida_registrado_en
+ */
 #[Fillable(['lote_id', 'area_id', 'orden', 'tarifa_mano_obra_hora', 'costo_maquina_hora'])]
 class LoteArea extends Model
 {
