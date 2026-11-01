@@ -1,5 +1,6 @@
 <?php
 
+use App\Broadcasting\CanalArea;
 use App\Broadcasting\CanalTablero;
 use App\Enums\EstadoLote;
 use App\Enums\Rol;
@@ -325,4 +326,31 @@ it('solo deja escuchar el tablero al administrador', function () {
 
     expect($canal->join($admin))->toBeTrue()
         ->and($canal->join($ventas))->toBeFalse();
+});
+
+it('avisa también en el canal de cada área del recorrido', function () {
+    $lote = loteParaCaptura();
+    $canales = collect((new LoteActualizado($lote))->broadcastOn())->map(fn ($canal) => $canal->name)->all();
+    $esperados = Area::query()->whereIn('codigo', ['MOL', 'FUS', 'COL', 'DES'])->pluck('id')
+        ->map(fn ($id) => "private-area.{$id}")->all();
+
+    expect($canales)->toContain('private-tablero')
+        ->and($canales)->toHaveCount(5)
+        ->and(array_diff($esperados, $canales))->toBeEmpty();
+});
+
+it('deja escuchar un área solo a sus encargados y al administrador', function () {
+    $moldeo = Area::query()->where('codigo', 'MOL')->firstOrFail();
+    $fusion = Area::query()->where('codigo', 'FUS')->firstOrFail();
+    $encargado = User::factory()->create();
+    $encargado->assignRole(Rol::Encargado);
+    $encargado->areas()->sync([$moldeo->id]);
+    $admin = User::factory()->create();
+    $admin->assignRole(Rol::Administrador);
+
+    $canal = new CanalArea;
+
+    expect($canal->join($encargado, $moldeo->id))->toBeTrue()
+        ->and($canal->join($encargado, $fusion->id))->toBeFalse()
+        ->and($canal->join($admin, $fusion->id))->toBeTrue();
 });

@@ -21,7 +21,12 @@ class LoteActualizado implements ShouldBroadcast, ShouldDispatchAfterCommit
      */
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('tablero')];
+        $areas = $this->lote->paradas()->pluck('area_id')->unique()->values();
+
+        return [
+            new PrivateChannel('tablero'),
+            ...$areas->map(fn ($area) => new PrivateChannel("area.{$area}"))->all(),
+        ];
     }
 
     public function broadcastAs(): string

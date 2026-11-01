@@ -278,3 +278,21 @@ it('lista los lotes y muestra el detalle por código', function () {
 
     getJson('/api/lotes/LOT-20261102-99')->assertNotFound();
 });
+
+it('filtra los lotes activos o con movimiento de hoy', function () {
+    entrarALotesComo(Rol::Administrador);
+    $producto = productoDeLote();
+    $datos = ['producto_id' => $producto->id, 'cantidad_objetivo' => 1];
+
+    postJson('/api/lotes', $datos)->assertCreated();
+    postJson('/api/lotes', $datos)->assertCreated();
+    Lote::query()->where('codigo', 'LOT-20261102-01')->update(['estado' => 'terminado', 'updated_at' => now()->subDays(3)]);
+    Lote::query()->where('codigo', 'LOT-20261102-02')->update(['estado' => 'por_confirmar']);
+
+    getJson('/api/lotes?activos=1')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.codigo', 'LOT-20261102-02');
+
+    getJson('/api/lotes')->assertJsonCount(2);
+});
