@@ -39,7 +39,7 @@ services:
 
   queue:
     <<: *api
-    command: php artisan queue:work --tries=3 --max-time=3600
+    command: php artisan queue:work --tries=3 --max-time=3600 --sleep=1
 
 volumes:
   caddy_data:
