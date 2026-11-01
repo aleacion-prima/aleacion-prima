@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
-    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()));
+    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()?->load('areas')));
 
     Route::middleware('role:administrador')->group(function () {
         Route::apiResource('insumos', InsumoController::class);

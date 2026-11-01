@@ -107,6 +107,15 @@ it('lleva el consecutivo del día y lo reinicia al día siguiente', function () 
     postJson('/api/lotes', $datos)->assertJsonPath('codigo', 'LOT-20261103-01');
 });
 
+it('usa la fecha de la planta y no la del servidor', function () {
+    entrarALotesComo(Rol::Administrador);
+    $producto = productoDeLote();
+    travelTo('2026-11-03 01:30:00');
+
+    postJson('/api/lotes', ['producto_id' => $producto->id, 'cantidad_objetivo' => 1])
+        ->assertJsonPath('codigo', 'LOT-20261102-01');
+});
+
 it('clona el recorrido por defecto del producto con las tarifas congeladas', function () {
     entrarALotesComo(Rol::Administrador);
     $producto = productoDeLote();
