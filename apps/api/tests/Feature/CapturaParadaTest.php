@@ -354,3 +354,27 @@ it('deja escuchar un área solo a sus encargados y al administrador', function (
         ->and($canal->join($encargado, $fusion->id))->toBeFalse()
         ->and($canal->join($admin, $fusion->id))->toBeTrue();
 });
+
+it('al encargado solo le lista los lotes que pasan por sus áreas', function () {
+    $conMoldeo = loteParaCaptura();
+    $producto = Producto::factory()->create();
+    $producto->areas()->attach(Area::query()->where('codigo', 'GRA')->value('id'), ['orden' => 1]);
+    $sinMoldeo = Lote::factory()->create(['producto_id' => $producto->id]);
+    $sinMoldeo->paradas()->create([
+        'area_id' => Area::query()->where('codigo', 'GRA')->value('id'),
+        'orden' => 1,
+        'tarifa_mano_obra_hora' => 1,
+        'costo_maquina_hora' => 1,
+    ]);
+
+    capturarComo(Rol::Encargado, ['MOL']);
+    getJson('/api/lotes')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.codigo', $conMoldeo->codigo);
+
+    getJson("/api/lotes/{$sinMoldeo->codigo}")->assertOk();
+
+    capturarComo(Rol::Ventas);
+    getJson('/api/lotes')->assertJsonCount(2);
+});
