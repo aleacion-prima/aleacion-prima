@@ -8,6 +8,7 @@ import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
 import { ESTILOS_ESTADO_LOTE } from '@/catalogos/estadosLote';
 import { estadoDeParada, resumenRecorrido } from '@/composables/recorridoLote';
+import { actualizarEnLista, useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -65,7 +66,13 @@ const abrir = (_evento: Event, lote: Lote): void => {
   void router.push(`/lotes/${lote.codigo}`);
 };
 
-onMounted(cargar);
+const { recientes } = useLotesEnVivo(useCanalesDeLotes(), (evento) =>
+  actualizarEnLista(lotes, evento.codigo),
+);
+
+const claseFila = (lote: Lote): string => (recientes.value.includes(lote.codigo) ? 'destello' : '');
+
+onMounted(() => void cargar());
 </script>
 
 <template>
@@ -108,6 +115,7 @@ onMounted(cargar);
       :loading="cargando"
       :pagination="{ rowsPerPage: 10 }"
       table-header-class="bg-secondary text-white"
+      :table-row-class-fn="claseFila"
       class="tabla-lotes"
       @row-click="abrir"
     >
@@ -148,7 +156,7 @@ onMounted(cargar);
           titulo="No se pudieron cargar los lotes"
           class="full-width"
         >
-          <q-btn flat color="primary" label="Reintentar" @click="cargar" />
+          <q-btn flat color="primary" label="Reintentar" @click="cargar()" />
         </EstadoVacio>
         <EstadoVacio
           v-else

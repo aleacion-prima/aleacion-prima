@@ -5,6 +5,7 @@ import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { formatearMoneda } from '@/composables/formato';
 import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
+import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -78,7 +79,11 @@ const cargar = async (): Promise<void> => {
   lote.value = error.value ? null : data.value;
 };
 
-onMounted(cargar);
+useLotesEnVivo(useCanalesDeLotes(), (evento) => {
+  if (evento.codigo === lote.value?.codigo) void cargar();
+});
+
+onMounted(() => void cargar());
 </script>
 
 <template>
@@ -102,7 +107,7 @@ onMounted(cargar);
       :icono="noEncontrado ? 'search_off' : 'cloud_off'"
       :titulo="noEncontrado ? 'Ese lote no existe' : 'No se pudo cargar el lote'"
     >
-      <q-btn v-if="!noEncontrado" flat color="primary" label="Reintentar" @click="cargar" />
+      <q-btn v-if="!noEncontrado" flat color="primary" label="Reintentar" @click="cargar()" />
     </EstadoVacio>
 
     <div v-else class="entrada-escalonada">
