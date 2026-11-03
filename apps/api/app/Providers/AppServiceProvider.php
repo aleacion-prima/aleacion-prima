@@ -45,6 +45,20 @@ class AppServiceProvider extends ServiceProvider
                 ));
         });
 
+        // Bloqueo por cuenta: 5 intentos fallidos y 15 minutos bloqueada, contando
+        // solo por correo (no por IP), para frenar el adivinado de la respuesta.
+        RateLimiter::for('pregunta-secreta', function (Request $request) {
+            $correo = mb_strtolower($request->string('email')->toString());
+
+            return Limit::perMinutes(15, 5)
+                ->by($correo)
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
         RateLimiter::for('recuperacion', function (Request $request) {
             $correo = mb_strtolower($request->string('email')->toString());
 

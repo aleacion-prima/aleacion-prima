@@ -6,6 +6,7 @@ use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()));
+
+    Route::get('/perfil/pregunta-secreta', [PreguntaSecretaController::class, 'mostrar']);
+    Route::put('/perfil/pregunta-secreta', [PreguntaSecretaController::class, 'guardar']);
 
     Route::middleware('role:administrador')->group(function () {
         Route::apiResource('insumos', InsumoController::class);
