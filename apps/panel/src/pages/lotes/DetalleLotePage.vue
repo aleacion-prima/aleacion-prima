@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
-import { formatearMoneda } from '@/composables/formato';
+import { conPlural, formatearMoneda } from '@/composables/formato';
 import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
 import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
@@ -77,8 +77,14 @@ const piezasActuales = computed(() => {
     .find((parada) => parada.piezas_entregadas !== null || parada.piezas_recibidas !== null);
   if (!conPiezas) return { numero: lote.value?.cantidad_objetivo ?? 0, texto: 'objetivo' };
   return conPiezas.piezas_entregadas !== null
-    ? { numero: conPiezas.piezas_entregadas, texto: 'entregadas' }
-    : { numero: conPiezas.piezas_recibidas ?? 0, texto: 'recibidas' };
+    ? {
+        numero: conPiezas.piezas_entregadas,
+        texto: conPlural(conPiezas.piezas_entregadas, 'entregada', 'entregadas'),
+      }
+    : {
+        numero: conPiezas.piezas_recibidas ?? 0,
+        texto: conPlural(conPiezas.piezas_recibidas ?? 0, 'recibida', 'recibidas'),
+      };
 });
 
 const cargar = async (): Promise<void> => {

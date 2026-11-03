@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { conPlural, piezas } from '@/composables/formato';
 
 interface ErrorApi {
   message?: string;
@@ -81,7 +82,8 @@ const confirmar = async (): Promise<void> => {
         </div>
 
         <div class="text-body2 q-mt-md">
-          {{ terminadas }} piezas entran al inventario de producto terminado.
+          {{ piezas(terminadas) }} {{ conPlural(terminadas, 'entra', 'entran') }} al inventario de
+          producto terminado.
         </div>
       </q-card-section>
 
