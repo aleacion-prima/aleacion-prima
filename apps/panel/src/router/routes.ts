@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
+import { useSesionStore } from '@/stores/sesion';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -14,7 +15,16 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/MainLayout.vue'),
     meta: { requiereSesion: true },
     children: [
-      { path: '', component: () => import('@/pages/tablero/TableroPage.vue') },
+      {
+        path: '',
+        component: () => import('@/pages/tablero/TableroPage.vue'),
+        beforeEnter: () => (useSesionStore().usuario?.rol === 'encargado' ? '/mi-area' : true),
+      },
+      {
+        path: 'mi-area',
+        component: () => import('@/pages/area/MiAreaPage.vue'),
+        meta: { roles: ['encargado'] },
+      },
       {
         path: 'areas',
         component: () => import('@/pages/area/AreasPage.vue'),

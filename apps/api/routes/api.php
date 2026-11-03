@@ -7,6 +7,7 @@ use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
-    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()));
+    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()?->load('areas')));
 
     Route::middleware('role:administrador')->group(function () {
         Route::apiResource('insumos', InsumoController::class);
@@ -49,4 +50,9 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     });
 
     Route::post('/lotes', [LoteController::class, 'store'])->middleware('role:administrador');
+
+    Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
+        Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);
+        Route::post('/lotes/{lote}/paradas/{parada}/salida', [ParadaLoteController::class, 'salida']);
+    });
 });

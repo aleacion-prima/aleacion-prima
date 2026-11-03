@@ -107,6 +107,15 @@ it('lleva el consecutivo del día y lo reinicia al día siguiente', function () 
     postJson('/api/lotes', $datos)->assertJsonPath('codigo', 'LOT-20261103-01');
 });
 
+it('usa la fecha de la planta y no la del servidor', function () {
+    entrarALotesComo(Rol::Administrador);
+    $producto = productoDeLote();
+    travelTo('2026-11-03 01:30:00');
+
+    postJson('/api/lotes', ['producto_id' => $producto->id, 'cantidad_objetivo' => 1])
+        ->assertJsonPath('codigo', 'LOT-20261102-01');
+});
+
 it('clona el recorrido por defecto del producto con las tarifas congeladas', function () {
     entrarALotesComo(Rol::Administrador);
     $producto = productoDeLote();
@@ -268,4 +277,22 @@ it('lista los lotes y muestra el detalle por código', function () {
         ->assertJsonCount(3, 'insumos');
 
     getJson('/api/lotes/LOT-20261102-99')->assertNotFound();
+});
+
+it('filtra los lotes activos o con movimiento de hoy', function () {
+    entrarALotesComo(Rol::Administrador);
+    $producto = productoDeLote();
+    $datos = ['producto_id' => $producto->id, 'cantidad_objetivo' => 1];
+
+    postJson('/api/lotes', $datos)->assertCreated();
+    postJson('/api/lotes', $datos)->assertCreated();
+    Lote::query()->where('codigo', 'LOT-20261102-01')->update(['estado' => 'terminado', 'updated_at' => now()->subDays(3)]);
+    Lote::query()->where('codigo', 'LOT-20261102-02')->update(['estado' => 'por_confirmar']);
+
+    getJson('/api/lotes?activos=1')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.codigo', 'LOT-20261102-02');
+
+    getJson('/api/lotes')->assertJsonCount(2);
 });

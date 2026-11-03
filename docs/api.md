@@ -1,6 +1,6 @@
 # API
 
-Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, y en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes` y `GET /api/lotes/{codigo}`; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
+Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes` y `GET /api/lotes/{codigo}`, y en Captura por área la entrada y la salida de cada parada; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
 
 Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles y el middleware de [autenticacion.md](autenticacion.md) y las operaciones sobre un lote de [flujo-lote.md](flujo-lote.md).
 
@@ -74,7 +74,7 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 
 Middleware: `auth:sanctum`. Rol según la fila. La lectura de un lote (`GET /api/lotes/{codigo}` y su historial) la comparten el panel y la app móvil.
 
-Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas.
+Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy.
 
 | Método | Ruta                            | Rol                                      | RF                                |
 | ------ | ------------------------------- | ---------------------------------------- | --------------------------------- |
@@ -91,6 +91,8 @@ Al crear un lote, el recorrido es opcional: si no se manda, se clona el del prod
 La etiqueta con el código QR (RF-20) la genera el panel con `qrcode.vue` a partir de los datos de `GET /api/lotes/{codigo}`; no necesita ruta propia.
 
 ## Captura por área
+
+La entrada de la parada N exige la salida de la N−1, y la salida exige su entrada. La merma en piezas la calcula la API (`recibidas − entregadas`). El retorno en kg solo se acepta en el área de `planta.area_retorno` (Desmolde) y hasta el metal asignado al lote; genera un movimiento `retorno` sobre `planta.insumo_retorno`. La primera entrada pasa el lote a `en_proceso` y la salida de la última parada a `por_confirmar`. Cada cambio emite `lote.actualizado` por el canal privado `tablero` (solo Administrador), con `codigo`, `estado` y `area_actual_id`. Las respuestas de `GET /api/lotes/{codigo}` marcan por parada la captura tardía, la discrepancia contra la parada anterior y si el usuario puede capturar en ella.
 
 Middleware: `auth:sanctum` y `role:encargado|administrador`. El encargado solo captura en las áreas que tiene asignadas (RF-48); el administrador captura en cualquiera.
 

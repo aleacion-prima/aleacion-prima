@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property EstadoLote $estado
+ */
 #[Fillable(['producto_id', 'pedido_id', 'cantidad_objetivo'])]
 class Lote extends Model
 {
