@@ -45,6 +45,11 @@ const rolEtiqueta = computed(() => ETIQUETAS_ROL[props.rol]);
       <q-btn flat round icon="account_circle" aria-label="Cuenta">
         <q-menu>
           <q-list>
+            <q-item v-close-popup clickable to="/mi-cuenta">
+              <q-item-section avatar><q-icon name="manage_accounts" /></q-item-section>
+              <q-item-section>Mi cuenta</q-item-section>
+            </q-item>
+            <q-separator />
             <q-item v-close-popup clickable @click="emit('salir')">
               <q-item-section avatar><q-icon name="logout" /></q-item-section>
               <q-item-section>Cerrar sesión</q-item-section>

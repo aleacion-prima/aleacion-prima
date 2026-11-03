@@ -64,10 +64,14 @@ it('devuelve la pregunta del usuario al escribir su correo', function () {
         ->assertJsonPath('pregunta', preguntaValida());
 });
 
-it('no da pregunta para un correo sin pregunta o inexistente', function () {
-    postJson('/forgot-password/pregunta', ['email' => 'nadie@ejemplo.com'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('email');
+it('devuelve una pregunta falsa pero estable para un correo inexistente (no revela)', function () {
+    $preguntas = (array) config('preguntas-secretas.preguntas');
+
+    $r1 = postJson('/forgot-password/pregunta', ['email' => 'nadie@ejemplo.com'])->assertOk();
+    $r2 = postJson('/forgot-password/pregunta', ['email' => 'nadie@ejemplo.com'])->assertOk();
+
+    expect($preguntas)->toContain($r1->json('pregunta'));
+    expect($r1->json('pregunta'))->toBe($r2->json('pregunta'));
 });
 
 it('restablece la contraseña con la respuesta correcta, sin importar mayúsculas ni espacios', function () {
@@ -134,4 +138,21 @@ it('rechaza una contraseña que no cumple la política', function () {
         'password' => 'corta',
         'password_confirmation' => 'corta',
     ])->assertUnprocessable()->assertJsonValidationErrors('password');
+});
+
+it('revoca los tokens de la app al restablecer por pregunta', function () {
+    $user = User::factory()->create([
+        'pregunta_secreta' => preguntaValida(),
+        'respuesta_secreta' => Hash::make('firulais'),
+    ]);
+    $user->createToken('movil');
+
+    postJson('/reset-password/pregunta', [
+        'email' => $user->email,
+        'respuesta' => 'firulais',
+        'password' => 'NuevaClave123',
+        'password_confirmation' => 'NuevaClave123',
+    ])->assertOk();
+
+    expect($user->tokens()->count())->toBe(0);
 });

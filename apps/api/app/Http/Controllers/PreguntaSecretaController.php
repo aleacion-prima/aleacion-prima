@@ -50,17 +50,19 @@ class PreguntaSecretaController extends Controller
     }
 
     /**
-     * Guest: dado el correo, devuelve la pregunta del usuario (si tiene una).
-     * Mostrar la pregunta revela que la cuenta existe; es el diseño de este método.
+     * Guest: dado el correo, devuelve la pregunta del usuario. Si el correo no
+     * existe o no tiene pregunta, devuelve una pregunta falsa pero estable, para
+     * no revelar si la cuenta existe.
      */
     public function pregunta(RecuperarPreguntaRequest $request): JsonResponse
     {
-        $usuario = User::query()->where('email', $request->string('email')->toString())->first();
+        $correo = $request->string('email')->toString();
+        $usuario = User::query()->where('email', $correo)->first();
 
+        // Si no hay usuario o no tiene pregunta, se devuelve una pregunta falsa
+        // pero estable para ese correo, para no revelar si la cuenta existe.
         if (! $usuario || ! $usuario->pregunta_secreta) {
-            throw ValidationException::withMessages([
-                'email' => ['No hay una pregunta de seguridad para ese correo.'],
-            ]);
+            return response()->json(['pregunta' => $this->preguntaFalsa($correo)]);
         }
 
         return response()->json(['pregunta' => $usuario->pregunta_secreta]);
@@ -91,8 +93,24 @@ class PreguntaSecretaController extends Controller
             ->setRememberToken(Str::random(60));
         $usuario->save();
 
+        // Al cambiar la contraseña, se revocan los tokens de la app móvil.
+        $usuario->tokens()->delete();
+
         event(new PasswordReset($usuario));
 
         return response()->json(['message' => __('passwords.reset')]);
+    }
+
+    /**
+     * Pregunta estable (siempre la misma para un mismo correo) para los correos
+     * sin pregunta o inexistentes, de modo que la respuesta no revele si la
+     * cuenta existe.
+     */
+    private function preguntaFalsa(string $correo): string
+    {
+        $preguntas = array_values((array) config('preguntas-secretas.preguntas'));
+        $indice = (int) (crc32(mb_strtolower(trim($correo))) % count($preguntas));
+
+        return (string) $preguntas[$indice];
     }
 }

@@ -21,12 +21,11 @@ describe('MenuLateral', () => {
     expect(texto).toContain('Cotizaciones');
   });
 
-  it('al encargado solo le muestra su área, lotes, notificaciones y su cuenta', () => {
+  it('al encargado solo le muestra su área, lotes y notificaciones', () => {
     const wrapper = montar('encargado');
 
     expect(wrapper.text()).toContain('Mi área');
-    expect(wrapper.text()).toContain('Mi cuenta');
     expect(wrapper.text()).not.toContain('Catálogos');
-    expect(wrapper.findAll('.q-item')).toHaveLength(4);
+    expect(wrapper.findAll('.q-item')).toHaveLength(3);
   });
 });
