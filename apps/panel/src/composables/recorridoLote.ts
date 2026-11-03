@@ -1,5 +1,6 @@
 import type { Lote, LoteParada } from '@aleacion-prima/types';
 import type { EstadoParada, ParadaLote } from '@/catalogos/areas';
+import { conPlural, pzas } from './formato';
 
 export const estadoDeParada = (parada: LoteParada): EstadoParada => {
   if (parada.salida_ocurrido_en) return 'terminada';
@@ -25,7 +26,7 @@ const tiempoDeParada = (parada: LoteParada): string => {
 const avisoDeParada = (parada: LoteParada): string => {
   const avisos: string[] = [];
   if (parada.discrepancia !== null) {
-    avisos.push(`Diferencia ${parada.discrepancia > 0 ? '+' : ''}${parada.discrepancia} pzas`);
+    avisos.push(`Diferencia ${parada.discrepancia > 0 ? '+' : ''}${pzas(parada.discrepancia)}`);
   }
   if (parada.entrada_tardia || parada.salida_tardia) avisos.push('Captura tardía');
   return avisos.join(' · ');
@@ -51,7 +52,7 @@ export const paradasDeLote = (lote: Lote): ParadaLote[] =>
         estado,
         tiempo: tiempoDeParada(parada),
         aviso: 'Lote cancelado',
-        piezas: `${parada.piezas_recibidas ?? 0} pzas al cancelar`,
+        piezas: `${pzas(parada.piezas_recibidas ?? 0)} al cancelar`,
       };
     }
     return {
@@ -62,9 +63,9 @@ export const paradasDeLote = (lote: Lote): ParadaLote[] =>
       aviso: avisoDeParada(parada),
       piezas:
         parada.piezas_entregadas !== null
-          ? `${parada.piezas_entregadas} pzas entregadas`
+          ? `${pzas(parada.piezas_entregadas)} ${conPlural(parada.piezas_entregadas, 'entregada', 'entregadas')}`
           : parada.piezas_recibidas !== null
-            ? `${parada.piezas_recibidas} pzas recibidas`
+            ? `${pzas(parada.piezas_recibidas)} ${conPlural(parada.piezas_recibidas, 'recibida', 'recibidas')}`
             : '',
     };
   });

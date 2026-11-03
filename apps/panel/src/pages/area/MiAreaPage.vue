@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useIntervalFn, useNow } from '@vueuse/core';
 import type { Lote, LoteParada } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { conPlural, piezas } from '@/composables/formato';
 import { useSesionStore } from '@/stores/sesion';
 import { iconoArea } from '@/catalogos/areas';
 import { lotesEnArea, lotesPorLlegar, movimientosDeHoy } from '@/composables/miArea';
@@ -80,7 +81,7 @@ const detalleAhora = (lote: Lote, parada: LoteParada): string =>
   [
     `Entró a las ${hora(parada.entrada_ocurrido_en)}`,
     transcurrido(parada.entrada_ocurrido_en),
-    `${parada.piezas_recibidas ?? 0} piezas recibidas`,
+    `${piezas(parada.piezas_recibidas ?? 0)} ${conPlural(parada.piezas_recibidas ?? 0, 'recibida', 'recibidas')}`,
     `parada ${parada.orden} de ${lote.paradas.length}`,
   ].join(' · ');
 
@@ -89,11 +90,11 @@ const detallePorLlegar = (
   anterior: LoteParada | undefined,
   disponible: boolean,
 ): string => {
-  if (!anterior) return `Lote nuevo · ${lote.cantidad_objetivo} piezas`;
+  if (!anterior) return `Lote nuevo · ${piezas(lote.cantidad_objetivo)}`;
   if (!disponible && !anterior.salida_ocurrido_en) {
-    return `En ${anterior.area.nombre} desde las ${hora(anterior.entrada_ocurrido_en)} · ${anterior.piezas_recibidas ?? 0} piezas`;
+    return `En ${anterior.area.nombre} desde las ${hora(anterior.entrada_ocurrido_en)} · ${piezas(anterior.piezas_recibidas ?? 0)}`;
   }
-  return `${anterior.area.nombre} entregó ${anterior.piezas_entregadas ?? 0} piezas`;
+  return `${anterior.area.nombre} entregó ${piezas(anterior.piezas_entregadas ?? 0)}`;
 };
 
 const cargar = async (): Promise<void> => {
