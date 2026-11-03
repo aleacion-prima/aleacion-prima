@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Lote, LoteParada } from '@aleacion-prima/types';
-import { estadoDeParada, paradasDeLote, resumenRecorrido, siguienteCaptura } from './recorridoLote';
+import {
+  estadoDeParada,
+  estadoVisual,
+  paradasDeLote,
+  resumenRecorrido,
+  siguienteCaptura,
+} from './recorridoLote';
 
 const parada = (
   orden: number,
@@ -114,5 +120,40 @@ describe('recorridoLote', () => {
     });
 
     expect(siguienteCaptura(lote(enFusion, 'por_confirmar'))).toBeNull();
+  });
+
+  it('distingue la parada donde se canceló y las que ya no se harán', () => {
+    const cancelado = {
+      ...lote(
+        [
+          parada(1, 'MOL', 'Moldeo', terminada),
+          parada(2, 'FUS', 'Fusión', {
+            ...enCurso,
+            salida_ocurrido_en: '2026-11-02T11:00:00Z',
+            piezas_entregadas: 0,
+          }),
+          parada(3, 'COL', 'Colada'),
+        ],
+        'cancelado',
+      ),
+      cancelado_en: '2026-11-02T11:00:00Z',
+    };
+
+    expect(cancelado.paradas.map((actual) => estadoVisual(cancelado, actual))).toEqual([
+      'terminada',
+      'cancelada',
+      'omitida',
+    ]);
+    expect(paradasDeLote(cancelado)[1]).toMatchObject({
+      aviso: 'Lote cancelado',
+      piezas: '20 pzas al cancelar',
+    });
+    expect(resumenRecorrido(cancelado)).toBe('Cancelado en Fusión · 1 de 3');
+    expect(
+      resumenRecorrido({
+        ...lote([parada(1, 'MOL', 'Moldeo')], 'cancelado'),
+        cancelado_en: '2026-11-02T08:00:00Z',
+      }),
+    ).toBe('Cancelado sin iniciar · 0 de 1');
   });
 });

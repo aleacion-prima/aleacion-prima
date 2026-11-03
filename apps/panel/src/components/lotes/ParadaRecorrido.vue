@@ -19,10 +19,15 @@ withDefaults(
 <template>
   <div class="parada column q-pa-md q-gutter-y-xs" :class="`parada--${estado}`">
     <div class="row items-center no-wrap q-gutter-x-sm">
-      <q-badge :color="estado === 'pendiente' ? 'grey-7' : 'dark'" rounded :label="orden" />
+      <q-badge
+        :color="estado === 'pendiente' || estado === 'omitida' ? 'grey-7' : 'dark'"
+        rounded
+        :label="orden"
+      />
       <span class="codigo">{{ codigo }}</span>
       <q-space />
       <q-icon v-if="estado === 'terminada'" name="check" color="positive" size="16px" />
+      <q-icon v-else-if="estado === 'cancelada'" name="block" color="negative" size="16px" />
       <span v-else-if="estado === 'en_curso'" class="parada__pulso" />
       <q-icon
         v-else-if="estado === 'planeada' && obligatoria"
@@ -36,7 +41,7 @@ withDefaults(
       <q-avatar
         size="32px"
         :color="estado === 'en_curso' ? 'orange-1' : 'grey-3'"
-        :text-color="estado === 'pendiente' ? 'grey-7' : 'dark'"
+        :text-color="estado === 'pendiente' || estado === 'omitida' ? 'grey-7' : 'dark'"
         :icon="iconoArea(codigo)"
         font-size="20px"
         class="parada__icono"
@@ -56,7 +61,8 @@ withDefaults(
     <div v-if="piezas" class="text-caption text-secundario">{{ piezas }}</div>
     <div
       v-if="aviso"
-      class="row items-start no-wrap bg-warning text-white text-caption text-weight-medium rounded-borders q-px-sm q-py-xs q-mt-sm"
+      :class="estado === 'cancelada' ? 'bg-negative' : 'bg-warning'"
+      class="row items-start no-wrap text-white text-caption text-weight-medium rounded-borders q-px-sm q-py-xs q-mt-sm"
     >
       <q-icon name="warning" size="14px" class="q-mr-xs q-mt-xs" />
       <span>{{ aviso }}</span>
@@ -96,6 +102,21 @@ withDefaults(
     border-color: $accent;
     background: rgba($accent, 0.06);
     box-shadow: 0 0 0 4px rgba($accent, 0.25);
+  }
+
+  &--cancelada {
+    border-color: $negative;
+    background: rgba($negative, 0.04);
+  }
+
+  &--omitida {
+    border-style: dashed;
+    background: $blanco-humo;
+    opacity: 0.55;
+
+    .text-weight-medium {
+      text-decoration: line-through;
+    }
   }
 
   &--pendiente {
