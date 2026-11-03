@@ -36,6 +36,10 @@ const lote = (
   producto: { id: 1, codigo: 'DIS-FRE-G', nombre: 'Disco de freno' },
   area_actual: null,
   paradas,
+  confirmado_en: null,
+  cancelado_en: null,
+  motivo_cancelacion: null,
+  admite_devolucion: false,
   created_at: '2026-11-02T06:00:00Z',
 });
 
