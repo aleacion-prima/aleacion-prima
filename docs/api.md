@@ -24,6 +24,8 @@ Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en
 | `POST` | `/api/movil/login`     | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                    |
 | `POST` | `/logout`              | Todos                                         | RF-05                           |
 | `GET`  | `/api/user`            | Todos                                         | RF-03 (devuelve rol y `activo`) |
+| `POST` | `/forgot-password`     | Todos (sin sesión)                            | T-22                            |
+| `POST` | `/reset-password`      | Todos (sin sesión)                            | T-22                            |
 
 ## Catálogos
 

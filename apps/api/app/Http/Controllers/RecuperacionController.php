@@ -39,6 +39,9 @@ class RecuperacionController extends Controller
                     ->setRememberToken(Str::random(60));
                 $usuario->save();
 
+                // Al cambiar la contraseña, se revocan los tokens de la app móvil.
+                $usuario->tokens()->delete();
+
                 event(new PasswordReset($usuario));
             },
         );
@@ -47,7 +50,8 @@ class RecuperacionController extends Controller
             return response()->json(['message' => __('passwords.reset')]);
         }
 
-        // Token inválido o caducado, o correo no encontrado.
-        throw ValidationException::withMessages(['email' => [__($estado)]]);
+        // Respuesta uniforme para token inválido/caducado Y correo inexistente,
+        // para no revelar si la cuenta existe.
+        throw ValidationException::withMessages(['email' => [__('passwords.token')]]);
     }
 }

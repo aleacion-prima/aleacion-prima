@@ -110,3 +110,29 @@ it('limita los intentos de recuperación como el login', function () {
 
     postJson('/forgot-password', ['email' => $user->email])->assertStatus(429);
 });
+
+it('no revela si el correo existe al restablecer (mismo error que token inválido)', function () {
+    postJson('/reset-password', [
+        'token' => 'cualquier-token',
+        'email' => 'nadie@ejemplo.com',
+        'password' => 'NuevaClave123',
+        'password_confirmation' => 'NuevaClave123',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('email')
+        ->assertJsonPath('errors.email.0', __('passwords.token'));
+});
+
+it('revoca los tokens de la app al restablecer la contraseña', function () {
+    $user = User::factory()->create();
+    $user->createToken('movil');
+    $token = Password::createToken($user);
+
+    postJson('/reset-password', [
+        'token' => $token,
+        'email' => $user->email,
+        'password' => 'NuevaClave123',
+        'password_confirmation' => 'NuevaClave123',
+    ])->assertOk();
+
+    expect($user->tokens()->count())->toBe(0);
+});
