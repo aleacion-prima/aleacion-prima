@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { QTableColumn } from 'quasar';
 import type { EstadoLote, Lote } from '@aleacion-prima/types';
@@ -13,6 +13,7 @@ import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
+import PaginacionTabla from '@/components/comunes/PaginacionTabla.vue';
 
 const router = useRouter();
 const sesion = useSesionStore();
@@ -21,6 +22,11 @@ const lotes = ref<Lote[]>([]);
 const cargando = ref(true);
 const error = ref(false);
 const pestana = ref<EstadoLote | 'todos'>('todos');
+const paginacion = ref({ page: 1, rowsPerPage: 10 });
+
+watch(pestana, () => {
+  paginacion.value = { ...paginacion.value, page: 1 };
+});
 
 const columnas: QTableColumn<Lote>[] = [
   { name: 'codigo', label: 'Código', field: 'codigo', align: 'left' },
@@ -113,8 +119,7 @@ onMounted(() => void cargar());
       :columns="columnas"
       row-key="id"
       :loading="cargando"
-      :pagination="{ rowsPerPage: 10 }"
-      table-header-class="bg-secondary text-white"
+      v-model:pagination="paginacion"
       :table-row-class-fn="claseFila"
       class="tabla-lotes"
       @row-click="abrir"
@@ -147,6 +152,15 @@ onMounted(() => void cargar());
         <q-td>
           <ChipEstado :estado="row.estado" />
         </q-td>
+      </template>
+
+      <template #bottom>
+        <PaginacionTabla
+          v-model:pagina="paginacion.page"
+          :por-pagina="paginacion.rowsPerPage"
+          :total="filas.length"
+          sustantivo="lotes"
+        />
       </template>
 
       <template #no-data>
