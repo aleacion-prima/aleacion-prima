@@ -34,7 +34,7 @@ export const useApi = createFetch({
 });
 
 export const peticionSesion = async (
-  ruta: '/login' | '/logout',
+  ruta: '/login' | '/logout' | '/forgot-password' | '/reset-password',
   cuerpo?: object,
 ): Promise<Response> =>
   fetch(`${API_URL}${ruta}`, {
