@@ -4,12 +4,17 @@ import { iconoArea, type EstadoParada } from '@/catalogos/areas';
 
 const props = defineProps<{ area: string; estado: EstadoParada }>();
 
-const color = computed(() =>
-  props.estado === 'terminada' ? 'positive' : props.estado === 'en_curso' ? 'accent' : 'grey-3',
-);
-const colorIcono = computed(() =>
-  props.estado === 'terminada' ? 'white' : props.estado === 'en_curso' ? 'dark' : 'grey-7',
-);
+const COLORES: Record<EstadoParada, { fondo: string; icono: string }> = {
+  terminada: { fondo: 'positive', icono: 'white' },
+  en_curso: { fondo: 'accent', icono: 'dark' },
+  cancelada: { fondo: 'negative', icono: 'white' },
+  pendiente: { fondo: 'grey-3', icono: 'grey-7' },
+  planeada: { fondo: 'grey-3', icono: 'grey-7' },
+  omitida: { fondo: 'grey-2', icono: 'grey-5' },
+};
+
+const color = computed(() => COLORES[props.estado].fondo);
+const colorIcono = computed(() => COLORES[props.estado].icono);
 </script>
 
 <template>

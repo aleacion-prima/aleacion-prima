@@ -7,7 +7,7 @@ import { ESTADOS_LOTE } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
 import { ESTILOS_ESTADO_LOTE } from '@/catalogos/estadosLote';
-import { estadoDeParada, resumenRecorrido } from '@/composables/recorridoLote';
+import { estadoVisual, resumenRecorrido } from '@/composables/recorridoLote';
 import { actualizarEnLista, useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
@@ -136,7 +136,7 @@ onMounted(() => void cargar());
               v-for="parada in (row as Lote).paradas"
               :key="parada.id"
               :area="parada.area.codigo"
-              :estado="estadoDeParada(parada)"
+              :estado="estadoVisual(row, parada)"
             />
             <span class="text-caption text-secundario q-ml-sm">{{ resumenRecorrido(row) }}</span>
           </div>
