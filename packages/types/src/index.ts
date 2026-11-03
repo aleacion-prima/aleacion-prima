@@ -164,7 +164,21 @@ export interface Lote {
   costo_por_pieza?: string | null;
   paradas: LoteParada[];
   insumos?: LoteInsumoAsignado[];
+  confirmado_en: string | null;
+  cancelado_en: string | null;
+  motivo_cancelacion: string | null;
+  admite_devolucion: boolean;
   created_at: string;
+}
+
+export interface DevolucionInsumo {
+  insumo_id: number;
+  cantidad: number;
+}
+
+export interface CancelarLote {
+  motivo: string;
+  devoluciones?: DevolucionInsumo[];
 }
 
 export interface CrearLote {

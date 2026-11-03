@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
@@ -11,11 +11,23 @@ import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
 import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
+import DialogoConfirmarCierre from '@/components/lotes/DialogoConfirmarCierre.vue';
+import DialogoCancelarLote from '@/components/lotes/DialogoCancelarLote.vue';
+import { useSesionStore } from '@/stores/sesion';
 
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
 const capturando = ref(false);
+const confirmando = ref(false);
+const cancelando = ref(false);
+const sesion = useSesionStore();
+
+const esAdmin = computed(() => sesion.usuario?.rol === 'administrador');
+const puedeConfirmar = computed(() => esAdmin.value && lote.value?.estado === 'por_confirmar');
+const puedeCancelar = computed(
+  () => esAdmin.value && (lote.value?.estado === 'creado' || lote.value?.estado === 'en_proceso'),
+);
 
 const captura = computed(() => {
   if (!lote.value) return null;
@@ -83,7 +95,15 @@ useLotesEnVivo(useCanalesDeLotes(), (evento) => {
   if (evento.codigo === lote.value?.codigo) void cargar();
 });
 
-onMounted(() => void cargar());
+watch(
+  () => route.params.codigo,
+  () => {
+    cargando.value = true;
+    lote.value = null;
+    void cargar();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -116,24 +136,55 @@ onMounted(() => void cargar());
           <h1 class="text-h4 q-my-none codigo">{{ lote.codigo }}</h1>
           <ChipEstado :key="lote.estado" :estado="lote.estado" class="rebotar" />
         </div>
-        <transition name="pagina" mode="out-in">
+        <div class="row items-center q-gutter-sm">
           <q-btn
-            v-if="captura"
-            :key="etiquetaCaptura"
+            v-if="puedeCancelar"
+            outline
+            no-caps
+            color="negative"
+            icon="block"
+            label="Cancelar lote"
+            @click="cancelando = true"
+          />
+          <q-btn
+            v-if="puedeConfirmar"
             unelevated
             no-caps
             color="primary"
-            :icon="captura.tipo === 'entrada' ? 'login' : 'check'"
-            :label="etiquetaCaptura"
-            @click="capturando = true"
+            icon="task_alt"
+            label="Confirmar cierre"
+            @click="confirmando = true"
           />
-        </transition>
+          <transition name="pagina" mode="out-in">
+            <q-btn
+              v-if="captura"
+              :key="etiquetaCaptura"
+              unelevated
+              no-caps
+              color="primary"
+              :icon="captura.tipo === 'entrada' ? 'login' : 'check'"
+              :label="etiquetaCaptura"
+              @click="capturando = true"
+            />
+          </transition>
+        </div>
       </div>
       <div class="text-secundario q-mb-lg">
         {{ lote.producto.nombre }} · <span class="codigo">{{ lote.producto.codigo }}</span> ·
         {{ lote.cantidad_objetivo }} piezas · creado el
         {{ fecha.format(new Date(lote.created_at)) }}
+        <template v-if="lote.confirmado_en">
+          · terminado el {{ fecha.format(new Date(lote.confirmado_en)) }}
+        </template>
       </div>
+      <q-banner
+        v-if="lote.estado === 'cancelado' && lote.cancelado_en"
+        dense
+        rounded
+        class="bg-red-1 text-negative q-mb-lg"
+      >
+        Cancelado el {{ fecha.format(new Date(lote.cancelado_en)) }} · {{ lote.motivo_cancelacion }}
+      </q-banner>
 
       <div class="row q-col-gutter-md q-mb-md entrada-escalonada">
         <div class="col-12 col-sm-6 col-md-4">
@@ -209,6 +260,14 @@ onMounted(() => void cargar());
         </q-card-section>
       </q-card>
     </div>
+
+    <DialogoConfirmarCierre
+      v-if="lote"
+      v-model="confirmando"
+      :lote="lote"
+      @guardado="lote = $event"
+    />
+    <DialogoCancelarLote v-if="lote" v-model="cancelando" :lote="lote" @guardado="lote = $event" />
 
     <DialogoCaptura
       v-if="lote && captura"
