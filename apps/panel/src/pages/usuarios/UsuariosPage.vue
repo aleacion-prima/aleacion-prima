@@ -5,6 +5,7 @@ import type { AreaAsignada, Rol, Usuario } from '@aleacion-prima/types';
 import { ROLES } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
+import { ETIQUETAS_ROL } from '@/catalogos/roles';
 
 interface FormularioUsuario {
   name: string;
@@ -170,7 +171,7 @@ onMounted(cargar);
     >
       <template #body-cell-rol="{ row }">
         <q-td
-          ><q-badge color="secondary">{{ row.rol }}</q-badge></q-td
+          ><q-badge color="secondary">{{ ETIQUETAS_ROL[row.rol as Rol] ?? row.rol }}</q-badge></q-td
         >
       </template>
       <template #body-cell-activo="{ row }">
