@@ -48,7 +48,7 @@ const salir = async (): Promise<void> => {
 
     <q-page-container>
       <router-view #default="{ Component }">
-        <transition name="q-transition--fade" mode="out-in">
+        <transition name="pagina" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
