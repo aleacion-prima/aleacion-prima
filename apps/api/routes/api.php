@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\CierreLoteController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
@@ -49,7 +50,11 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('/lotes/{lote}', [LoteController::class, 'show']);
     });
 
-    Route::post('/lotes', [LoteController::class, 'store'])->middleware('role:administrador');
+    Route::middleware('role:administrador')->group(function () {
+        Route::post('/lotes', [LoteController::class, 'store']);
+        Route::post('/lotes/{lote}/confirmar', [CierreLoteController::class, 'confirmar']);
+        Route::post('/lotes/{lote}/cancelar', [CierreLoteController::class, 'cancelar']);
+    });
 
     Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
         Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);

@@ -8,6 +8,7 @@ import type {
   RegistrarSalidaParada,
 } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { piezas as textoPiezas, pzas } from '@/composables/formato';
 
 interface ErrorApi {
   message?: string;
@@ -55,11 +56,11 @@ const titulo = computed(() =>
 const subtitulo = computed(() => {
   const posicion = `Parada ${props.parada.orden} de ${props.lote.paradas.length}`;
   if (props.tipo === 'salida' && props.parada.entrada_ocurrido_en) {
-    return `${posicion} · entró el ${fecha.format(new Date(props.parada.entrada_ocurrido_en))} · ${props.parada.piezas_recibidas ?? 0} piezas`;
+    return `${posicion} · entró el ${fecha.format(new Date(props.parada.entrada_ocurrido_en))} · ${textoPiezas(props.parada.piezas_recibidas ?? 0)}`;
   }
   return anterior.value
-    ? `${posicion} · ${anterior.value.area.nombre} entregó ${esperado.value} piezas`
-    : `${posicion} · ${props.lote.cantidad_objetivo} piezas objetivo`;
+    ? `${posicion} · ${anterior.value.area.nombre} entregó ${textoPiezas(esperado.value)}`
+    : `${posicion} · ${textoPiezas(props.lote.cantidad_objetivo)} objetivo`;
 });
 
 const diferencia = computed(() =>
@@ -177,7 +178,7 @@ const guardar = async (): Promise<void> => {
               v-if="diferencia !== 0"
               class="text-caption text-warning text-weight-medium q-mt-xs diferencia"
             >
-              Diferencia: {{ diferencia > 0 ? '+' : '' }}{{ diferencia }} pzas
+              Diferencia: {{ diferencia > 0 ? '+' : '' }}{{ pzas(diferencia) }}
             </div>
           </div>
 

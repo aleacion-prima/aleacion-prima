@@ -1,5 +1,6 @@
 import type { Lote, LoteParada } from '@aleacion-prima/types';
 import type { EstadoParada, ParadaLote } from '@/catalogos/areas';
+import { conPlural, pzas } from './formato';
 
 export const estadoDeParada = (parada: LoteParada): EstadoParada => {
   if (parada.salida_ocurrido_en) return 'terminada';
@@ -25,26 +26,49 @@ const tiempoDeParada = (parada: LoteParada): string => {
 const avisoDeParada = (parada: LoteParada): string => {
   const avisos: string[] = [];
   if (parada.discrepancia !== null) {
-    avisos.push(`Diferencia ${parada.discrepancia > 0 ? '+' : ''}${parada.discrepancia} pzas`);
+    avisos.push(`Diferencia ${parada.discrepancia > 0 ? '+' : ''}${pzas(parada.discrepancia)}`);
   }
   if (parada.entrada_tardia || parada.salida_tardia) avisos.push('Captura tardía');
   return avisos.join(' · ');
 };
 
+export const estadoVisual = (lote: Lote, parada: LoteParada): EstadoParada => {
+  if (lote.estado === 'cancelado') {
+    if (parada.salida_ocurrido_en && parada.salida_ocurrido_en === lote.cancelado_en) {
+      return 'cancelada';
+    }
+    if (!parada.entrada_ocurrido_en) return 'omitida';
+  }
+  return estadoDeParada(parada);
+};
+
 export const paradasDeLote = (lote: Lote): ParadaLote[] =>
-  lote.paradas.map((parada) => ({
-    codigo: parada.area.codigo,
-    nombre: parada.area.nombre,
-    estado: estadoDeParada(parada),
-    tiempo: tiempoDeParada(parada),
-    aviso: avisoDeParada(parada),
-    piezas:
-      parada.piezas_entregadas !== null
-        ? `${parada.piezas_entregadas} pzas entregadas`
-        : parada.piezas_recibidas !== null
-          ? `${parada.piezas_recibidas} pzas recibidas`
-          : '',
-  }));
+  lote.paradas.map((parada) => {
+    const estado = estadoVisual(lote, parada);
+    if (estado === 'cancelada') {
+      return {
+        codigo: parada.area.codigo,
+        nombre: parada.area.nombre,
+        estado,
+        tiempo: tiempoDeParada(parada),
+        aviso: 'Lote cancelado',
+        piezas: `${pzas(parada.piezas_recibidas ?? 0)} al cancelar`,
+      };
+    }
+    return {
+      codigo: parada.area.codigo,
+      nombre: parada.area.nombre,
+      estado,
+      tiempo: tiempoDeParada(parada),
+      aviso: avisoDeParada(parada),
+      piezas:
+        parada.piezas_entregadas !== null
+          ? `${pzas(parada.piezas_entregadas)} ${conPlural(parada.piezas_entregadas, 'entregada', 'entregadas')}`
+          : parada.piezas_recibidas !== null
+            ? `${pzas(parada.piezas_recibidas)} ${conPlural(parada.piezas_recibidas, 'recibida', 'recibidas')}`
+            : '',
+    };
+  });
 
 export interface SiguienteCaptura {
   parada: LoteParada;
@@ -67,8 +91,14 @@ export const resumenRecorrido = (lote: Lote): string => {
   const enCurso = lote.paradas.find((parada) => estadoDeParada(parada) === 'en_curso');
 
   if (lote.estado === 'cancelado') {
-    const ultima = enCurso ?? lote.paradas[Math.max(terminadas - 1, 0)];
-    return `Cancelado en ${ultima?.area.nombre ?? 'creación'} · ${terminadas} de ${total}`;
+    const interrumpida = lote.paradas.find((parada) => estadoVisual(lote, parada) === 'cancelada');
+    const completadas = lote.paradas.filter(
+      (parada) => estadoVisual(lote, parada) === 'terminada',
+    ).length;
+    const donde = interrumpida ?? lote.paradas[completadas - 1];
+    return donde
+      ? `Cancelado en ${donde.area.nombre} · ${completadas} de ${total}`
+      : `Cancelado sin iniciar · 0 de ${total}`;
   }
   if (enCurso) return `${enCurso.area.nombre} · ${terminadas} de ${total}`;
   if (terminadas === 0) return `Sin iniciar · 0 de ${total}`;
