@@ -256,7 +256,7 @@ onMounted(cargar);
             <q-card-section>
               <h2 class="text-h6 q-mt-none q-mb-sm">Movimientos de hoy en {{ area?.nombre }}</h2>
               <q-markup-table v-if="movimientos.length" flat separator="horizontal">
-                <thead class="bg-secondary text-white">
+                <thead>
                   <tr>
                     <th class="text-left">Hora</th>
                     <th class="text-left">Evento</th>

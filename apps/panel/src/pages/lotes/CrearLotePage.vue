@@ -241,7 +241,7 @@ onMounted(cargar);
             <q-card-section>
               <h2 class="text-h6 q-mt-none q-mb-md">Insumos que se asignarán</h2>
               <q-markup-table flat separator="horizontal">
-                <thead class="bg-secondary text-white">
+                <thead>
                   <tr>
                     <th class="text-left">Código</th>
                     <th class="text-left">Insumo</th>
