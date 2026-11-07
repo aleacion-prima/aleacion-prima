@@ -5,6 +5,7 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,12 +16,16 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  TAG: ${{ github.event.workflow_run.head_sha }}
+  # workflow_run: usa el head_sha del CI. workflow_dispatch (botón): cae a github.sha.
+  TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   build:
     name: Construir y publicar imágenes
-    if: github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_ENABLED == 'true'
+    if: >-
+      (github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success') &&
+      vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     outputs:
       owner: ${{ steps.owner.outputs.name }}
