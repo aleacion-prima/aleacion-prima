@@ -23,7 +23,7 @@ jobs:
   build:
     name: Construir y publicar imágenes
     if: >-
-      (github.event_name == 'workflow_dispatch' ||
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       github.event.workflow_run.conclusion == 'success') &&
       vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
