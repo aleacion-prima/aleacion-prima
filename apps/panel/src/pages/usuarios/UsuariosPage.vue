@@ -3,9 +3,9 @@ import { onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import type { AreaAsignada, Rol, Usuario } from '@aleacion-prima/types';
 import { ROLES } from '@aleacion-prima/types';
+import { etiquetaRol } from '@/catalogos/roles';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
-import { ETIQUETAS_ROL } from '@/catalogos/roles';
 
 interface FormularioUsuario {
   name: string;
@@ -13,6 +13,7 @@ interface FormularioUsuario {
   password: string;
   rol: Rol;
   area_ids: number[];
+  activo: boolean;
 }
 
 const $q = useQuasar();
@@ -28,7 +29,17 @@ const formulario = reactive<FormularioUsuario>({
   password: '',
   rol: 'encargado',
   area_ids: [],
+  activo: true,
 });
+
+const esUnoMismo = (usuario: Usuario | null): boolean =>
+  usuario !== null && usuario.id === sesion.usuario?.id;
+
+const areasAsignadas = (usuario: Usuario): string => {
+  if (!usuario.areas?.length) return '—';
+
+  return usuario.areas.map((area) => area.nombre).join(', ');
+};
 
 const cargar = async (): Promise<void> => {
   cargando.value = true;
@@ -54,6 +65,7 @@ const abrir = (usuario?: Usuario): void => {
   formulario.password = '';
   formulario.rol = usuario?.rol ?? 'encargado';
   formulario.area_ids = usuario?.areas?.map((area) => area.id) ?? [];
+  formulario.activo = usuario?.activo ?? true;
   dialogo.value = true;
 };
 
@@ -65,6 +77,7 @@ const guardar = async (): Promise<void> => {
     ...(formulario.password ? { password: formulario.password } : {}),
     rol: formulario.rol,
     area_ids: formulario.rol === 'encargado' ? formulario.area_ids : [],
+    ...(esEdicion && !esUnoMismo(editando.value) ? { activo: formulario.activo } : {}),
   };
 
   const { error } = esEdicion
@@ -82,47 +95,6 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Usuario actualizado' : 'Usuario creado' });
 };
 
-const esUnoMismo = (usuario: Usuario): boolean => usuario.id === sesion.usuario?.id;
-
-const alternarActivo = async (usuario: Usuario): Promise<void> => {
-  const { error } = await useApi(`/usuarios/${usuario.id}`)
-    .put({
-      name: usuario.name,
-      email: usuario.email,
-      rol: usuario.rol,
-      area_ids: usuario.areas?.map((area) => area.id) ?? [],
-      activo: !usuario.activo,
-    })
-    .json<Usuario>();
-
-  if (error.value) {
-    $q.notify({ type: 'negative', message: 'No se pudo cambiar el estado del usuario' });
-    return;
-  }
-  await cargar();
-  $q.notify({
-    type: 'positive',
-    message: usuario.activo ? 'Usuario desactivado' : 'Usuario activado',
-  });
-};
-
-const alternarEstado = (usuario: Usuario): void => {
-  if (esUnoMismo(usuario)) {
-    $q.notify({ type: 'warning', message: 'No puedes desactivarte a ti mismo' });
-    return;
-  }
-
-  const activar = !usuario.activo;
-  $q.dialog({
-    title: activar ? 'Activar usuario' : 'Desactivar usuario',
-    message: activar ? `¿Activar a ${usuario.name}?` : `¿Desactivar a ${usuario.name}?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    void alternarActivo(usuario);
-  });
-};
-
 const eliminarConfirmado = async (usuario: Usuario): Promise<void> => {
   const { error } = await useApi(`/usuarios/${usuario.id}`).delete().text();
 
@@ -130,6 +102,7 @@ const eliminarConfirmado = async (usuario: Usuario): Promise<void> => {
     $q.notify({ type: 'negative', message: 'No se pudo eliminar al usuario' });
     return;
   }
+  dialogo.value = false;
   await cargar();
   $q.notify({ type: 'positive', message: 'Usuario eliminado' });
 };
@@ -150,63 +123,64 @@ onMounted(cargar);
 
 <template>
   <q-page padding>
-    <div class="row items-center justify-between q-mb-lg">
-      <div class="text-h4">Usuarios y roles</div>
-      <q-btn color="primary" unelevated icon="add" label="Nuevo usuario" @click="abrir()" />
+    <div class="row items-start justify-between q-mb-lg">
+      <div>
+        <div class="text-h4">Usuarios y roles</div>
+        <div class="text-secundario q-mt-xs">
+          Administra las cuentas de acceso, los roles y las áreas asignadas.
+        </div>
+      </div>
+      <q-btn unelevated no-caps color="primary" icon="add" label="Nuevo usuario" @click="abrir()" />
     </div>
 
-    <q-table
-      flat
-      bordered
-      :rows="usuarios"
-      :columns="[
-        { name: 'name', label: 'Nombre', field: 'name', align: 'left' },
-        { name: 'email', label: 'Correo', field: 'email', align: 'left' },
-        { name: 'rol', label: 'Rol', field: 'rol', align: 'left' },
-        { name: 'activo', label: 'Estado', field: 'activo', align: 'left' },
-        { name: 'acciones', label: '', field: 'id', align: 'right' },
-      ]"
-      row-key="id"
-      :loading="cargando"
-    >
-      <template #body-cell-rol="{ row }">
-        <q-td
-          ><q-badge color="secondary">{{ ETIQUETAS_ROL[row.rol as Rol] ?? row.rol }}</q-badge></q-td
-        >
-      </template>
-      <template #body-cell-activo="{ row }">
-        <q-td
-          ><q-badge :color="row.activo ? 'positive' : 'grey'">{{
-            row.activo ? 'Activo' : 'Inactivo'
-          }}</q-badge></q-td
-        >
-      </template>
-      <template #body-cell-acciones="{ row }">
-        <q-td class="text-right">
-          <q-btn
-            flat
-            round
-            :color="row.activo ? 'positive' : 'grey'"
-            :icon="row.activo ? 'toggle_on' : 'toggle_off'"
-            :aria-label="row.activo ? 'Desactivar' : 'Activar'"
-            :disable="esUnoMismo(row)"
-            @click="alternarEstado(row)"
-          >
-            <q-tooltip v-if="esUnoMismo(row)">No puedes desactivarte a ti mismo</q-tooltip>
-          </q-btn>
-          <q-btn flat round icon="edit" aria-label="Editar" @click="abrir(row)" />
-          <q-btn
-            v-if="!esUnoMismo(row)"
-            flat
-            round
-            color="negative"
-            icon="delete"
-            aria-label="Eliminar"
-            @click="eliminar(row)"
-          />
-        </q-td>
-      </template>
-    </q-table>
+    <div v-if="cargando" class="row justify-center q-pa-xl">
+      <q-spinner color="primary" size="40px" />
+    </div>
+
+    <div v-else class="row q-col-gutter-md">
+      <div v-for="usuario in usuarios" :key="usuario.id" class="col-12 col-sm-6 col-lg-4">
+        <q-card flat bordered class="tarjeta-usuario column no-wrap">
+          <q-card-section class="q-pb-sm">
+            <div class="row items-center justify-between">
+              <div class="text-h6">{{ usuario.name }}</div>
+              <q-chip
+                dense
+                :color="usuario.activo ? 'positive' : 'grey-6'"
+                text-color="white"
+                :label="usuario.activo ? 'Activo' : 'Inactivo'"
+                class="text-weight-medium"
+              />
+            </div>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none column q-gutter-y-sm">
+            <div class="campo-usuario">
+              <div class="campo-etiqueta">Rol del sistema</div>
+              <div class="text-info">{{ etiquetaRol(usuario.rol) }}</div>
+            </div>
+            <div class="campo-usuario">
+              <div class="campo-etiqueta">Correo electrónico</div>
+              <div class="campo-valor">{{ usuario.email }}</div>
+            </div>
+            <div class="campo-usuario">
+              <div class="campo-etiqueta">Áreas asignadas</div>
+              <div class="campo-valor">{{ areasAsignadas(usuario) }}</div>
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="right" class="q-pa-md q-pt-none q-mt-auto">
+            <q-btn
+              outline
+              no-caps
+              color="secondary"
+              label="Editar usuario"
+              icon-right="arrow_forward"
+              @click="abrir(usuario)"
+            />
+          </q-card-actions>
+        </q-card>
+      </div>
+    </div>
 
     <q-dialog v-model="dialogo">
       <q-card style="width: 520px; max-width: 90vw">
@@ -214,7 +188,7 @@ onMounted(cargar);
           editando ? 'Editar usuario' : 'Nuevo usuario'
         }}</q-card-section>
         <q-card-section class="column q-gutter-md">
-          <q-input v-model="formulario.name" label="Nombre" outlined />
+          <q-input v-model="formulario.name" label="Nombre" outlined autofocus />
           <q-input v-model="formulario.email" label="Correo" type="email" outlined />
           <q-input
             v-model="formulario.password"
@@ -222,7 +196,14 @@ onMounted(cargar);
             type="password"
             outlined
           />
-          <q-select v-model="formulario.rol" :options="ROLES" label="Rol" outlined emit-value />
+          <q-select
+            v-model="formulario.rol"
+            :options="ROLES"
+            label="Rol"
+            outlined
+            emit-value
+            :option-label="etiquetaRol"
+          />
           <q-select
             v-if="formulario.rol === 'encargado'"
             v-model="formulario.area_ids"
@@ -235,8 +216,26 @@ onMounted(cargar);
             map-options
             outlined
           />
+          <q-toggle
+            v-if="editando"
+            v-model="formulario.activo"
+            label="Cuenta activa"
+            :disable="esUnoMismo(editando)"
+          />
+          <div v-if="editando && esUnoMismo(editando)" class="text-secundario text-caption">
+            No puedes desactivar tu propia cuenta.
+          </div>
         </q-card-section>
-        <q-card-actions align="right">
+        <q-card-actions>
+          <q-btn
+            v-if="editando && !esUnoMismo(editando)"
+            flat
+            no-caps
+            color="negative"
+            label="Eliminar usuario"
+            @click="eliminar(editando)"
+          />
+          <q-space />
           <q-btn v-close-popup flat label="Cancelar" />
           <q-btn color="primary" unelevated label="Guardar" @click="guardar" />
         </q-card-actions>
@@ -244,3 +243,27 @@ onMounted(cargar);
     </q-dialog>
   </q-page>
 </template>
+
+<style scoped lang="scss">
+.tarjeta-usuario {
+  border-radius: 8px;
+}
+
+.campo-usuario {
+  padding: 8px 12px;
+  border: 1px solid $acero-claro;
+  border-radius: 6px;
+  background: $blanco-humo;
+}
+
+.campo-etiqueta {
+  color: $grafito-medio;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.campo-valor {
+  color: $dark;
+  overflow-wrap: anywhere;
+}
+</style>
