@@ -25,7 +25,7 @@ class ProductoInventarioResource extends JsonResource
             // Las especificaciones son un jsonb libre: no todos los productos
             // traen material o peso, así que se leen sin asumir su presencia.
             'material' => $this->texto($especificaciones['material'] ?? null),
-            'peso' => $this->texto($especificaciones['peso'] ?? null),
+            'peso' => $this->texto($especificaciones['peso_kg'] ?? null),
             'existencia' => $this->existencia,
             'activo' => $this->activo,
         ];

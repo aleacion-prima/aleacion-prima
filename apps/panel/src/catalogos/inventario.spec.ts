@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  estadoInsumo,
-  estadoProducto,
-  formatearCantidad,
-  formatearCosto,
-  formatearPeso,
-} from './inventario';
+import { estadoInsumo, estadoProducto, formatearPeso } from './inventario';
 
 describe('estadoInsumo', () => {
   it('marca crítico cuando la existencia está en o bajo el mínimo', () => {
@@ -38,15 +32,6 @@ describe('estadoProducto', () => {
 });
 
 describe('formato de inventario', () => {
-  it('formatea cantidades con separador de miles y hasta tres decimales', () => {
-    expect(formatearCantidad('11701.100')).toBe('11,701.1');
-    expect(formatearCantidad(5000)).toBe('5,000');
-  });
-
-  it('formatea el costo en pesos con dos decimales', () => {
-    expect(formatearCosto('7')).toBe('$7.00');
-  });
-
   it('agrega la unidad al peso y deja un guion cuando falta', () => {
     expect(formatearPeso('8.5')).toBe('8.5 kg');
     expect(formatearPeso('hierro gris clase 30')).toBe('hierro gris clase 30');

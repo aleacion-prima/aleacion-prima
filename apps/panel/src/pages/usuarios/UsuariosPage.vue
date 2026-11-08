@@ -130,7 +130,7 @@ onMounted(cargar);
           Administra las cuentas de acceso, los roles y las áreas asignadas.
         </div>
       </div>
-      <q-btn outline no-caps color="secondary" icon="add" label="Nuevo usuario" @click="abrir()" />
+      <q-btn unelevated no-caps color="primary" icon="add" label="Nuevo usuario" @click="abrir()" />
     </div>
 
     <div v-if="cargando" class="row justify-center q-pa-xl">

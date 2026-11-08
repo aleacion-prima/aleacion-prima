@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import type { Insumo, MovimientoInsumo } from '@aleacion-prima/types';
-import {
-  ESTILOS_ESTADO_INSUMO,
-  estadoInsumo,
-  formatearCantidad,
-  formatearCosto,
-} from '@/catalogos/inventario';
+import { ESTILOS_ESTADO_INSUMO, estadoInsumo } from '@/catalogos/inventario';
 import type { EstadoInsumo } from '@/catalogos/inventario';
+import { formatearCantidad, formatearMoneda } from '@/composables/formato';
+import PaginacionTabla from '@/components/comunes/PaginacionTabla.vue';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
 
@@ -50,18 +47,29 @@ const formularioAjuste = reactive<FormularioAjuste>({
   motivo: '',
 });
 
-const columnas: QTableColumn<Insumo>[] = [
-  { name: 'codigo', label: 'Código', field: 'codigo', align: 'left' },
-  { name: 'nombre', label: 'Insumo', field: 'nombre', align: 'left' },
-  { name: 'unidad', label: 'Unidad', field: 'unidad', align: 'left' },
-  { name: 'costo_unitario', label: 'Costo unitario', field: 'costo_unitario', align: 'right' },
-  { name: 'stock_minimo', label: 'Stock mínimo', field: 'stock_minimo', align: 'right' },
-  { name: 'existencia', label: 'Existencia', field: 'existencia', align: 'right' },
-  { name: 'estado', label: 'Estado', field: 'id', align: 'left' },
-  { name: 'acciones', label: 'Acción', field: 'id', align: 'right' },
-];
+const paginacion = ref({ page: 1, rowsPerPage: 10 });
 
 const puedeEditar = computed(() => sesion.usuario?.rol === 'administrador');
+
+const columnas = computed<QTableColumn<Insumo>[]>(() => {
+  const base: QTableColumn<Insumo>[] = [
+    { name: 'codigo', label: 'Código', field: 'codigo', align: 'left' },
+    { name: 'nombre', label: 'Insumo', field: 'nombre', align: 'left' },
+    { name: 'unidad', label: 'Unidad', field: 'unidad', align: 'left' },
+    { name: 'costo_unitario', label: 'Costo unitario', field: 'costo_unitario', align: 'right' },
+    { name: 'stock_minimo', label: 'Stock mínimo', field: 'stock_minimo', align: 'right' },
+    { name: 'existencia', label: 'Existencia', field: 'existencia', align: 'right' },
+    { name: 'estado', label: 'Estado', field: 'id', align: 'left' },
+  ];
+
+  if (!puedeEditar.value) return base;
+
+  return [...base, { name: 'acciones', label: 'Acción', field: 'id', align: 'right' }];
+});
+
+watch([filtroTab, busqueda, unidad], () => {
+  paginacion.value = { ...paginacion.value, page: 1 };
+});
 
 const conteos = computed<Record<FiltroTab, number>>(() => {
   const totales: Record<FiltroTab, number> = {
@@ -246,6 +254,7 @@ onMounted(cargar);
         :columns="columnas"
         row-key="id"
         :loading="cargando"
+        v-model:pagination="paginacion"
         no-data-label="No hay insumos que coincidan con el filtro"
         :rows-per-page-options="[10, 25, 50]"
       >
@@ -255,7 +264,7 @@ onMounted(cargar);
           </q-td>
         </template>
         <template #body-cell-costo_unitario="{ row }">
-          <q-td class="text-right">{{ formatearCosto(row.costo_unitario) }}</q-td>
+          <q-td class="text-right">{{ formatearMoneda(row.costo_unitario) }}</q-td>
         </template>
         <template #body-cell-stock_minimo="{ row }">
           <q-td class="text-right">{{ formatearCantidad(row.stock_minimo) }}</q-td>
@@ -286,6 +295,15 @@ onMounted(cargar);
               @click="abrirAjuste(row)"
             />
           </q-td>
+        </template>
+
+        <template #bottom>
+          <PaginacionTabla
+            v-model:pagina="paginacion.page"
+            :por-pagina="paginacion.rowsPerPage"
+            :total="filas.length"
+            sustantivo="insumos"
+          />
         </template>
       </q-table>
     </q-card>

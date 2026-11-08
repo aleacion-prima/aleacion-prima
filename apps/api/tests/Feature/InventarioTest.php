@@ -100,7 +100,7 @@ it('expone material y peso del producto desde sus especificaciones', function ()
     $conEspecificaciones = Producto::query()->create([
         'codigo' => 'DIS-FRE-G',
         'nombre' => 'Disco de freno',
-        'especificaciones' => ['material' => 'Hierro gris clase 30', 'peso' => 8.5],
+        'especificaciones' => ['material' => 'Hierro gris clase 30', 'peso_kg' => 8.5],
         'precio_mayoreo' => 100,
         'precio_menudeo' => 120,
         'existencia' => 4,

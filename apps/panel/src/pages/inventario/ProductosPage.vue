@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import type { ProductoInventario } from '@aleacion-prima/types';
-import {
-  ESTILOS_ESTADO_PRODUCTO,
-  estadoProducto,
-  formatearCantidad,
-  formatearPeso,
-} from '@/catalogos/inventario';
+import { ESTILOS_ESTADO_PRODUCTO, estadoProducto, formatearPeso } from '@/catalogos/inventario';
 import type { EstadoProducto } from '@/catalogos/inventario';
+import { formatearCantidad } from '@/composables/formato';
+import PaginacionTabla from '@/components/comunes/PaginacionTabla.vue';
 import { useApi } from '@/services/api';
 
 type FiltroTab = 'todos' | EstadoProducto;
@@ -20,6 +17,11 @@ const cargando = ref(true);
 const filtroTab = ref<FiltroTab>('todos');
 const busqueda = ref('');
 const material = ref<string | null>(null);
+const paginacion = ref({ page: 1, rowsPerPage: 10 });
+
+watch([filtroTab, busqueda, material], () => {
+  paginacion.value = { ...paginacion.value, page: 1 };
+});
 
 const columnas: QTableColumn<ProductoInventario>[] = [
   { name: 'codigo', label: 'Código', field: 'codigo', align: 'left' },
@@ -141,6 +143,7 @@ onMounted(cargar);
         :columns="columnas"
         row-key="id"
         :loading="cargando"
+        v-model:pagination="paginacion"
         no-data-label="No hay producto terminado que coincida con el filtro"
         :rows-per-page-options="[10, 25, 50]"
       >
@@ -168,6 +171,15 @@ onMounted(cargar);
               class="text-weight-medium"
             />
           </q-td>
+        </template>
+
+        <template #bottom>
+          <PaginacionTabla
+            v-model:pagina="paginacion.page"
+            :por-pagina="paginacion.rowsPerPage"
+            :total="filas.length"
+            sustantivo="productos"
+          />
         </template>
       </q-table>
     </q-card>

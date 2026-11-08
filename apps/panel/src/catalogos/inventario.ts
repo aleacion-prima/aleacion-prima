@@ -1,4 +1,5 @@
 import type { Insumo, ProductoInventario } from '@aleacion-prima/types';
+import { formatearCantidad } from '@/composables/formato';
 
 export interface EstiloEstadoInventario {
   etiqueta: string;
@@ -40,24 +41,9 @@ export const ESTILOS_ESTADO_PRODUCTO: Record<EstadoProducto, EstiloEstadoInventa
 export const estadoProducto = (producto: Pick<ProductoInventario, 'existencia'>): EstadoProducto =>
   producto.existencia > 0 ? 'disponible' : 'agotado';
 
-const formatoCantidad = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 3 });
-const formatoCosto = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  currencyDisplay: 'narrowSymbol',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-export const formatearCantidad = (cantidad: string | number): string =>
-  formatoCantidad.format(Number(cantidad));
-
-export const formatearCosto = (costo: string | number): string =>
-  formatoCosto.format(Number(costo));
-
 export const formatearPeso = (peso: string | null): string => {
   if (!peso) return '—';
 
   const numero = Number(peso);
-  return Number.isFinite(numero) ? `${formatoCantidad.format(numero)} kg` : peso;
+  return Number.isFinite(numero) ? `${formatearCantidad(numero)} kg` : peso;
 };
