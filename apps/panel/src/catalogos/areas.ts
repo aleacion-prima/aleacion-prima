@@ -10,7 +10,14 @@ export const ICONOS_AREA: Record<string, string> = {
 
 export const iconoArea = (codigo: string): string => ICONOS_AREA[codigo] ?? 'category';
 
-export const ESTADOS_PARADA = ['terminada', 'en_curso', 'pendiente', 'planeada'] as const;
+export const ESTADOS_PARADA = [
+  'terminada',
+  'en_curso',
+  'pendiente',
+  'planeada',
+  'cancelada',
+  'omitida',
+] as const;
 export type EstadoParada = (typeof ESTADOS_PARADA)[number];
 
 export interface ParadaLote {

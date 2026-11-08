@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\EstadoLote;
 use App\Enums\Rol;
 use App\Models\Lote;
 use App\Models\LoteArea;
@@ -49,6 +50,11 @@ class LoteResource extends JsonResource
                 })->values();
             }),
             'insumos' => InsumoLoteResource::collection($this->whenLoaded('insumos')),
+            'confirmado_en' => $this->confirmado_en,
+            'cancelado_en' => $this->cancelado_en,
+            'motivo_cancelacion' => $this->motivo_cancelacion,
+            'admite_devolucion' => $this->whenLoaded('paradas', fn () => in_array($this->estado, [EstadoLote::Creado, EstadoLote::EnProceso], true)
+                && $this->paradas->first()?->salida_ocurrido_en === null),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

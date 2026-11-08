@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import type { Rol } from '@aleacion-prima/types';
 import { ETIQUETAS_ROL } from '@/catalogos/roles';
+import LogoMarca from './LogoMarca.vue';
 
 const props = withDefaults(defineProps<{ nombre: string; rol: Rol; pendientes?: number }>(), {
   pendientes: 0,
@@ -17,8 +18,9 @@ const rolEtiqueta = computed(() => ETIQUETAS_ROL[props.rol]);
   <q-header class="bg-secondary">
     <q-toolbar class="q-px-md" style="min-height: 64px">
       <q-btn flat dense round icon="menu" aria-label="Menú" @click="emit('alternar-menu')" />
-      <q-toolbar-title shrink class="text-h6 text-uppercase" style="letter-spacing: 0.08em">
-        Aleación Prima
+      <q-toolbar-title shrink class="row items-center no-wrap q-gutter-x-sm">
+        <LogoMarca />
+        <span class="text-h6 text-uppercase marca">Aleación Prima</span>
       </q-toolbar-title>
       <q-space />
       <q-input
@@ -33,10 +35,19 @@ const rolEtiqueta = computed(() => ETIQUETAS_ROL[props.rol]);
         <template #prepend><q-icon name="search" /></template>
       </q-input>
       <q-space />
-      <q-btn flat round icon="notifications" aria-label="Notificaciones" to="/notificaciones">
+      <q-btn flat round icon="notifications" aria-label="Notificaciones">
         <q-badge v-if="pendientes" color="accent" text-color="dark" floating rounded>
           {{ pendientes }}
         </q-badge>
+        <q-menu anchor="bottom right" self="top right" :offset="[0, 8]">
+          <div class="vistazo">
+            <div class="text-subtitle1 text-weight-medium q-px-md q-pt-md">Notificaciones</div>
+            <div class="column items-center q-pa-lg text-secundario">
+              <q-icon name="notifications_none" size="32px" />
+              <div class="q-mt-sm">Sin notificaciones</div>
+            </div>
+          </div>
+        </q-menu>
       </q-btn>
       <div class="column items-end q-mx-sm">
         <span class="text-weight-medium">{{ nombre }}</span>
@@ -60,3 +71,13 @@ const rolEtiqueta = computed(() => ETIQUETAS_ROL[props.rol]);
     </q-toolbar>
   </q-header>
 </template>
+
+<style scoped>
+.marca {
+  letter-spacing: 0.08em;
+}
+
+.vistazo {
+  width: 320px;
+}
+</style>

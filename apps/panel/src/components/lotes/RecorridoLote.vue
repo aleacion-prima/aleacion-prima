@@ -9,9 +9,11 @@ const props = withDefaults(defineProps<{ paradas: ParadaLote[]; vertical?: boole
   vertical: false,
 });
 
-const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' => {
+const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' | 'cancelado' | 'omitido' => {
   const anterior = props.paradas[i - 1]?.estado;
   const actual = props.paradas[i]?.estado;
+  if (actual === 'cancelada') return 'cancelado';
+  if (actual === 'omitida') return 'omitido';
   if (anterior === 'terminada' && actual === 'terminada') return 'terminado';
   if (anterior === 'terminada' && actual === 'en_curso') return 'en_curso';
   return 'pendiente';
@@ -62,6 +64,14 @@ const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' => {
 
     &--terminado {
       background: $positive;
+    }
+
+    &--cancelado {
+      background: $negative;
+    }
+
+    &--omitido {
+      opacity: 0.4;
     }
 
     &--en_curso {
