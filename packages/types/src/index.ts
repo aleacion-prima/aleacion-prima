@@ -104,17 +104,52 @@ export type EstadoLote = (typeof ESTADOS_LOTE)[number];
 export const ROLES = ['administrador', 'ventas', 'encargado', 'cliente'] as const;
 export type Rol = (typeof ROLES)[number];
 
+export interface ReferenciaCatalogo {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
+export interface LoteParada {
+  id: number;
+  orden: number;
+  area: ReferenciaCatalogo;
+  tarifa_mano_obra_hora?: string;
+  costo_maquina_hora?: string;
+  piezas_recibidas: number | null;
+  piezas_entregadas: number | null;
+  merma_piezas: number | null;
+  entrada_ocurrido_en: string | null;
+  salida_ocurrido_en: string | null;
+}
+
+export interface LoteInsumoAsignado {
+  id: number;
+  insumo: ReferenciaCatalogo & { unidad: string };
+  cantidad: string;
+  cantidad_devuelta: string;
+  costo_unitario?: string;
+}
+
 export interface Lote {
   id: number;
   codigo: string;
-  producto_id: number;
-  pedido_id: number | null;
   estado: EstadoLote;
-  area_actual_id: number | null;
   cantidad_objetivo: number;
   piezas_terminadas: number | null;
-  costo_total: string;
+  producto: ReferenciaCatalogo;
+  area_actual: ReferenciaCatalogo | null;
+  costo_total?: string;
+  costo_por_pieza?: string | null;
+  paradas: LoteParada[];
+  insumos?: LoteInsumoAsignado[];
   created_at: string;
+}
+
+export interface CrearLote {
+  producto_id: number;
+  cantidad_objetivo: number;
+  recorrido?: number[];
 }
 
 export interface Usuario {

@@ -49,7 +49,7 @@ const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' => {
 
     @for $i from 1 through 8 {
       &:nth-of-type(#{$i}) {
-        animation-delay: #{($i - 1) * 0.08}s;
+        animation-delay: #{($i - 1) * 0.04}s;
       }
     }
   }

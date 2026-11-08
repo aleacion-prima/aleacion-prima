@@ -20,5 +20,12 @@ const colorIcono = computed(() =>
     :icon="iconoArea(area)"
     font-size="16px"
     :title="area"
+    :class="{ 'paso--en-curso': estado === 'en_curso' }"
   />
 </template>
+
+<style scoped lang="scss">
+.paso--en-curso {
+  animation: pulso 1.4s ease-out infinite;
+}
+</style>
