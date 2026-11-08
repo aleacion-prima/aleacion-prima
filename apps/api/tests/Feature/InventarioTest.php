@@ -4,6 +4,7 @@ use App\Enums\Rol;
 use App\Models\Ajuste;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
+use App\Models\Producto;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -80,6 +81,55 @@ it('rechaza al encargado para consultar existencias', function () {
 
     getJson('/api/inventario/insumos')->assertForbidden();
     getJson('/api/inventario/productos')->assertForbidden();
+});
+
+it('expone si un insumo está bajo el stock mínimo comparando como números', function () {
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $critico = insumoInventario(['existencia' => 900, 'stock_minimo' => 1000]);
+    $holgado = insumoInventario(['existencia' => 5000, 'stock_minimo' => 1000]);
+
+    getJson('/api/inventario/insumos')
+        ->assertOk()
+        ->assertJsonFragment(['id' => $critico->id, 'bajo_minimo' => true])
+        ->assertJsonFragment(['id' => $holgado->id, 'bajo_minimo' => false]);
+});
+
+it('expone material y peso del producto desde sus especificaciones', function () {
+    Sanctum::actingAs(usuarioInventario(Rol::Ventas));
+
+    $conEspecificaciones = Producto::query()->create([
+        'codigo' => 'DIS-FRE-G',
+        'nombre' => 'Disco de freno',
+        'especificaciones' => ['material' => 'Hierro gris clase 30', 'peso' => 8.5],
+        'precio_mayoreo' => 100,
+        'precio_menudeo' => 120,
+        'existencia' => 4,
+        'publicado' => true,
+        'activo' => true,
+    ]);
+    $sinEspecificaciones = Producto::query()->create([
+        'codigo' => 'POL-IND-G',
+        'nombre' => 'Polea industrial',
+        'especificaciones' => null,
+        'precio_mayoreo' => 100,
+        'precio_menudeo' => 120,
+        'existencia' => 0,
+        'publicado' => true,
+        'activo' => true,
+    ]);
+
+    getJson('/api/inventario/productos')
+        ->assertOk()
+        ->assertJsonFragment([
+            'id' => $conEspecificaciones->id,
+            'material' => 'Hierro gris clase 30',
+            'peso' => '8.5',
+        ])
+        ->assertJsonFragment([
+            'id' => $sinEspecificaciones->id,
+            'material' => null,
+            'peso' => null,
+        ]);
 });
 
 it('reconstruye existencias desde los movimientos', function () {

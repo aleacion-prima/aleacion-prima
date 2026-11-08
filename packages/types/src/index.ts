@@ -36,6 +36,8 @@ export interface ProductoInventario {
   id: number;
   codigo: string;
   nombre: string;
+  material: string | null;
+  peso: string | null;
   existencia: number;
   activo: boolean;
 }

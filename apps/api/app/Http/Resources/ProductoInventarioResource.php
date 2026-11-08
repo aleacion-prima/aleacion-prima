@@ -16,12 +16,23 @@ class ProductoInventarioResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $especificaciones = is_array($this->especificaciones) ? $this->especificaciones : [];
+
         return [
             'id' => $this->id,
             'codigo' => $this->codigo,
             'nombre' => $this->nombre,
+            // Las especificaciones son un jsonb libre: no todos los productos
+            // traen material o peso, así que se leen sin asumir su presencia.
+            'material' => $this->texto($especificaciones['material'] ?? null),
+            'peso' => $this->texto($especificaciones['peso'] ?? null),
             'existencia' => $this->existencia,
             'activo' => $this->activo,
         ];
+    }
+
+    private function texto(mixed $valor): ?string
+    {
+        return is_string($valor) || is_numeric($valor) ? (string) $valor : null;
     }
 }
