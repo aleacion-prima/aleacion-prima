@@ -56,7 +56,7 @@ export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
   encargado: [
     {
       elementos: [
-        { etiqueta: 'Mi área', ruta: '/', icono: 'handyman' },
+        { etiqueta: 'Mi área', ruta: '/mi-area', icono: 'handyman' },
         { etiqueta: 'Lotes', ruta: '/lotes', icono: 'precision_manufacturing' },
       ],
     },

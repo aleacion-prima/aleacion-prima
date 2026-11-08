@@ -8,7 +8,7 @@ class GeneradorCodigoLote
 {
     public function siguiente(): string
     {
-        $prefijo = 'LOT-'.now()->format('Ymd').'-';
+        $prefijo = 'LOT-'.now()->setTimezone((string) config('planta.zona_horaria'))->format('Ymd').'-';
 
         $ultimo = Lote::query()
             ->where('codigo', 'like', $prefijo.'%')

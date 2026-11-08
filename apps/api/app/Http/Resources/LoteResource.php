@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Rol;
 use App\Models\Lote;
+use App\Models\LoteArea;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,7 +38,16 @@ class LoteResource extends JsonResource
             ]),
             'costo_total' => $this->when($veCostos, $this->costo_total),
             'costo_por_pieza' => $this->when($veCostos, $this->costo_por_pieza),
-            'paradas' => ParadaLoteResource::collection($this->whenLoaded('paradas')),
+            'paradas' => $this->whenLoaded('paradas', function () {
+                $anterior = null;
+
+                return $this->paradas->map(function (LoteArea $parada) use (&$anterior) {
+                    $recurso = (new ParadaLoteResource($parada))->conAnterior($anterior);
+                    $anterior = $parada;
+
+                    return $recurso;
+                })->values();
+            }),
             'insumos' => InsumoLoteResource::collection($this->whenLoaded('insumos')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
