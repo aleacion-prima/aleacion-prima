@@ -40,6 +40,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/usuarios/UsuariosPage.vue'),
         meta: { roles: ['administrador'] },
       },
+      { path: 'mi-cuenta', component: () => import('@/pages/cuenta/MiCuentaPage.vue') },
       {
         path: 'inventario/insumos',
         component: () => import('@/pages/inventario/InsumosPage.vue'),
@@ -69,6 +70,21 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     component: () => import('@/layouts/AccesoLayout.vue'),
     children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
+  },
+  {
+    path: '/olvide-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/OlvideContrasenaPage.vue') }],
+  },
+  {
+    path: '/nueva-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/NuevaContrasenaPage.vue') }],
+  },
+  {
+    path: '/recuperar-pregunta',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/RecuperarPreguntaPage.vue') }],
   },
   {
     path: '/:catchAll(.*)*',

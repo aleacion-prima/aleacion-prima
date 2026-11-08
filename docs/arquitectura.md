@@ -113,6 +113,7 @@ flowchart LR
 - Las variables públicas de los fronts (`PUBLIC_API_URL`, `PUBLIC_REVERB_*`) se inyectan **en tiempo de build** de la imagen de Caddy; cambiarlas implica reconstruir.
 - `api.env` de producción lo genera el pipeline desde un secret; no se edita en el servidor.
 - Rollback: cambiar `TAG` en el `.env` del servidor y `docker compose up -d`.
+- Deploy manual: en **Actions → Deploy → Run workflow** (rama `main`) se vuelve a desplegar sin mergear nada, útil tras cambiar una variable o un secret (p. ej. el dominio). El deploy automático al terminar el CI sigue igual.
 
 ## Repositorio
 

@@ -30,11 +30,57 @@ export const useSesionStore = defineStore('sesion', () => {
     usuario.value = null;
   };
 
+  const recuperar = async (email: string): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/forgot-password', { email });
+    const cuerpo = (await res.json()) as { message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo enviar el enlace');
+    return cuerpo.message ?? 'Si el correo existe, te enviamos un enlace.';
+  };
+
+  const restablecer = async (datos: {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/reset-password', datos);
+    const cuerpo = (await res.json()) as { message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo restablecer la contraseña');
+    return cuerpo.message ?? 'Contraseña restablecida.';
+  };
+
+  const obtenerPregunta = async (email: string): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/forgot-password/pregunta', { email });
+    const cuerpo = (await res.json()) as { pregunta?: string; message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo obtener la pregunta');
+    return cuerpo.pregunta ?? '';
+  };
+
+  const restablecerPorPregunta = async (datos: {
+    email: string;
+    respuesta: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/reset-password/pregunta', datos);
+    const cuerpo = (await res.json()) as { message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo restablecer la contraseña');
+    return cuerpo.message ?? 'Contraseña restablecida.';
+  };
+
   return {
     usuario,
     cargada,
     cargar,
     iniciar,
     cerrar,
+    recuperar,
+    restablecer,
+    obtenerPregunta,
+    restablecerPorPregunta,
   };
 });
