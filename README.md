@@ -481,6 +481,130 @@ Las ramas, los commits, los Pull Requests y los hooks están en [Definición y d
 
 > Las revisiones del backend corren en Docker, así que **Docker debe estar encendido** para commitear archivos PHP y para hacer push.
 
+#### Resolver conflictos
+
+GitHub dice que hay conflicto cuando dos ramas cambiaron las mismas líneas del mismo archivo y no puede decidir cuál versión vale. **No se arregla con un clic:** hay que abrir el archivo, leer las dos versiones y dejar el código correcto. La regla del equipo es simple: en código compartido casi nunca se elige un lado, **se integran los dos**. Elegir "el mío" o "el de `main`" a ciegas es cómo se pierde el trabajo de alguien.
+
+**Qué significan "current" e "incoming"**
+
+| Dónde lo ves                         | "Current" / actual       | "Incoming" / entrante  |
+| ------------------------------------ | ------------------------ | ---------------------- |
+| Conflicto en GitHub (pestaña del PR) | Lo que ya está en `main` | Los cambios de tu rama |
+| `git merge origin/main` en tu rama   | Tu rama                  | `main`                 |
+| `git rebase origin/main` en tu rama  | `main`                   | Tus commits            |
+
+> ⚠️ **En un rebase los papeles se invierten.** "Current" es `main` y "Accept current" descarta tu trabajo. Si rebasas, lee dos veces antes de aceptar un lado y prefiere resolver a mano.
+
+**Paso a paso**
+
+1. Actualiza tu rama y trae `main`:
+
+   ```bash
+   git switch mi-rama
+   git fetch origin
+   git merge origin/main
+   ```
+
+2. Mira qué archivos quedaron en conflicto (`both modified`):
+
+   ```bash
+   git status
+   ```
+
+3. Abre cada archivo y quita los marcadores, dejando el código correcto:
+
+   ```text
+   <<<<<<< HEAD
+   lo que ya tenías en tu rama
+   =======
+   lo que trae main
+   >>>>>>> origin/main
+   ```
+
+   (Si resuelves desde GitHub, los marcadores se leen al revés: `HEAD` es `main` y la otra parte es tu rama.)
+
+4. Marca los archivos resueltos y termina la fusión:
+
+   ```bash
+   git add <archivos resueltos>
+   git commit
+   git push
+   ```
+
+   Si en lugar de fusionar rebasaste, se termina con `git add`, `git rebase --continue` y `git push --force-with-lease`. El `--force-with-lease` es **solo para tu rama**; nunca se usa en `main`.
+
+5. Comprueba lo que tocaste antes de pedir revisión. Para rutas de la API: `pnpm artisan route:list`. Para rutas del panel: `pnpm typecheck`. Y como siempre, `pnpm check` (el hook `pre-push` lo corre igual).
+
+**Ejemplo real: `apps/api/routes/api.php`**
+
+Las rutas de la API crecen en el mismo archivo y en el mismo grupo de middleware, así que dos ramas que agregan endpoints chocan ahí. Un conflicto típico se ve así:
+
+```php
+Route::middleware('role:administrador|ventas')->group(function () {
+<<<<<<< HEAD
+    Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
+    Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+=======
+    Route::apiResource('productos', ProductoController::class);
+>>>>>>> feat/catalogo-productos
+});
+```
+
+Dejar las cuatro líneas juntas **no es la solución**: `productos` es solo para administradores y las de inventario las ve también ventas. Cada ruta se queda en el grupo que le toca:
+
+```php
+Route::middleware('role:administrador|ventas')->group(function () {
+    Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
+    Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+});
+
+Route::middleware('role:administrador')->group(function () {
+    Route::apiResource('productos', ProductoController::class);
+});
+```
+
+Después de resolver, `pnpm artisan route:list` debe mostrar ambos endpoints y con el middleware correcto.
+
+**Ejemplo real: `apps/panel/src/router/routes.ts`**
+
+Aquí pasa lo mismo con las rutas de Vue Router: cada pantalla nueva agrega un objeto en el arreglo de `children`. El conflicto suele ser dos objetos pegados:
+
+```ts
+{
+<<<<<<< HEAD
+  path: 'inventario/insumos',
+  component: () => import('@/pages/inventario/InsumosPage.vue'),
+  meta: { roles: ['administrador', 'ventas'] },
+},
+=======
+  path: 'productos',
+  component: () => import('@/pages/productos/ProductosPage.vue'),
+  meta: { roles: ['administrador'] },
+},
+>>>>>>> feat/catalogo-productos
+```
+
+La resolución es conservar los dos objetos, cada uno con su `meta.roles`, separados por coma:
+
+```ts
+{
+  path: 'inventario/insumos',
+  component: () => import('@/pages/inventario/InsumosPage.vue'),
+  meta: { roles: ['administrador', 'ventas'] },
+},
+{
+  path: 'productos',
+  component: () => import('@/pages/productos/ProductosPage.vue'),
+  meta: { roles: ['administrador'] },
+},
+```
+
+El error más común al resolver este archivo es olvidar la coma entre los dos objetos; `pnpm typecheck` lo detecta de inmediato.
+
+**Si el conflicto no es de rutas**
+
+Aplica la misma regla: entender qué hacía cada lado antes de borrar nada. Si no conoces el otro cambio, no lo resuelvas solo; pide a quien lo hizo que revise contigo. Un conflicto mal resuelto no rompe el build necesariamente: puede borrar una función o un permiso sin que nadie lo note hasta producción.
+
 ### 9. Editor
 
 #### VS Code
