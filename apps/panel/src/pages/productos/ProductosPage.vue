@@ -150,7 +150,6 @@ const opcionesMaterial = computed<OpcionMaterial[]>(() => {
   return lista;
 });
 
-/** Parte de las especificaciones que ya tiene el producto: esta pantalla solo edita material y norma. */
 const especificacionesParaApi = (): Record<string, string | number> => {
   const especificaciones = { ...(editando.value?.especificaciones ?? {}) };
   const elegido = opcionesMaterial.value.find((item) => item.material === formulario.material);
@@ -204,7 +203,6 @@ const insumosDisponibles = (indice: number) =>
       !formulario.receta.some((renglon) => renglon.insumo_id === insumo.id),
   );
 
-/** La unidad es del insumo (`insumos.unidad`), no del renglón de la receta. */
 const unidadDe = (insumoId: number | null): string =>
   opciones.value.insumos.find((insumo) => insumo.id === insumoId)?.unidad ?? '';
 
@@ -305,44 +303,51 @@ onMounted(cargar);
 
     <div v-else class="row q-col-gutter-md">
       <div v-for="producto in productos" :key="producto.id" class="col-12 col-sm-6 col-lg-4">
-        <q-card flat bordered class="full-height column">
+        <q-card flat bordered class="tarjeta full-height column">
           <q-card-section class="row items-start no-wrap">
             <div class="col">
-              <div class="text-caption text-grey-7">{{ producto.codigo }}</div>
-              <div class="text-h6">{{ producto.nombre }}</div>
+              <div class="tarjeta__codigo">{{ producto.codigo }}</div>
+              <div class="tarjeta__nombre">{{ producto.nombre }}</div>
             </div>
-            <q-badge :color="producto.activo ? 'positive' : 'grey'">{{
-              producto.activo ? 'Activo' : 'Inactivo'
-            }}</q-badge>
+            <span class="insignia" :class="producto.activo ? 'insignia--verde' : 'insignia--gris'">
+              {{ producto.activo ? 'Activo' : 'Inactivo' }}
+            </span>
           </q-card-section>
 
-          <q-card-section class="column q-gutter-sm q-pt-none">
-            <div class="bg-grey-2 rounded-borders q-pa-sm row">
-              <div class="col-6">
-                <div class="text-caption text-grey-7">Material</div>
-                <div>{{ materialLegible(producto) }}</div>
+          <q-card-section class="campos q-pt-none">
+            <div class="campos__fila">
+              <div class="campo">
+                <div class="campo__etiqueta">Material</div>
+                <div class="campo__valor">{{ materialLegible(producto) }}</div>
               </div>
-              <div class="col-6">
-                <div class="text-caption text-grey-7">Precio de mayoreo / menudeo</div>
-                <div>
+              <div class="campo">
+                <div class="campo__etiqueta">Precio de mayoreo / menudeo</div>
+                <div class="campo__valor campo__valor--mono">
                   {{ formatearPrecio(producto.precio_mayoreo) }} /
                   {{ formatearPrecio(producto.precio_menudeo) }}
                 </div>
               </div>
             </div>
-            <div class="bg-grey-2 rounded-borders q-pa-sm">
-              <div class="text-caption text-grey-7">Recorrido por defecto</div>
-              <div>{{ recorridoLegible(producto) }}</div>
+            <div class="campo">
+              <div class="campo__etiqueta">Recorrido por defecto</div>
+              <div class="campo__valor">{{ recorridoLegible(producto) }}</div>
             </div>
-            <div class="bg-grey-2 rounded-borders q-pa-sm">
-              <div class="text-caption text-grey-7">Receta de insumos (por pieza)</div>
-              <div>{{ resumenReceta(producto) }}</div>
+            <div class="campo">
+              <div class="campo__etiqueta">Receta de insumos (por pieza)</div>
+              <div class="campo__valor">{{ resumenReceta(producto) }}</div>
             </div>
           </q-card-section>
 
           <q-space />
           <q-card-actions align="right">
-            <q-btn outline color="primary" label="Editar producto" @click="abrir(producto)" />
+            <q-btn
+              class="btn-editar"
+              outline
+              no-caps
+              color="secondary"
+              label="Editar producto"
+              @click="abrir(producto)"
+            />
           </q-card-actions>
         </q-card>
       </div>
@@ -366,7 +371,6 @@ onMounted(cargar);
         <q-separator />
 
         <q-card-section class="scroll" style="max-height: 68vh">
-          <!-- Datos del producto -->
           <div>
             <div class="text-subtitle1 text-weight-bold q-mb-sm">Datos del producto</div>
             <div class="row q-col-gutter-md">
@@ -436,7 +440,6 @@ onMounted(cargar);
             </div>
           </div>
           <q-separator class="q-my-lg" />
-
           <!-- Recorrido por defecto -->
           <div>
             <div class="row items-start justify-between q-mb-sm">
@@ -449,7 +452,7 @@ onMounted(cargar);
               </div>
               <q-btn
                 outline
-                color="primary"
+                color="secondary"
                 icon="add"
                 label="Agregar área"
                 :disable="areasParaAgregar.length === 0"
@@ -525,7 +528,7 @@ onMounted(cargar);
               </div>
               <q-btn
                 outline
-                color="primary"
+                color="secondary"
                 icon="add"
                 label="Agregar insumo"
                 @click="agregarRenglonReceta"
@@ -604,3 +607,78 @@ onMounted(cargar);
     </q-dialog>
   </q-page>
 </template>
+
+<style scoped lang="scss">
+.tarjeta {
+  border-radius: 16px;
+  border-color: $acero-claro;
+}
+.tarjeta__codigo {
+  font-family: $fuente-codigo;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: $grafito-medio;
+}
+.tarjeta__nombre {
+  font-family: $fuente-titulos;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: $dark;
+}
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.campos__fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.campo {
+  background: $blanco-humo;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.campo__etiqueta {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: $grafito-medio;
+  margin-bottom: 4px;
+}
+.campo__valor {
+  font-size: 16px;
+  line-height: 1.4;
+  color: $dark;
+}
+.campo__valor--mono {
+  font-family: $fuente-codigo;
+}
+.insignia {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #fff;
+}
+.insignia--azul {
+  background: $info;
+}
+.insignia--verde {
+  background: $positive;
+}
+.insignia--gris {
+  background: $acero-claro;
+  color: $grafito-medio;
+}
+.btn-editar {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color $duracion-rapida $curva-salida;
+}
+</style>
