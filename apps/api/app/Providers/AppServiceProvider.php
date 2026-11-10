@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Events\LoteActualizado;
+use App\Lotes\RecalcularCostoAlActualizar;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -18,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::withoutWrapping();
+
+        // Cada vez que un lote cambia, se recalcula su costo.
+        Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición
