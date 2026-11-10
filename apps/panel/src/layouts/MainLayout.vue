@@ -43,7 +43,7 @@ const salir = async (): Promise<void> => {
       :width="232"
       :mini-width="64"
     >
-      <MenuLateral :rol="rol" />
+      <MenuLateral :rol="rol" :modulos="sesion.modulos" />
     </q-drawer>
 
     <q-page-container>

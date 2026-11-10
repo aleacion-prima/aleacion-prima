@@ -15,6 +15,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()?->load('areas')));
@@ -63,5 +64,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
         Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);
         Route::post('/lotes/{lote}/paradas/{parada}/salida', [ParadaLoteController::class, 'salida']);
+    });
+
+    // Módulo de ventas (apagado por defecto con Pennant). Las rutas de ventas
+    // —clientes, pedidos, reportes, cotizaciones— van dentro de este grupo, así
+    // nacen protegidas: con la bandera apagada no responden aunque se llamen.
+    Route::middleware(EnsureFeaturesAreActive::using('ventas'))->group(function () {
+        // Aún no hay endpoints de ventas; llegan en sus tareas.
     });
 });

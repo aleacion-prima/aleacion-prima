@@ -10,6 +10,7 @@
         "brick/math": "1.0.0",
         "dedoc/scramble": "^0.13.45",
         "laravel/framework": "^13.17",
+        "laravel/pennant": "^1.26",
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",

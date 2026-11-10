@@ -21,6 +21,7 @@ Cada archivo de esta carpeta es un **registro de decisión de arquitectura** (AD
 | [0013](./0013-github-como-plataforma.md)         | GitHub como plataforma del repositorio, el CI, las imágenes y el tablero     |
 | [0014](./0014-github-flow-squash.md)             | GitHub Flow con una rama por tarea y Squash and merge                        |
 | [0015](./0015-servidor-en-azure-for-students.md) | Servidor en una VM de Azure for Students con dominio de sslip.io             |
+| [0016](./0016-feature-flags-con-pennant.md)      | Feature flags con Pennant para prender y apagar módulos (ventas) globalmente |
 
 ## Formato
 
