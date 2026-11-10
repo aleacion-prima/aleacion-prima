@@ -69,6 +69,20 @@ it('edita un usuario y sincroniza sus áreas', function () {
         ->assertJsonPath('areas.0.id', $area->id);
 });
 
+it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?activo=1', function () {
+    Sanctum::actingAs(administrador());
+    $activa = area();
+    $inactiva = area();
+    $inactiva->update(['activo' => false]);
+
+    getJson('/api/areas-disponibles')->assertNotFound();
+
+    getJson('/api/areas?activo=1')
+        ->assertOk()
+        ->assertJsonFragment(['id' => $activa->id, 'nombre' => $activa->nombre])
+        ->assertJsonMissing(['id' => $inactiva->id]);
+});
+
 it('da de baja sin borrar el usuario y revoca sus tokens', function () {
     Sanctum::actingAs(administrador());
     $usuario = User::factory()->create();
@@ -143,5 +157,5 @@ it('restringe la gestión de usuarios al administrador', function (Rol $rol) {
     Sanctum::actingAs($usuario);
 
     getJson('/api/usuarios')->assertForbidden();
-    getJson('/api/areas-disponibles')->assertForbidden();
+    getJson('/api/areas')->assertForbidden();
 })->with([Rol::Ventas, Rol::Encargado]);

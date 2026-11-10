@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Rol;
+use App\Events\StockMinimoAlcanzado;
 use App\Models\Ajuste;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
@@ -8,6 +9,7 @@ use App\Models\Producto;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -188,6 +190,53 @@ it('registra un ajuste negativo y deja la existencia en la cantidad real', funct
     expect($insumo->fresh()->existencia)->toBe('6.250');
     expect(MovimientoInsumo::query()->where('insumo_id', $insumo->id)->first()?->cantidad)
         ->toBe('-3.750');
+});
+
+it('emite StockMinimoAlcanzado cuando un ajuste cruza el stock mínimo', function () {
+    Event::fake([StockMinimoAlcanzado::class]);
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $insumo = insumoInventario(['existencia' => 10, 'stock_minimo' => 5]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 4,
+        'motivo' => 'Conteo físico: faltante de material',
+    ])->assertCreated();
+
+    Event::assertDispatched(StockMinimoAlcanzado::class, function (StockMinimoAlcanzado $evento) use ($insumo) {
+        return $evento->insumoId === $insumo->id
+            && $evento->existencia === 4.0
+            && $evento->stockMinimo === 5.0;
+    });
+    expect($insumo->fresh()->existencia)->toBe('4.000');
+});
+
+it('no emite StockMinimoAlcanzado cuando el ajuste deja la existencia por encima del mínimo', function () {
+    Event::fake([StockMinimoAlcanzado::class]);
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $insumo = insumoInventario(['existencia' => 10, 'stock_minimo' => 5]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 12,
+        'motivo' => 'Conteo físico: sobrante de material',
+    ])->assertCreated();
+
+    Event::assertNotDispatched(StockMinimoAlcanzado::class);
+});
+
+it('rechaza un ajuste a la cantidad que ya hay y no registra nada', function () {
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    $insumo = insumoInventario(['existencia' => 10]);
+
+    postJson("/api/insumos/{$insumo->id}/ajustes", [
+        'cantidad_real' => 10,
+        'motivo' => 'Conteo físico sin diferencias',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('cantidad_real');
+
+    expect($insumo->fresh()->existencia)->toBe('10.000');
+    expect(Ajuste::query()->count())->toBe(0);
+    expect(MovimientoInsumo::query()->count())->toBe(0);
 });
 
 it('solo permite ajustes al administrador', function (Rol $rol) {

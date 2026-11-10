@@ -45,7 +45,7 @@ const cargar = async (): Promise<void> => {
   cargando.value = true;
   const [usuariosRes, areasRes] = await Promise.all([
     useApi<Usuario[]>('/usuarios').json<Usuario[]>(),
-    useApi<AreaAsignada[]>('/areas-disponibles').json<AreaAsignada[]>(),
+    useApi<AreaAsignada[]>('/areas?activo=1').json<AreaAsignada[]>(),
   ]);
   cargando.value = false;
 

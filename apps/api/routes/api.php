@@ -34,7 +34,6 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     });
 
     Route::middleware('role:administrador')->group(function () {
-        Route::get('/areas-disponibles', [UsuarioController::class, 'areas']);
         Route::apiResource('usuarios', UsuarioController::class)
             ->only(['index', 'store', 'update', 'destroy']);
         Route::post('/insumos/{insumo}/entradas', [EntradaInsumoController::class, 'store']);
