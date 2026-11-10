@@ -39,7 +39,7 @@ class ProductoResource extends JsonResource
                 'nombre' => $insumo->nombre,
                 'unidad' => $insumo->unidad,
                 'categoria' => $insumo->categoria,
-                'cantidad_por_pieza' => (float) data_get($insumo, 'pivot.cantidad_por_pieza'),
+                'cantidad_por_pieza' => data_get($insumo, 'pivot.cantidad_por_pieza'),
 
             ])->values(),
         ];
