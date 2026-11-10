@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'areas',
-        component: () => import('@/pages/area/AreasPage.vue'),
+        component: () => import('@/pages/areas/AreasPage.vue'),
         meta: { roles: ['administrador'] },
       },
       {

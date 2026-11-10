@@ -266,4 +266,5 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
+  encargados?: Usuario[];
 }
