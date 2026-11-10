@@ -69,8 +69,12 @@ test('recorre el lote de referencia y cierra en $226.11 por pieza', async ({ pag
   // 2. Crear el lote del producto de referencia (DIS-FRE-G, 50 piezas).
   //    El recorrido se auto-rellena desde el producto; no hay que tocarlo.
   await page.goto('/#/lotes/nuevo');
-  await page.locator('.q-field', { hasText: 'Producto' }).click();
-  await page.locator('.q-menu .q-item', { hasText: 'DIS-FRE-G' }).click();
+  // El q-select de Producto se llena desde /productos al montar la página; si se abre
+  // antes de que lleguen las opciones, el menú queda vacío y Quasar no lo repuebla.
+  // Esperar a que los catálogos terminen de cargar antes de desplegarlo.
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel('Producto').click();
+  await page.getByRole('option', { name: /DIS-FRE-G/ }).click();
   await campo(page, 'Cantidad objetivo').fill('50');
   await Promise.all([
     page.waitForURL(/#\/lotes\/LOT-/),
