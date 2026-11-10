@@ -55,6 +55,13 @@ class UsuarioController extends Controller
             'No puedes desactivarte a ti mismo.'
         );
 
+        abort_if(
+            $this->esElUsuarioAutenticado($request, $usuario)
+                && $datos['rol'] !== Rol::Administrador->value,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'No puedes quitarte el rol de administrador.'
+        );
+
         return DB::transaction(function () use ($datos, $usuario): JsonResponse {
             $usuario->update($this->atributos($datos, false));
             $usuario->syncRoles($datos['rol']);
