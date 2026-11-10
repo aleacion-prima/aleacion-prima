@@ -27,6 +27,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     });
 
     Route::middleware('role:administrador')->group(function () {
+        Route::get('areas/opciones', [AreaController::class, 'opciones']);
         Route::apiResource('areas', AreaController::class);
         Route::post('/insumos/{insumo}/ajustes', [AjusteInsumoController::class, 'store']);
     });
