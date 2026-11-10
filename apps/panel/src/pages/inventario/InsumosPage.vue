@@ -23,6 +23,11 @@ interface FormularioAjuste {
   motivo: string;
 }
 
+interface ErrorApi {
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 type FiltroTab = 'todos' | EstadoInsumo;
 
 const $q = useQuasar();
@@ -46,6 +51,7 @@ const formularioAjuste = reactive<FormularioAjuste>({
   cantidad_real: '',
   motivo: '',
 });
+const errorAjuste = ref('');
 
 const paginacion = ref({ page: 1, rowsPerPage: 10 });
 
@@ -161,6 +167,7 @@ const abrirAjuste = (insumo: Insumo): void => {
   insumoSeleccionado.value = insumo;
   formularioAjuste.cantidad_real = insumo.existencia;
   formularioAjuste.motivo = '';
+  errorAjuste.value = '';
   dialogoAjuste.value = true;
 };
 
@@ -168,7 +175,7 @@ const registrarAjuste = async (): Promise<void> => {
   const insumo = insumoSeleccionado.value;
   if (!insumo) return;
 
-  const { error } = await useApi(`/insumos/${insumo.id}/ajustes`)
+  const { data, error } = await useApi(`/insumos/${insumo.id}/ajustes`)
     .post({
       cantidad_real: Number(formularioAjuste.cantidad_real),
       motivo: formularioAjuste.motivo,
@@ -176,7 +183,11 @@ const registrarAjuste = async (): Promise<void> => {
     .json();
 
   if (error.value) {
-    $q.notify({ type: 'negative', message: 'No se pudo registrar el ajuste' });
+    // La API rechaza el ajuste sin cambios con 422; el motivo va junto al campo.
+    errorAjuste.value = (data.value as ErrorApi | null)?.errors?.cantidad_real?.[0] ?? '';
+    if (!errorAjuste.value) {
+      $q.notify({ type: 'negative', message: 'No se pudo registrar el ajuste' });
+    }
     return;
   }
 
@@ -352,6 +363,9 @@ onMounted(cargar);
             type="number"
             min="0"
             outlined
+            :error="errorAjuste !== ''"
+            :error-message="errorAjuste"
+            @update:model-value="errorAjuste = ''"
           />
           <q-input v-model="formularioAjuste.motivo" label="Motivo" type="textarea" outlined />
         </q-card-section>
