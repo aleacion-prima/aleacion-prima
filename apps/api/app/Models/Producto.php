@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string, mixed>|null $especificaciones
+ */
 #[Fillable([
     'codigo',
     'nombre',
@@ -44,5 +48,11 @@ class Producto extends Model
     {
         return $this->belongsToMany(Insumo::class, 'producto_insumo')
             ->withPivot('cantidad_por_pieza');
+    }
+
+    /** @return HasMany<MovimientoProducto, $this> */
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(MovimientoProducto::class);
     }
 }

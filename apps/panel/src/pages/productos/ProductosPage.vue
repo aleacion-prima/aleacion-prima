@@ -288,7 +288,7 @@ onMounted(cargar);
         </div>
       </div>
       <q-btn
-        outline
+        unelevated
         color="primary"
         icon="add"
         label="Nuevo producto"

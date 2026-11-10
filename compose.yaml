@@ -32,7 +32,7 @@ services:
 
   queue:
     <<: *api
-    command: php artisan queue:listen --tries=1
+    command: php artisan queue:listen --tries=1 --sleep=1
 
   postgres:
     image: postgres:18-alpine

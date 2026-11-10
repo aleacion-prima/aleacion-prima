@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
+import { useSesionStore } from '@/stores/sesion';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -14,17 +15,42 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/MainLayout.vue'),
     meta: { requiereSesion: true },
     children: [
-      { path: '', component: () => import('@/pages/tablero/TableroPage.vue') },
+      {
+        path: '',
+        component: () => import('@/pages/tablero/TableroPage.vue'),
+        beforeEnter: () => (useSesionStore().usuario?.rol === 'encargado' ? '/mi-area' : true),
+      },
+      {
+        path: 'mi-area',
+        component: () => import('@/pages/area/MiAreaPage.vue'),
+        meta: { roles: ['encargado'] },
+      },
       {
         path: 'areas',
         component: () => import('@/pages/areas/AreasPage.vue'),
         meta: { roles: ['administrador'] },
       },
       {
+        path: 'lotes',
+        component: () => import('@/pages/lotes/LotesPage.vue'),
+        meta: { roles: ['administrador', 'ventas', 'encargado'] },
+      },
+      {
+        path: 'lotes/nuevo',
+        component: () => import('@/pages/lotes/CrearLotePage.vue'),
+        meta: { roles: ['administrador'] },
+      },
+      {
+        path: 'lotes/:codigo',
+        component: () => import('@/pages/lotes/DetalleLotePage.vue'),
+        meta: { roles: ['administrador', 'ventas', 'encargado'] },
+      },
+      {
         path: 'usuarios',
         component: () => import('@/pages/usuarios/UsuariosPage.vue'),
         meta: { roles: ['administrador'] },
       },
+      { path: 'mi-cuenta', component: () => import('@/pages/cuenta/MiCuentaPage.vue') },
       {
         path: 'inventario/insumos',
         component: () => import('@/pages/inventario/InsumosPage.vue'),
@@ -54,6 +80,21 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     component: () => import('@/layouts/AccesoLayout.vue'),
     children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
+  },
+  {
+    path: '/olvide-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/OlvideContrasenaPage.vue') }],
+  },
+  {
+    path: '/nueva-contrasena',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/NuevaContrasenaPage.vue') }],
+  },
+  {
+    path: '/recuperar-pregunta',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/RecuperarPreguntaPage.vue') }],
   },
   {
     path: '/:catchAll(.*)*',

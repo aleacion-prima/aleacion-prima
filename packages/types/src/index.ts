@@ -36,6 +36,8 @@ export interface ProductoInventario {
   id: number;
   codigo: string;
   nombre: string;
+  material: string | null;
+  peso: string | null;
   existencia: number;
   activo: boolean;
 }
@@ -104,17 +106,87 @@ export type EstadoLote = (typeof ESTADOS_LOTE)[number];
 export const ROLES = ['administrador', 'ventas', 'encargado', 'cliente'] as const;
 export type Rol = (typeof ROLES)[number];
 
+export interface ReferenciaCatalogo {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
+export interface LoteParada {
+  id: number;
+  orden: number;
+  area: ReferenciaCatalogo;
+  tarifa_mano_obra_hora?: string;
+  costo_maquina_hora?: string;
+  piezas_recibidas: number | null;
+  piezas_entregadas: number | null;
+  merma_piezas: number | null;
+  merma_material: string | null;
+  retorno_kg: string | null;
+  discrepancia: number | null;
+  entrada_ocurrido_en: string | null;
+  entrada_registrado_en: string | null;
+  entrada_tardia: boolean;
+  salida_ocurrido_en: string | null;
+  salida_registrado_en: string | null;
+  salida_tardia: boolean;
+  admite_retorno: boolean;
+  puede_capturar: boolean;
+}
+
+export interface RegistrarEntradaParada {
+  piezas_recibidas: number;
+  ocurrido_en?: string;
+}
+
+export interface RegistrarSalidaParada {
+  piezas_entregadas: number;
+  merma_material?: number;
+  retorno_kg?: number;
+  ocurrido_en?: string;
+}
+
+export interface LoteInsumoAsignado {
+  id: number;
+  insumo: ReferenciaCatalogo & { unidad: string };
+  cantidad: string;
+  cantidad_devuelta: string;
+  costo_unitario?: string;
+}
+
 export interface Lote {
   id: number;
   codigo: string;
-  producto_id: number;
-  pedido_id: number | null;
   estado: EstadoLote;
-  area_actual_id: number | null;
   cantidad_objetivo: number;
   piezas_terminadas: number | null;
-  costo_total: string;
+  producto: ReferenciaCatalogo;
+  area_actual: ReferenciaCatalogo | null;
+  costo_total?: string;
+  costo_por_pieza?: string | null;
+  paradas: LoteParada[];
+  insumos?: LoteInsumoAsignado[];
+  confirmado_en: string | null;
+  cancelado_en: string | null;
+  motivo_cancelacion: string | null;
+  admite_devolucion: boolean;
   created_at: string;
+}
+
+export interface DevolucionInsumo {
+  insumo_id: number;
+  cantidad: number;
+}
+
+export interface CancelarLote {
+  motivo: string;
+  devoluciones?: DevolucionInsumo[];
+}
+
+export interface CrearLote {
+  producto_id: number;
+  cantidad_objetivo: number;
+  recorrido?: number[];
 }
 
 export interface Usuario {

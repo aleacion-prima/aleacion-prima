@@ -62,6 +62,12 @@ const entrar = async (): Promise<void> => {
           </template>
         </q-input>
 
+        <div class="text-right">
+          <router-link to="/olvide-contrasena" class="text-primary"
+            >¿Olvidaste tu contraseña?</router-link
+          >
+        </div>
+
         <q-banner v-if="error" dense class="bg-red-1 text-negative">{{ error }}</q-banner>
 
         <q-btn type="submit" color="primary" label="Ingresar" unelevated :loading="cargando" />

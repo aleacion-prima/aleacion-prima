@@ -27,7 +27,7 @@ const salir = async (): Promise<void> => {
 </script>
 
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="hHh Lpr lFf">
     <BarraSuperior
       :nombre="sesion.usuario?.name ?? ''"
       :rol="rol"
@@ -48,7 +48,7 @@ const salir = async (): Promise<void> => {
 
     <q-page-container>
       <router-view #default="{ Component }">
-        <transition name="q-transition--fade" mode="out-in">
+        <transition name="pagina" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>

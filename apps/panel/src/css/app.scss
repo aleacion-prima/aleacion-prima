@@ -30,3 +30,24 @@ body.body--light {
 .q-field--outlined .q-field__control:before {
   border-color: $acero-claro;
 }
+
+.q-table thead th,
+.q-markup-table thead th {
+  background: $secondary;
+  color: white;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.q-table thead th .q-table__sort-icon {
+  color: rgba(white, 0.7);
+}
+
+.q-table tbody tr,
+.q-markup-table tbody tr {
+  transition: background-color $duracion-rapida ease;
+}
+
+.q-table__bottom {
+  color: $grafito-medio;
+}
