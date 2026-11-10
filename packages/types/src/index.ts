@@ -195,6 +195,7 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
   activo: boolean;
+  modulos: Record<string, boolean>;
   areas?: AreaAsignada[];
 }
 
@@ -266,4 +267,5 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
+  encargados?: Usuario[];
 }

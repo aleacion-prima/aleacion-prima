@@ -6,6 +6,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiereSesion?: boolean;
     roles?: Rol[];
+    // Si se define, la ruta solo es accesible con ese módulo activo.
+    modulo?: string;
   }
 }
 
@@ -27,7 +29,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'areas',
-        component: () => import('@/pages/area/AreasPage.vue'),
+        component: () => import('@/pages/areas/AreasPage.vue'),
         meta: { roles: ['administrador'] },
       },
       {
