@@ -6,6 +6,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiereSesion?: boolean;
     roles?: Rol[];
+    // Si se define, la ruta solo es accesible con ese módulo activo.
+    modulo?: string;
   }
 }
 

@@ -2,16 +2,33 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { Usuario } from '@aleacion-prima/types';
 import { peticionSesion, prepararCsrf, useApi } from '@/services/api';
-import { desconectarEcho } from '@/services/echo';
+import { desconectarEcho, obtenerEcho } from '@/services/echo';
 
 export const useSesionStore = defineStore('sesion', () => {
   const usuario = ref<Usuario | null>(null);
   const cargada = ref<boolean>(false);
+  const modulos = ref<Record<string, boolean>>({});
+  let suscritoModulos = false;
+
+  const moduloActivo = (nombre: string): boolean => modulos.value[nombre] === true;
+
+  // Escucha en vivo los cambios de módulos (canal privado, tras el login).
+  const suscribirModulos = (): void => {
+    if (suscritoModulos) return;
+    suscritoModulos = true;
+    obtenerEcho()
+      .private('modulos')
+      .listen('.modulos.actualizados', (e: { modulos: Record<string, boolean> }) => {
+        modulos.value = e.modulos;
+      });
+  };
 
   const cargar = async (): Promise<void> => {
     const { data, error } = await useApi<Usuario>('/user').json<Usuario>();
     usuario.value = error.value ? null : data.value;
+    modulos.value = usuario.value?.modulos ?? {};
     cargada.value = true;
+    if (usuario.value) suscribirModulos();
   };
 
   const iniciar = async (email: string, password: string): Promise<void> => {
@@ -28,6 +45,8 @@ export const useSesionStore = defineStore('sesion', () => {
     await peticionSesion('/logout');
     desconectarEcho();
     usuario.value = null;
+    modulos.value = {};
+    suscritoModulos = false;
   };
 
   const recuperar = async (email: string): Promise<string> => {
@@ -75,6 +94,8 @@ export const useSesionStore = defineStore('sesion', () => {
   return {
     usuario,
     cargada,
+    modulos,
+    moduloActivo,
     cargar,
     iniciar,
     cerrar,
