@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\Rol;
 use App\Http\Requests\GuardarUsuarioRequest;
 use App\Http\Resources\UsuarioResource;
-use App\Models\Area;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,14 +18,6 @@ class UsuarioController extends Controller
         return response()->json(UsuarioResource::collection(
             User::query()->with('areas')->orderBy('name')->get(),
         ));
-    }
-
-    public function areas(): JsonResponse
-    {
-        return response()->json(Area::query()
-            ->where('activo', true)
-            ->orderBy('orden_catalogo')
-            ->get(['id', 'codigo', 'nombre']));
     }
 
     public function store(GuardarUsuarioRequest $request): JsonResponse
@@ -53,6 +44,13 @@ class UsuarioController extends Controller
                 && $this->esElUsuarioAutenticado($request, $usuario),
             Response::HTTP_UNPROCESSABLE_ENTITY,
             'No puedes desactivarte a ti mismo.'
+        );
+
+        abort_if(
+            $this->esElUsuarioAutenticado($request, $usuario)
+                && $datos['rol'] !== Rol::Administrador->value,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'No puedes quitarte el rol de administrador.'
         );
 
         return DB::transaction(function () use ($datos, $usuario): JsonResponse {

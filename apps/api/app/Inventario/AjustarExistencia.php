@@ -7,6 +7,7 @@ use App\Models\Ajuste;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AjustarExistencia
 {
@@ -20,6 +21,15 @@ class AjustarExistencia
             $insumo = Insumo::query()->lockForUpdate()->findOrFail($insumo->id);
             $anterior = (float) $insumo->existencia;
             $nuevo = (float) $datos['cantidad_real'];
+
+            // Un ajuste que no cambia nada solo ensucia el historial con un
+            // movimiento de cero; la existencia ya está en la cantidad real.
+            if (abs($nuevo - $anterior) < 0.0005) {
+                throw ValidationException::withMessages([
+                    'cantidad_real' => 'La cantidad real ya es la existencia actual: no hay nada que ajustar.',
+                ]);
+            }
+
             $diferencia = $nuevo - $anterior;
 
             $ajuste = Ajuste::query()->create([
@@ -42,6 +52,13 @@ class AjustarExistencia
             ]);
 
             $insumo->update(['existencia' => $nuevo]);
+
+            (new DetectorStockMinimo)->revisar(
+                $insumo->id,
+                $anterior,
+                $nuevo,
+                (float) $insumo->stock_minimo,
+            );
 
             return compact('ajuste', 'movimiento');
         });

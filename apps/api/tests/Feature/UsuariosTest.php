@@ -69,6 +69,20 @@ it('edita un usuario y sincroniza sus áreas', function () {
         ->assertJsonPath('areas.0.id', $area->id);
 });
 
+it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?activo=1', function () {
+    Sanctum::actingAs(administrador());
+    $activa = area();
+    $inactiva = area();
+    $inactiva->update(['activo' => false]);
+
+    getJson('/api/areas-disponibles')->assertNotFound();
+
+    getJson('/api/areas?activo=1')
+        ->assertOk()
+        ->assertJsonFragment(['id' => $activa->id, 'nombre' => $activa->nombre])
+        ->assertJsonMissing(['id' => $inactiva->id]);
+});
+
 it('da de baja sin borrar el usuario y revoca sus tokens', function () {
     Sanctum::actingAs(administrador());
     $usuario = User::factory()->create();
@@ -107,6 +121,21 @@ it('no permite que el administrador se desactive a sí mismo', function () {
     expect($administrador->fresh()->activo)->toBeTrue();
 });
 
+it('no permite que el administrador se quite su propio rol', function () {
+    $administrador = administrador();
+    Sanctum::actingAs($administrador);
+
+    putJson("/api/usuarios/{$administrador->id}", [
+        'name' => $administrador->name,
+        'email' => $administrador->email,
+        'rol' => Rol::Ventas->value,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'No puedes quitarte el rol de administrador.');
+
+    expect($administrador->fresh()->hasRole(Rol::Administrador))->toBeTrue();
+});
+
 it('permite que el administrador edite sus propios datos', function () {
     $administrador = administrador();
     Sanctum::actingAs($administrador);
@@ -143,5 +172,5 @@ it('restringe la gestión de usuarios al administrador', function (Rol $rol) {
     Sanctum::actingAs($usuario);
 
     getJson('/api/usuarios')->assertForbidden();
-    getJson('/api/areas-disponibles')->assertForbidden();
+    getJson('/api/areas')->assertForbidden();
 })->with([Rol::Ventas, Rol::Encargado]);

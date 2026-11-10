@@ -45,7 +45,7 @@ const cargar = async (): Promise<void> => {
   cargando.value = true;
   const [usuariosRes, areasRes] = await Promise.all([
     useApi<Usuario[]>('/usuarios').json<Usuario[]>(),
-    useApi<AreaAsignada[]>('/areas-disponibles').json<AreaAsignada[]>(),
+    useApi<AreaAsignada[]>('/areas?activo=1').json<AreaAsignada[]>(),
   ]);
   cargando.value = false;
 
@@ -95,26 +95,26 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Usuario actualizado' : 'Usuario creado' });
 };
 
-const eliminarConfirmado = async (usuario: Usuario): Promise<void> => {
+const darDeBajaConfirmado = async (usuario: Usuario): Promise<void> => {
   const { error } = await useApi(`/usuarios/${usuario.id}`).delete().text();
 
   if (error.value) {
-    $q.notify({ type: 'negative', message: 'No se pudo eliminar al usuario' });
+    $q.notify({ type: 'negative', message: 'No se pudo dar de baja al usuario' });
     return;
   }
   dialogo.value = false;
   await cargar();
-  $q.notify({ type: 'positive', message: 'Usuario eliminado' });
+  $q.notify({ type: 'positive', message: 'Usuario dado de baja' });
 };
 
-const eliminar = (usuario: Usuario): void => {
+const darDeBaja = (usuario: Usuario): void => {
   $q.dialog({
-    title: 'Eliminar usuario',
-    message: `¿Eliminar a ${usuario.name}? Su cuenta quedará inactiva y se cerrarán sus sesiones.`,
+    title: 'Dar de baja',
+    message: `¿Dar de baja a ${usuario.name}? Su cuenta quedará inactiva y se cerrarán sus sesiones.`,
     cancel: true,
     persistent: true,
   }).onOk(() => {
-    void eliminarConfirmado(usuario);
+    void darDeBajaConfirmado(usuario);
   });
 };
 
@@ -203,6 +203,7 @@ onMounted(cargar);
             outlined
             emit-value
             :option-label="etiquetaRol"
+            :disable="esUnoMismo(editando)"
           />
           <q-select
             v-if="formulario.rol === 'encargado'"
@@ -223,7 +224,7 @@ onMounted(cargar);
             :disable="esUnoMismo(editando)"
           />
           <div v-if="editando && esUnoMismo(editando)" class="text-secundario text-caption">
-            No puedes desactivar tu propia cuenta.
+            No puedes desactivar tu cuenta ni quitarte el rol de administrador.
           </div>
         </q-card-section>
         <q-card-actions>
@@ -232,8 +233,9 @@ onMounted(cargar);
             flat
             no-caps
             color="negative"
-            label="Eliminar usuario"
-            @click="eliminar(editando)"
+            icon="person_off"
+            label="Dar de baja"
+            @click="darDeBaja(editando)"
           />
           <q-space />
           <q-btn v-close-popup flat label="Cancelar" />
