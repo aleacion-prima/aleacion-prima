@@ -121,6 +121,21 @@ it('no permite que el administrador se desactive a sí mismo', function () {
     expect($administrador->fresh()->activo)->toBeTrue();
 });
 
+it('no permite que el administrador se quite su propio rol', function () {
+    $administrador = administrador();
+    Sanctum::actingAs($administrador);
+
+    putJson("/api/usuarios/{$administrador->id}", [
+        'name' => $administrador->name,
+        'email' => $administrador->email,
+        'rol' => Rol::Ventas->value,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'No puedes quitarte el rol de administrador.');
+
+    expect($administrador->fresh()->hasRole(Rol::Administrador))->toBeTrue();
+});
+
 it('permite que el administrador edite sus propios datos', function () {
     $administrador = administrador();
     Sanctum::actingAs($administrador);
