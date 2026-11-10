@@ -43,10 +43,11 @@ class Producto extends Model
             ->orderByPivot('orden');
     }
 
-    /** @return BelongsToMany<Insumo, $this> */
+    /** @return BelongsToMany<Insumo, $this, ProductoInsumo, 'pivot'> */
     public function insumos(): BelongsToMany
     {
         return $this->belongsToMany(Insumo::class, 'producto_insumo')
+            ->using(ProductoInsumo::class)
             ->withPivot('cantidad_por_pieza');
     }
 

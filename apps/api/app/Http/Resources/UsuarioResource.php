@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\Area;
 use App\Models\User;
+use App\Support\Modulos;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,7 @@ class UsuarioResource extends JsonResource
             'email' => $this->email,
             'rol' => $this->getRoleNames()->first(),
             'activo' => $this->activo,
+            'modulos' => Modulos::estado(),
             'areas' => $this->whenLoaded('areas', fn () => $this->areas->map(fn (Area $area) => [
                 'id' => $area->id,
                 'codigo' => $area->codigo,

@@ -28,6 +28,9 @@ export default defineRouter(({ store }) => {
     if (to.meta.roles && (!sesion.usuario?.rol || !to.meta.roles.includes(sesion.usuario.rol))) {
       return '/';
     }
+    if (to.meta.modulo && !sesion.moduloActivo(to.meta.modulo)) {
+      return '/';
+    }
     if (to.meta.requiereSesion && !sesion.usuario) {
       return { path: '/login', query: { volver: to.fullPath } };
     }

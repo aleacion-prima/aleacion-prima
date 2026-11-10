@@ -32,7 +32,7 @@ class AreaRequest extends FormRequest
      */
     public function rules(): array
     {
-        $area = $this->route('area');
+        $area = $this->route('area') ?? $this->route('areas');
         $tarifa = ['required', 'numeric', 'min:0', 'max:9999999999', 'decimal:0,4'];
 
         return [
@@ -42,8 +42,10 @@ class AreaRequest extends FormRequest
             'tarifa_mano_obra_hora' => $tarifa,
             'costo_maquina_hora' => $tarifa,
             'obligatoria' => ['required', 'boolean'],
-            'orden_catalogo' => ['required', 'integer', 'min:1', Rule::unique('areas', 'orden_catalogo')->ignore($area)],
+            'orden_catalogo' => ['sometimes', 'integer', 'min:1', Rule::unique('areas', 'orden_catalogo')->ignore($area)],
             'activo' => $this->isMethod('POST') ? ['sometimes', 'boolean'] : ['required', 'boolean'],
+            'encargados' => ['sometimes', 'array'],
+            'encargados.*' => ['integer', 'distinct', Rule::exists('users', 'id')],
         ];
     }
 
@@ -75,11 +77,13 @@ class AreaRequest extends FormRequest
             'costo_maquina_hora.numeric' => 'El costo de máquina debe ser un número.',
             'costo_maquina_hora.min' => 'El costo de máquina no puede ser negativo.',
             'costo_maquina_hora.decimal' => 'El costo de máquina admite hasta :decimal decimales.',
-            'orden_catalogo.required' => 'El orden en el catálogo es obligatorio.',
             'orden_catalogo.integer' => 'El orden debe ser un número entero.',
             'orden_catalogo.min' => 'El orden empieza en :min.',
             'orden_catalogo.unique' => 'Otra área ya ocupa ese lugar en el catálogo.',
             'obligatoria.required' => 'Indica si el área es obligatoria.',
+            'encargados.array' => 'Los encargados deben enviarse como una lista.',
+            'encargados.*.exists' => 'Alguno de los encargados seleccionados ya no existe.',
+            'encargados.*.distinct' => 'Un encargado no puede repetirse.',
             'activo.required' => 'Indica si el área está activa.',
         ];
     }
