@@ -55,14 +55,13 @@ Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lectur
 | `PUT`    | `/api/insumos/{insumo}`                 | Administrador         | RF-08        |
 | `DELETE` | `/api/insumos/{insumo}`                 | Administrador         | RF-08        |
 | `GET`    | `/api/usuarios`                         | Administrador         | RF-09        |
-| `GET`    | `/api/areas-disponibles`                | Administrador         | RF-09, RF-48 |
 | `POST`   | `/api/usuarios`                         | Administrador         | RF-09, RF-48 |
 | `PUT`    | `/api/usuarios/{usuario}`               | Administrador         | RF-09, RF-48 |
 | `DELETE` | `/api/usuarios/{usuario}`               | Administrador         | RF-09        |
 
 - `DELETE` no borra en ningún catálogo: desactiva (`activo = false`). En usuarios, además, revoca sus tokens.
 - El recorrido por defecto y la receta de insumos de un producto viajan dentro de `/api/productos` (RF-07); no tienen ruta propia. `GET /api/productos/opciones` devuelve las áreas e insumos activos para armarlos.
-- Las áreas de un encargado viajan como `area_ids` dentro de `POST` y `PUT /api/usuarios` (RF-48); `GET /api/areas-disponibles` devuelve las áreas activas para elegirlas.
+- Las áreas de un encargado viajan como `area_ids` dentro de `POST` y `PUT /api/usuarios` (RF-48); para elegirlas, el panel pide `GET /api/areas?activo=1`.
 
 ## Inventario
 
@@ -75,6 +74,9 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 | `GET`  | `/api/insumos/{insumo}/movimientos` | Administrador         | RF-11               |
 | `GET`  | `/api/inventario/insumos`           | Ventas, Administrador | RF-13, RF-11        |
 | `GET`  | `/api/inventario/productos`         | Ventas, Administrador | RF-13, RF-15        |
+
+- Un ajuste con la misma cantidad que ya existe se rechaza con `422`: no se registra un movimiento de cero.
+- Entradas y ajustes avisan al detector de stock mínimo: cuando el movimiento deja la existencia igual o por debajo del mínimo, se emite `StockMinimoAlcanzado` (RF-14).
 
 ## Lotes
 
@@ -189,7 +191,6 @@ Se recorta en este orden si el tiempo no alcanza: chat de cotizaciones, clientes
 ## Pendiente
 
 - **Lectura de catálogos para Ventas.** El contrato inicial daba a Ventas la lectura de productos e insumos, y a Ventas y Encargado la de áreas; en el Sprint 1 se implementaron solo para Administrador. Se decide en la planeación del Sprint 2 si se abre el `GET` a esos roles.
-- **`/api/areas-disponibles` contra `/api/areas?activo=1`.** Devuelven lo mismo para elegir áreas activas; conviene dejar solo una.
 
 - **Quién crea lotes.** RF-16 dice Administrador; [flujo-lote.md](flujo-lote.md) y el diagrama de estados dicen Ventas o Administrador. Aquí se sigue el RF. Si ventas también crea, `POST /api/lotes` pasa a `role:ventas|administrador` y se actualizan RF-16 y autenticacion.md.
 - **Costos para el encargado.** Se propone que `historial` y `GET /api/lotes/{codigo}` no devuelvan costos al encargado de área ni a la app móvil; solo `costo` y `bitacora` los exponen, y solo a Ventas y Administrador. Confirmar con el equipo.
