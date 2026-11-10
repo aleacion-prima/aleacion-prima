@@ -3,9 +3,15 @@ import { computed } from 'vue';
 import type { Rol } from '@aleacion-prima/types';
 import { MENU_POR_ROL } from '@/catalogos/menu';
 
-const props = withDefaults(defineProps<{ rol?: Rol }>(), { rol: 'administrador' });
+const props = withDefaults(defineProps<{ rol?: Rol; modulos?: Record<string, boolean> }>(), {
+  rol: 'administrador',
+  modulos: () => ({}),
+});
 
-const secciones = computed(() => MENU_POR_ROL[props.rol]);
+// Oculta las secciones cuyo módulo esté apagado (p. ej. ventas).
+const secciones = computed(() =>
+  MENU_POR_ROL[props.rol].filter((seccion) => !seccion.modulo || props.modulos[seccion.modulo]),
+);
 </script>
 
 <template>
