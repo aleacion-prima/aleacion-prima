@@ -115,7 +115,7 @@ describe('alta', function () {
     it('valida campos obligatorios', function () {
         postJson('/api/areas', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['codigo', 'nombre', 'tarifa_mano_obra_hora', 'costo_maquina_hora', 'obligatoria', 'orden_catalogo']);
+            ->assertJsonValidationErrors(['codigo', 'nombre', 'tarifa_mano_obra_hora', 'costo_maquina_hora', 'obligatoria']);
     });
 
     it('rechaza código, nombre y orden repetidos', function () {
@@ -216,6 +216,83 @@ describe('desactivación', function () {
         ]))->assertUnprocessable()->assertJsonValidationErrors('activo');
 
         expect($area->refresh()->activo)->toBeTrue();
+    });
+});
+
+describe('orden y encargados', function () {
+    beforeEach(function () {
+        actuarComo(Rol::Administrador);
+    });
+
+    it('asigna el orden al final del catálogo cuando no se envía', function () {
+        Area::factory()->create(['orden_catalogo' => 5]);
+
+        $datos = datosDeArea();
+        unset($datos['orden_catalogo']);
+
+        postJson('/api/areas', $datos)->assertCreated()->assertJsonPath('orden_catalogo', 6);
+    });
+
+    it('guarda los encargados al crear y los devuelve con id y nombre', function () {
+        $encargado = User::factory()->create(['name' => 'Julio López']);
+
+        postJson('/api/areas', datosDeArea(['encargados' => [$encargado->id]]))
+            ->assertCreated()
+            ->assertJsonPath('encargados.0.id', $encargado->id)
+            ->assertJsonPath('encargados.0.name', 'Julio López');
+
+        $this->assertDatabaseHas('area_user', ['user_id' => $encargado->id]);
+    });
+
+    it('reemplaza los encargados al editar', function () {
+        $area = Area::factory()->create();
+        [$a, $b] = User::factory()->count(2)->create();
+        $area->encargados()->sync([$a->id]);
+
+        putJson("/api/areas/{$area->id}", datosDeArea([
+            'codigo' => $area->codigo,
+            'nombre' => $area->nombre,
+            'orden_catalogo' => $area->orden_catalogo,
+            'encargados' => [$b->id],
+        ]))->assertOk()->assertJsonPath('encargados.0.id', $b->id);
+
+        expect($area->encargados()->pluck('users.id')->all())->toBe([$b->id]);
+    });
+
+    it('conserva los encargados si la edición no envía el campo', function () {
+        $area = Area::factory()->create();
+        $encargado = User::factory()->create();
+        $area->encargados()->sync([$encargado->id]);
+
+        putJson("/api/areas/{$area->id}", datosDeArea([
+            'codigo' => $area->codigo,
+            'nombre' => $area->nombre,
+            'orden_catalogo' => $area->orden_catalogo,
+        ]))->assertOk();
+
+        expect($area->encargados()->count())->toBe(1);
+    });
+
+    it('quita todos los encargados con una lista vacía', function () {
+        $area = Area::factory()->create();
+        $area->encargados()->sync([User::factory()->create()->id]);
+
+        putJson("/api/areas/{$area->id}", datosDeArea([
+            'codigo' => $area->codigo,
+            'nombre' => $area->nombre,
+            'orden_catalogo' => $area->orden_catalogo,
+            'encargados' => [],
+        ]))->assertOk()->assertJsonPath('encargados', []);
+    });
+
+    it('rechaza encargados inexistentes o repetidos', function () {
+        $encargado = User::factory()->create();
+
+        postJson('/api/areas', datosDeArea(['encargados' => [9999]]))
+            ->assertUnprocessable()->assertJsonValidationErrors('encargados.0');
+
+        postJson('/api/areas', datosDeArea(['encargados' => [$encargado->id, $encargado->id]]))
+            ->assertUnprocessable()->assertJsonValidationErrors('encargados.0');
     });
 });
 

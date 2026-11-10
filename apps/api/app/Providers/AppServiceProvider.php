@@ -2,14 +2,22 @@
 
 namespace App\Providers;
 
+use App\Events\LoteActualizado;
+use App\Listeners\DifundirModulos;
+use App\Lotes\RecalcularCostoAlActualizar;
 use App\Models\User;
+use App\Support\Modulos;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Pennant\Events\FeatureUpdated;
+use Laravel\Pennant\Events\FeatureUpdatedForAllScopes;
+use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::withoutWrapping();
+
+        // Cada vez que un lote cambia, se recalcula su costo.
+        Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición
@@ -70,5 +81,18 @@ class AppServiceProvider extends ServiceProvider
                     $headers,
                 ));
         });
+
+        // --- Módulos (feature flags con Pennant) ---
+        // Scope global: una bandera vale igual para todos, no por usuario.
+        Feature::resolveScopeUsing(fn () => null);
+
+        // Cada módulo arranca apagado.
+        foreach (Modulos::nombres() as $modulo) {
+            Feature::define($modulo, fn () => false);
+        }
+
+        // Al cambiar una bandera, difundir el estado de los módulos por Reverb.
+        Event::listen(FeatureUpdated::class, DifundirModulos::class);
+        Event::listen(FeatureUpdatedForAllScopes::class, DifundirModulos::class);
     }
 }

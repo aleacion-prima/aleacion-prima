@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Area;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,6 +29,12 @@ class AreaResource extends JsonResource
             'obligatoria' => $this->obligatoria,
             'orden_catalogo' => $this->orden_catalogo,
             'activo' => $this->activo,
+            'encargados' => $this->whenLoaded(
+                'encargados',
+                fn () => $this->encargados
+                    ->map(fn (User $usuario) => ['id' => $usuario->id, 'name' => $usuario->name])
+                    ->values(),
+            ),
         ];
     }
 }

@@ -8,6 +8,8 @@ export interface ElementoMenu {
 
 export interface SeccionMenu {
   titulo?: string;
+  // Si se define, la sección solo se muestra cuando ese módulo está activo.
+  modulo?: string;
   elementos: ElementoMenu[];
 }
 
@@ -38,6 +40,7 @@ const catalogos: SeccionMenu = {
 
 const ventas: SeccionMenu = {
   titulo: 'Ventas',
+  modulo: 'ventas',
   elementos: [
     { etiqueta: 'Clientes', ruta: '/clientes', icono: 'groups' },
     { etiqueta: 'Pedidos', ruta: '/pedidos', icono: 'receipt_long' },
@@ -62,5 +65,10 @@ export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
     },
     notificaciones,
   ],
-  cliente: [{ elementos: [{ etiqueta: 'Cotizaciones', ruta: '/cotizaciones', icono: 'chat' }] }],
+  cliente: [
+    {
+      modulo: 'ventas',
+      elementos: [{ etiqueta: 'Cotizaciones', ruta: '/cotizaciones', icono: 'chat' }],
+    },
+  ],
 };
