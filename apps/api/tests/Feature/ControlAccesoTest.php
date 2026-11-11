@@ -32,22 +32,22 @@ it('responde 401 sin sesión', function () {
 });
 
 it('responde 403 a un rol que no le toca la ruta', function () use ($conRol) {
-    Sanctum::actingAs($conRol(Rol::Encargado));
+    Sanctum::actingAs($conRol(Rol::Encargado), ['*']);
 
     getJson('/api/prueba/ventas')->assertForbidden();
     getJson('/api/prueba/administracion')->assertForbidden();
 });
 
 it('deja pasar al rol de la ruta', function () use ($conRol) {
-    Sanctum::actingAs($conRol(Rol::Ventas));
+    Sanctum::actingAs($conRol(Rol::Ventas), ['*']);
     getJson('/api/prueba/ventas')->assertNoContent();
 
-    Sanctum::actingAs($conRol(Rol::Encargado));
+    Sanctum::actingAs($conRol(Rol::Encargado), ['*']);
     getJson('/api/prueba/captura')->assertNoContent();
 });
 
 it('el administrador puede todo lo de ventas y encargado', function () use ($conRol) {
-    Sanctum::actingAs($conRol(Rol::Administrador));
+    Sanctum::actingAs($conRol(Rol::Administrador), ['*']);
 
     getJson('/api/prueba/ventas')->assertNoContent();
     getJson('/api/prueba/captura')->assertNoContent();

@@ -18,7 +18,7 @@ function preguntaValida(): string
 
 it('el usuario guarda su pregunta y la respuesta queda hasheada, no en texto plano', function () {
     $user = User::factory()->create();
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     putJson('/api/perfil/pregunta-secreta', [
         'pregunta' => preguntaValida(),
@@ -34,7 +34,7 @@ it('el usuario guarda su pregunta y la respuesta queda hasheada, no en texto pla
 
 it('rechaza una pregunta que no está en la lista', function () {
     $user = User::factory()->create();
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     putJson('/api/perfil/pregunta-secreta', [
         'pregunta' => 'Una pregunta inventada',
@@ -44,7 +44,7 @@ it('rechaza una pregunta que no está en la lista', function () {
 
 it('muestra la pregunta actual y la lista disponible', function () {
     $user = User::factory()->create(['pregunta_secreta' => preguntaValida()]);
-    Sanctum::actingAs($user);
+    Sanctum::actingAs($user, ['*']);
 
     getJson('/api/perfil/pregunta-secreta')
         ->assertOk()

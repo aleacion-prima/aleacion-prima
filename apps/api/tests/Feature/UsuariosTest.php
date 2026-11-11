@@ -36,7 +36,7 @@ function area(): Area
 }
 
 it('permite al administrador crear un encargado con áreas', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $areas = [area(), area()];
 
     postJson('/api/usuarios', [
@@ -53,7 +53,7 @@ it('permite al administrador crear un encargado con áreas', function () {
 });
 
 it('edita un usuario y sincroniza sus áreas', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
     $area = area();
@@ -70,7 +70,7 @@ it('edita un usuario y sincroniza sus áreas', function () {
 });
 
 it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?activo=1', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $activa = area();
     $inactiva = area();
     $inactiva->update(['activo' => false]);
@@ -84,7 +84,7 @@ it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?
 });
 
 it('da de baja sin borrar el usuario y revoca sus tokens', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
 
@@ -96,7 +96,7 @@ it('da de baja sin borrar el usuario y revoca sus tokens', function () {
 
 it('no permite que el administrador se dé de baja a sí mismo', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     deleteJson("/api/usuarios/{$administrador->id}")
         ->assertStatus(422)
@@ -107,7 +107,7 @@ it('no permite que el administrador se dé de baja a sí mismo', function () {
 
 it('no permite que el administrador se desactive a sí mismo', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => $administrador->name,
@@ -123,7 +123,7 @@ it('no permite que el administrador se desactive a sí mismo', function () {
 
 it('no permite que el administrador se quite su propio rol', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => $administrador->name,
@@ -138,7 +138,7 @@ it('no permite que el administrador se quite su propio rol', function () {
 
 it('permite que el administrador edite sus propios datos', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => 'Administrador renombrado',
@@ -150,7 +150,7 @@ it('permite que el administrador edite sus propios datos', function () {
 });
 
 it('reactiva un usuario dado de baja', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create(['activo' => false]);
     $usuario->assignRole(Rol::Ventas);
 
@@ -169,7 +169,7 @@ it('reactiva un usuario dado de baja', function () {
 it('restringe la gestión de usuarios al administrador', function (Rol $rol) {
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     getJson('/api/usuarios')->assertForbidden();
     getJson('/api/areas')->assertForbidden();
