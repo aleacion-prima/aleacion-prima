@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@aleacion-prima/types": "workspace:*",
+    "@capacitor/preferences": "8.0.1",
     "@quasar/extras": "^2.1.0",
     "@vueuse/core": "^15.0.0",
     "laravel-echo": "^2.5.0",

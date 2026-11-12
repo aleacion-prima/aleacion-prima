@@ -12,7 +12,7 @@ function actuarComoProducto(string $rol): User
     Role::findOrCreate($rol, 'web');
     $usuario = User::factory()->create(['activo' => true]);
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     return $usuario;
 }
