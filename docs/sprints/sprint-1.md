@@ -37,8 +37,6 @@ Se cerraron **las 13 tareas comprometidas: 41 de 41 puntos**. No quedó deuda de
 
 El trabajo dejó en `main` la base de autenticación y permisos, los catálogos de áreas, productos e insumos con su API y sus pantallas, el inventario de insumos con entradas, ajustes y detección de stock mínimo, y el despliegue de prueba sobre Azure.
 
-Al cerrar esta acta, el tablero ya tiene el **Sprint 2** en curso con 17 tareas y 50 puntos: 8 en Done (28 puntos: T-18, T-19, T-20, T-22, T-23, T-25, T-26 y T-32) y 9 en Todo (22 puntos: T-21, T-24, T-27 a T-31, T-33 y T-34). T-24 es precisamente este documento.
-
 ## Retrospectiva
 
 ### Salió bien
