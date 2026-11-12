@@ -9,7 +9,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post('/login', [SesionController::class, 'iniciar'])->middleware(['guest', 'throttle:login']);
+Route::post('/login', [SesionController::class, 'iniciar'])->middleware(['throttle:login']);
 Route::post('/logout', [SesionController::class, 'cerrar'])->middleware('auth');
 
 Route::post('/forgot-password', [RecuperacionController::class, 'enviarEnlace'])
