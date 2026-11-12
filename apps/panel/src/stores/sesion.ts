@@ -10,9 +10,20 @@ export const useSesionStore = defineStore('sesion', () => {
   const usuario = ref<Usuario | null>(null);
   const cargada = ref<boolean>(false);
   const modulos = ref<Record<string, boolean>>({});
+  let canalUsuario: string | null = null;
   let suscritoModulos = false;
 
   const moduloActivo = (nombre: string): boolean => modulos.value[nombre] === true;
+
+  const suscribirUsuario = (id: number): void => {
+    if (canalUsuario) return;
+    canalUsuario = `App.Models.User.${id}`;
+    obtenerEcho()
+      .private(canalUsuario)
+      .listen('.usuario.actualizado', () => {
+        void cargar();
+      });
+  };
 
   // Escucha en vivo los cambios de módulos (canal privado, tras el login).
   const suscribirModulos = (): void => {
@@ -42,7 +53,15 @@ export const useSesionStore = defineStore('sesion', () => {
       const { borrarToken } = await import('@/services/tokenMovil');
       await borrarToken();
     }
-    if (usuario.value && !ES_MOVIL) suscribirModulos();
+    if (ES_MOVIL) return;
+    if (usuario.value) {
+      suscribirModulos();
+      suscribirUsuario(usuario.value.id);
+    } else if (canalUsuario) {
+      desconectarEcho();
+      suscritoModulos = false;
+      canalUsuario = null;
+    }
   };
 
   const iniciar = async (email: string, password: string): Promise<void> => {
@@ -81,6 +100,7 @@ export const useSesionStore = defineStore('sesion', () => {
     usuario.value = null;
     modulos.value = {};
     suscritoModulos = false;
+    canalUsuario = null;
   };
 
   const recuperar = async (email: string): Promise<string> => {

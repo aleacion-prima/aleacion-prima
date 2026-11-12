@@ -1,9 +1,13 @@
 <?php
 
 use App\Enums\Rol;
+use App\Events\UsuarioActualizado;
 use App\Models\Area;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -174,3 +178,66 @@ it('restringe la gestión de usuarios al administrador', function (Rol $rol) {
     getJson('/api/usuarios')->assertForbidden();
     getJson('/api/areas')->assertForbidden();
 })->with([Rol::Ventas, Rol::Encargado]);
+
+it('avisa en vivo al usuario cuando el administrador lo edita', function () {
+    Event::fake([UsuarioActualizado::class]);
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create();
+    $usuario->assignRole(Rol::Encargado);
+
+    putJson("/api/usuarios/{$usuario->id}", [
+        'name' => 'Nombre editado',
+        'email' => $usuario->email,
+        'rol' => Rol::Encargado->value,
+        'area_ids' => [area()->id],
+    ])->assertOk();
+
+    Event::assertDispatchedTimes(UsuarioActualizado::class, 1);
+    Event::assertDispatched(UsuarioActualizado::class, fn (UsuarioActualizado $evento) => $evento->id === $usuario->id);
+});
+
+it('avisa en vivo al usuario cuando lo dan de baja', function () {
+    Event::fake([UsuarioActualizado::class]);
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create();
+    $usuario->assignRole(Rol::Encargado);
+
+    deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
+
+    Event::assertDispatched(UsuarioActualizado::class, fn (UsuarioActualizado $evento) => $evento->id === $usuario->id);
+});
+
+it('no avisa nada si el cambio se rechaza', function () {
+    Event::fake([UsuarioActualizado::class]);
+    $administrador = administrador();
+    Sanctum::actingAs($administrador, ['*']);
+
+    deleteJson("/api/usuarios/{$administrador->id}")->assertStatus(422);
+    putJson("/api/usuarios/{$administrador->id}", [
+        'name' => $administrador->name,
+        'email' => $administrador->email,
+        'rol' => Rol::Ventas->value,
+    ])->assertStatus(422);
+
+    Event::assertNotDispatched(UsuarioActualizado::class);
+});
+
+it('el aviso va solo al canal privado del usuario y solo lleva su id', function () {
+    $evento = new UsuarioActualizado(7);
+
+    expect($evento)->toBeInstanceOf(ShouldDispatchAfterCommit::class)
+        ->and($evento->broadcastOn()->name)->toBe('private-App.Models.User.7')
+        ->and($evento->broadcastAs())->toBe('usuario.actualizado')
+        ->and($evento->broadcastWith())->toBe(['id' => 7]);
+});
+
+it('el aviso sale hasta que se guardan los cambios', function () {
+    Event::fake([UsuarioActualizado::class]);
+
+    DB::transaction(function () {
+        UsuarioActualizado::dispatch(7);
+        Event::assertNotDispatched(UsuarioActualizado::class);
+    });
+
+    Event::assertDispatched(UsuarioActualizado::class);
+});
