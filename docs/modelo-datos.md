@@ -269,16 +269,16 @@ La materia prima cambia de naturaleza en la primera parada (entra chatarra y are
 
 **`ajustes`** — una sola tabla para corregir cualquier cosa ya registrada: lote terminado, existencias, movimientos. En vez de una relación polimórfica usa un **arco exclusivo**: cuatro llaves foráneas nulas y una restricción `CHECK` que obliga a que exactamente una tenga valor, así la BD garantiza que ningún ajuste apunta al vacío.
 
-| Columna          | Tipo     | Notas                                                                 |
-| ---------------- | -------- | --------------------------------------------------------------------- |
-| `lote_area_id`   | fk, null | Uno y solo uno de estos cuatro                                        |
-| `lote_insumo_id` | fk, null |                                                                       |
-| `insumo_id`      | fk, null |                                                                       |
-| `producto_id`    | fk, null |                                                                       |
-| `campo`          | string   | Qué columna cambió (`piezas_entregadas`, `retorno_kg`, `existencia`…) |
-| `valores`        | jsonb    | `{ "anterior": 48, "nuevo": 47 }`; conserva el tipo                   |
-| `motivo`         | text     | Obligatorio                                                           |
-| `user_id`        | fk       | Solo administrador                                                    |
+| Columna          | Tipo     | Notas                                                               |
+| ---------------- | -------- | ------------------------------------------------------------------- |
+| `lote_area_id`   | fk, null | Uno y solo uno de estos cuatro                                      |
+| `lote_insumo_id` | fk, null |                                                                     |
+| `insumo_id`      | fk, null |                                                                     |
+| `producto_id`    | fk, null |                                                                     |
+| `campo`          | string   | Qué columna cambió (`piezas_entregadas`, `cantidad`, `existencia`…) |
+| `valores`        | jsonb    | `{ "anterior": 48, "nuevo": 47 }`; conserva el tipo                 |
+| `motivo`         | text     | Obligatorio                                                         |
+| `user_id`        | fk       | Solo administrador                                                  |
 
 ```sql
 ALTER TABLE ajustes ADD CONSTRAINT ajustes_un_objetivo

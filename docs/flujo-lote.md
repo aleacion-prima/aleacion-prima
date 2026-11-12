@@ -118,6 +118,7 @@ Un lote en `creado` o `en_proceso` se puede cancelar (solo el administrador), co
 Un lote `terminado` no se edita. Si una captura estuvo mal:
 
 - Se registra un **ajuste** sobre el movimiento afectado: valor anterior, valor nuevo, **motivo** y **responsable** (usuario que lo hace; solo administrador).
+- Los datos ajustables son las piezas recibidas o entregadas, la merma de material y las horas de entrada o salida de una parada, y la cantidad asignada o devuelta de un insumo. La merma en piezas se recalcula sola. `retorno_kg` todavía no se ajusta: requiere compensar también el movimiento `retorno`.
 - El ajuste recalcula el costo real y, si cambia la cantidad de piezas terminadas, el inventario. Todo queda en la bitácora.
 - Es el mismo mecanismo de los ajustes de inventario que el análisis de riesgos pide en RE-04; se implementa una sola vez y se usa para ambos.
 

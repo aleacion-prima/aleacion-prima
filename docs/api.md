@@ -95,6 +95,9 @@ Al crear un lote, el recorrido es opcional: si no se manda, se clona el del prod
 | `POST` | `/api/lotes/{codigo}/confirmar` | Administrador                            | RF-22, RF-24, RF-15, RF-33        |
 | `POST` | `/api/lotes/{codigo}/cancelar`  | Administrador                            | RF-21, RF-24                      |
 | `POST` | `/api/lotes/{codigo}/ajustes`   | Administrador                            | RF-23, RF-32, RF-36               |
+| `GET`  | `/api/lotes/{codigo}/ajustes`   | Administrador                            | RF-23, RF-36                      |
+
+Un ajuste corrige un solo dato ya capturado, sin reabrir el lote: se indica `lote_area_id` o `lote_insumo_id`, el `campo`, el `valor` nuevo y un `motivo` obligatorio. En las paradas se ajustan `piezas_recibidas`, `piezas_entregadas`, `merma_material`, `entrada_ocurrido_en` y `salida_ocurrido_en`; en los insumos asignados, `cantidad` y `cantidad_devuelta`. La API guarda el valor anterior y el nuevo, recalcula el costo en la misma transacción y, si cambian las `piezas_entregadas` de la última parada de un lote terminado, corrige `piezas_terminadas` y la existencia del producto con un movimiento `ajuste`. `POST` responde `{ ajuste, lote }`; `GET` devuelve el historial con el renglón, el responsable y el motivo. El ajuste de `retorno_kg` queda pendiente porque tendría que compensar también el movimiento `retorno` del insumo.
 
 La etiqueta con el código QR (RF-20) la genera el panel con `qrcode.vue` a partir de los datos de `GET /api/lotes/{codigo}`; no necesita ruta propia.
 
