@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { Lote } from '@aleacion-prima/types';
+import type { AjusteLote, Lote, LoteInsumoAsignado } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
-import { conPlural, formatearMoneda } from '@/composables/formato';
+import { conPlural, formatearCantidad, formatearMoneda } from '@/composables/formato';
 import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
 import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
+import { etiquetaCampo, type ObjetivoAjuste } from '@/catalogos/ajustes';
+import type { EstadoParada } from '@/catalogos/areas';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -13,14 +15,18 @@ import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
 import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
 import DialogoConfirmarCierre from '@/components/lotes/DialogoConfirmarCierre.vue';
 import DialogoCancelarLote from '@/components/lotes/DialogoCancelarLote.vue';
+import DialogoAjusteLote from '@/components/lotes/DialogoAjusteLote.vue';
 import { useSesionStore } from '@/stores/sesion';
 
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
+const ajustes = ref<AjusteLote[]>([]);
 const capturando = ref(false);
 const confirmando = ref(false);
 const cancelando = ref(false);
+const ajustando = ref(false);
+const objetivoAjuste = ref<ObjetivoAjuste | null>(null);
 const sesion = useSesionStore();
 
 const esAdmin = computed(() => sesion.usuario?.rol === 'administrador');
@@ -95,6 +101,53 @@ const cargar = async (): Promise<void> => {
   cargando.value = false;
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
+  if (lote.value && esAdmin.value) void cargarAjustes();
+};
+
+const cargarAjustes = async (): Promise<void> => {
+  const codigo = String(route.params.codigo ?? '');
+  const { data, error } = await useApi<AjusteLote[]>(
+    `/lotes/${encodeURIComponent(codigo)}/ajustes`,
+  ).json<AjusteLote[]>();
+  ajustes.value = error.value || !Array.isArray(data.value) ? [] : data.value;
+};
+
+const abrirAjusteParada = (indice: number): void => {
+  const parada = lote.value?.paradas[indice];
+  if (!parada) return;
+  objetivoAjuste.value = { tipo: 'parada', parada };
+  ajustando.value = true;
+};
+
+const abrirAjusteInsumo = (insumo: LoteInsumoAsignado): void => {
+  objetivoAjuste.value = { tipo: 'insumo', insumo };
+  ajustando.value = true;
+};
+
+const puedeAjustarParada = (estado: EstadoParada): boolean =>
+  estado === 'terminada' || estado === 'en_curso' || estado === 'cancelada';
+
+const alGuardarAjuste = (actualizado: Lote): void => {
+  lote.value = actualizado;
+  void cargarAjustes();
+};
+
+const renglonDeAjuste = (ajuste: AjusteLote): string =>
+  ajuste.parada
+    ? `Parada ${ajuste.parada.orden} · ${ajuste.parada.area.nombre}`
+    : ajuste.insumo
+      ? `${ajuste.insumo.codigo} · ${ajuste.insumo.nombre}`
+      : '—';
+
+const valorDeAjuste = (ajuste: AjusteLote, valor: string | number | null): string => {
+  if (valor === null) return '—';
+  if (ajuste.campo === 'entrada_ocurrido_en' || ajuste.campo === 'salida_ocurrido_en') {
+    return fecha.format(new Date(String(valor)));
+  }
+  if (ajuste.campo === 'piezas_recibidas' || ajuste.campo === 'piezas_entregadas') {
+    return formatearCantidad(valor, 0);
+  }
+  return formatearCantidad(valor);
 };
 
 useLotesEnVivo(useCanalesDeLotes(), (evento) => {
@@ -232,7 +285,22 @@ watch(
       <q-card flat bordered class="q-mb-md">
         <q-card-section>
           <h2 class="text-h6 q-mt-none q-mb-sm">Recorrido</h2>
-          <RecorridoLote :paradas="paradasDeLote(lote)" />
+          <RecorridoLote :paradas="paradasDeLote(lote)">
+            <template #accion="{ indice, parada }">
+              <q-btn
+                v-if="esAdmin && puedeAjustarParada(parada.estado)"
+                flat
+                dense
+                no-caps
+                size="sm"
+                color="primary"
+                icon="tune"
+                label="Ajustar"
+                class="q-mt-sm"
+                @click="abrirAjusteParada(indice)"
+              />
+            </template>
+          </RecorridoLote>
         </q-card-section>
       </q-card>
 
@@ -248,6 +316,7 @@ watch(
                 <th v-if="lote.insumos[0]?.costo_unitario !== undefined" class="text-right">
                   Costo unitario
                 </th>
+                <th v-if="esAdmin" class="text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -260,6 +329,56 @@ watch(
                 <td v-if="asignado.costo_unitario !== undefined" class="text-right codigo">
                   {{ formatearMoneda(asignado.costo_unitario) }}
                 </td>
+                <td v-if="esAdmin" class="text-right">
+                  <q-btn
+                    flat
+                    dense
+                    no-caps
+                    size="sm"
+                    color="primary"
+                    icon="tune"
+                    label="Ajustar"
+                    @click="abrirAjusteInsumo(asignado)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </q-markup-table>
+        </q-card-section>
+      </q-card>
+      <q-card v-if="esAdmin" flat bordered class="q-mt-md">
+        <q-card-section>
+          <div class="row items-center justify-between q-mb-md">
+            <h2 class="text-h6 q-my-none">Ajustes</h2>
+            <span class="text-caption text-secundario">{{ ajustes.length }} registrados</span>
+          </div>
+          <EstadoVacio
+            v-if="!ajustes.length"
+            icono="tune"
+            titulo="Sin ajustes"
+            descripcion="Corrige un dato desde el recorrido o desde los insumos asignados."
+          />
+          <q-markup-table v-else flat separator="horizontal" wrap-cells>
+            <thead>
+              <tr>
+                <th class="text-left">Fecha</th>
+                <th class="text-left">Renglón</th>
+                <th class="text-left">Dato</th>
+                <th class="text-left">Antes</th>
+                <th class="text-left">Después</th>
+                <th class="text-left">Motivo</th>
+                <th class="text-left">Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ajuste in ajustes" :key="ajuste.id">
+                <td class="text-no-wrap">{{ fecha.format(new Date(ajuste.created_at)) }}</td>
+                <td>{{ renglonDeAjuste(ajuste) }}</td>
+                <td>{{ etiquetaCampo(ajuste.campo) }}</td>
+                <td class="codigo">{{ valorDeAjuste(ajuste, ajuste.valores.anterior) }}</td>
+                <td class="codigo">{{ valorDeAjuste(ajuste, ajuste.valores.nuevo) }}</td>
+                <td>{{ ajuste.motivo }}</td>
+                <td>{{ ajuste.usuario?.name ?? '—' }}</td>
               </tr>
             </tbody>
           </q-markup-table>
@@ -274,6 +393,14 @@ watch(
       @guardado="lote = $event"
     />
     <DialogoCancelarLote v-if="lote" v-model="cancelando" :lote="lote" @guardado="lote = $event" />
+
+    <DialogoAjusteLote
+      v-if="lote && objetivoAjuste"
+      v-model="ajustando"
+      :lote="lote"
+      :objetivo="objetivoAjuste"
+      @guardado="alGuardarAjuste"
+    />
 
     <DialogoCaptura
       v-if="lote && captura"
