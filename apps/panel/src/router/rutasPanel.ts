@@ -33,6 +33,11 @@ const rutasPanel: RouteRecordRaw[] = [
         meta: { roles: ['administrador'] },
       },
       {
+        path: 'lotes/:codigo/etiqueta',
+        component: () => import('@/pages/lotes/EtiquetaLotePage.vue'),
+        meta: { roles: ['administrador'] },
+      },
+      {
         path: 'lotes/:codigo',
         component: () => import('@/pages/lotes/DetalleLotePage.vue'),
         meta: { roles: ['administrador', 'ventas', 'encargado'] },
