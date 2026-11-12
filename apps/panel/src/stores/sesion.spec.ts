@@ -18,9 +18,20 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
+const echo = vi.hoisted(() => ({
+  oyentes: new Map<string, () => void>(),
+  desconectar: vi.fn(),
+}));
+
 vi.mock('@/services/echo', () => ({
-  obtenerEcho: vi.fn(() => ({ private: () => ({ listen: vi.fn() }) })),
-  desconectarEcho: vi.fn(),
+  obtenerEcho: () => ({
+    private: (canal: string) => ({
+      listen: (evento: string, oyente: () => void) => {
+        echo.oyentes.set(`${canal} ${evento}`, oyente);
+      },
+    }),
+  }),
+  desconectarEcho: echo.desconectar,
 }));
 
 const encargado: Usuario = {
@@ -57,6 +68,8 @@ const crearSesion = async (modo: 'capacitor' | 'spa') => {
 
 beforeEach(() => {
   preferencias.clear();
+  echo.oyentes.clear();
+  echo.desconectar.mockReset();
   fetchFalso.mockReset();
   vi.stubGlobal('fetch', fetchFalso);
 });
@@ -154,5 +167,74 @@ describe('sesión en el panel', () => {
 
     expect(llamada('/api/user')?.credentials).toBe('include');
     expect(cabecera('/api/user', 'Authorization')).toBeNull();
+  });
+});
+
+describe('cambios del usuario en vivo', () => {
+  const avisar = async (id: number): Promise<void> => {
+    echo.oyentes.get(`App.Models.User.${id} .usuario.actualizado`)?.();
+    await vi.waitFor(() => expect(fetchFalso.mock.calls.length).toBeGreaterThan(1));
+    await new Promise((resolver) => setTimeout(resolver));
+  };
+
+  it('escucha solo el canal privado del usuario con sesión', async () => {
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    const sesion = await crearSesion('spa');
+
+    await sesion.cargar();
+
+    expect([...echo.oyentes.keys()]).toContain('App.Models.User.7 .usuario.actualizado');
+  });
+
+  it('vuelve a pedir el usuario al recibir el aviso', async () => {
+    const conOtraArea = { ...encargado, name: 'Juan Pérez López', areas: [] };
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    fetchFalso.mockResolvedValueOnce(respuesta(200, conOtraArea));
+    const sesion = await crearSesion('spa');
+    await sesion.cargar();
+
+    await avisar(7);
+
+    expect(sesion.usuario).toEqual(conOtraArea);
+  });
+
+  it('si lo desactivaron, limpia la sesión y desconecta el tiempo real', async () => {
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    fetchFalso.mockResolvedValueOnce(respuesta(401, { message: 'Tu cuenta está desactivada.' }));
+    const sesion = await crearSesion('spa');
+    await sesion.cargar();
+
+    await avisar(7);
+
+    expect(sesion.usuario).toBeNull();
+    expect(echo.desconectar).toHaveBeenCalled();
+  });
+
+  it('tras cerrar sesión y entrar con otra cuenta escucha el canal de la nueva', async () => {
+    const administrador: Usuario = { ...encargado, id: 9, rol: 'administrador' };
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    const sesion = await crearSesion('spa');
+    await sesion.cargar();
+
+    fetchFalso.mockResolvedValueOnce(respuesta(204));
+    await sesion.cerrar();
+    echo.oyentes.clear();
+
+    fetchFalso.mockResolvedValueOnce(respuesta(204));
+    fetchFalso.mockResolvedValueOnce(respuesta(204));
+    fetchFalso.mockResolvedValueOnce(respuesta(200, administrador));
+    await sesion.iniciar('admin@aleacionprima.test', 'password');
+
+    expect([...echo.oyentes.keys()]).toContain('App.Models.User.9 .usuario.actualizado');
+  });
+
+  it('la app móvil no usa el tiempo real', async () => {
+    preferencias.set('token', '1|abc');
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    const sesion = await crearSesion('capacitor');
+
+    await sesion.cargar();
+
+    expect(echo.oyentes.size).toBe(0);
   });
 });
