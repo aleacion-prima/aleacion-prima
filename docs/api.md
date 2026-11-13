@@ -59,7 +59,9 @@ Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lectur
 | `PUT`    | `/api/usuarios/{usuario}`               | Administrador         | RF-09, RF-48 |
 | `DELETE` | `/api/usuarios/{usuario}`               | Administrador         | RF-09        |
 
-- `DELETE` no borra en ningún catálogo: desactiva (`activo = false`). En usuarios, además, revoca sus tokens.
+- `DELETE` desactiva (`activo = false`) en áreas, productos e insumos: nunca borra.
+- En usuarios, `DELETE` **da de baja**: oculta al usuario de `GET /api/usuarios` (sigue visible con `?incluir_bajas=1`), guarda `dado_de_baja_en`, archiva su correo en `email_baja`, libera `email` con un placeholder único (`baja.{id}@baja.aleacionprima.invalid`) y revoca sus tokens. Un usuario dado de baja no se edita ni se da de baja dos veces. La respuesta de usuarios devuelve el correo archivado.
+- Desactivar un usuario con `PUT` (`activo = false`) **no** lo oculta: sigue en la lista como inactivo. Son dos estados distintos.
 - El recorrido por defecto y la receta de insumos de un producto viajan dentro de `/api/productos` (RF-07); no tienen ruta propia. `GET /api/productos/opciones` devuelve las áreas e insumos activos para armarlos.
 - Las áreas de un encargado viajan como `area_ids` dentro de `POST` y `PUT /api/usuarios` (RF-48); para elegirlas, el panel pide `GET /api/areas?activo=1`.
 
