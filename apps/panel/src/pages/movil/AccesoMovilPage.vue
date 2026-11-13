@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import { correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
 const sesion = useSesionStore();
@@ -39,7 +40,8 @@ const entrar = async (): Promise<void> => {
         bg-color="white"
         autocomplete="username"
         inputmode="email"
-        :rules="[(v) => !!v || 'Escribe tu correo']"
+        lazy-rules
+        :rules="[requerido('Escribe tu correo'), correo]"
         hide-bottom-space
       />
 
@@ -52,7 +54,7 @@ const entrar = async (): Promise<void> => {
         dense
         bg-color="white"
         autocomplete="current-password"
-        :rules="[(v) => !!v || 'Escribe tu contraseña']"
+        :rules="[requerido('Escribe tu contraseña')]"
         hide-bottom-space
       />
 
