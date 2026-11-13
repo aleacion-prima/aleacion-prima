@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -16,6 +17,8 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * @property string|null $pregunta_secreta
  * @property string|null $respuesta_secreta
+ * @property string|null $email_baja
+ * @property CarbonImmutable|null $dado_de_baja_en
  */
 #[Fillable(['name', 'email', 'password', 'activo', 'pregunta_secreta'])]
 #[Hidden(['password', 'remember_token', 'respuesta_secreta'])]
@@ -43,6 +46,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'activo' => 'boolean',
+            'dado_de_baja_en' => 'immutable_datetime',
         ];
     }
 }

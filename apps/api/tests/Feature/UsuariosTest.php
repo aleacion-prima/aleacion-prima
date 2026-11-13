@@ -87,15 +87,111 @@ it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?
         ->assertJsonMissing(['id' => $inactiva->id]);
 });
 
-it('da de baja sin borrar el usuario y revoca sus tokens', function () {
+it('da de baja sin borrar la cuenta, archiva el correo y revoca los tokens', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create(['email' => 'ventas@aleacionprima.test', 'activo' => true]);
+    $usuario->assignRole(Rol::Ventas);
+    $usuario->createToken('prueba');
+
+    deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
+
+    $baja = $usuario->fresh();
+
+    expect($baja->activo)->toBeFalse()
+        ->and($baja->dado_de_baja_en)->not->toBeNull()
+        ->and($baja->email_baja)->toBe('ventas@aleacionprima.test')
+        ->and($baja->email)->toBe("baja.{$usuario->id}@baja.aleacionprima.invalid")
+        ->and($baja->tokens)->toBeEmpty();
+});
+
+it('oculta a los usuarios dados de baja del listado', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $enUso = User::factory()->create();
+    $enUso->assignRole(Rol::Ventas);
+    $baja = User::factory()->create();
+    $baja->assignRole(Rol::Ventas);
+
+    deleteJson("/api/usuarios/{$baja->id}")->assertNoContent();
+
+    getJson('/api/usuarios')
+        ->assertOk()
+        ->assertJsonFragment(['id' => $enUso->id])
+        ->assertJsonMissing(['id' => $baja->id]);
+});
+
+it('muestra a los dados de baja con incluir_bajas y su correo archivado', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $baja = User::factory()->create(['email' => 'archivado@aleacionprima.test']);
+    $baja->assignRole(Rol::Ventas);
+
+    deleteJson("/api/usuarios/{$baja->id}")->assertNoContent();
+
+    getJson('/api/usuarios?incluir_bajas=1')
+        ->assertOk()
+        ->assertJsonFragment([
+            'id' => $baja->id,
+            'email' => 'archivado@aleacionprima.test',
+        ]);
+});
+
+it('mantiene visible al usuario inactivo que no está dado de baja', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $inactivo = User::factory()->create(['activo' => false]);
+    $inactivo->assignRole(Rol::Ventas);
+
+    getJson('/api/usuarios')
+        ->assertOk()
+        ->assertJsonFragment(['id' => $inactivo->id, 'activo' => false]);
+});
+
+it('permite crear otra cuenta con el correo de un usuario dado de baja', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $baja = User::factory()->create(['email' => 'reutilizable@aleacionprima.test']);
+    $baja->assignRole(Rol::Ventas);
+
+    deleteJson("/api/usuarios/{$baja->id}")->assertNoContent();
+
+    postJson('/api/usuarios', [
+        'name' => 'Cuenta nueva',
+        'email' => 'reutilizable@aleacionprima.test',
+        'password' => 'Password123',
+        'rol' => Rol::Ventas->value,
+    ])
+        ->assertCreated()
+        ->assertJsonPath('email', 'reutilizable@aleacionprima.test');
+});
+
+it('no permite dar de baja dos veces al mismo usuario', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create(['email' => 'doble@aleacionprima.test']);
+    $usuario->assignRole(Rol::Ventas);
+
+    deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
+
+    deleteJson("/api/usuarios/{$usuario->id}")
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Ese usuario ya está dado de baja.');
+
+    // La segunda baja no debe pisar el correo real archivado con el placeholder.
+    expect($usuario->fresh()->email_baja)->toBe('doble@aleacionprima.test');
+});
+
+it('no permite editar a un usuario dado de baja', function () {
     Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
 
     deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
 
-    expect($usuario->fresh()->activo)->toBeFalse()
-        ->and($usuario->fresh()->tokens)->toBeEmpty();
+    putJson("/api/usuarios/{$usuario->id}", [
+        'name' => 'Nombre nuevo',
+        'email' => $usuario->fresh()->email,
+        'rol' => Rol::Ventas->value,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Un usuario dado de baja ya no se edita.');
+
+    expect($usuario->fresh()->name)->not->toBe('Nombre nuevo');
 });
 
 it('no permite que el administrador se dé de baja a sí mismo', function () {
