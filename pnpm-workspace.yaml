@@ -1,6 +1,5 @@
 packages:
   - 'apps/panel'
-  - 'apps/panel/src-capacitor'
   - 'apps/web'
   - 'packages/*'
   - 'e2e'
