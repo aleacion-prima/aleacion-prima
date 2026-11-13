@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import { coincideCon, contrasenaSegura, requerido } from '@/composables/reglas';
 
 const route = useRoute();
 const router = useRouter();
@@ -54,7 +55,8 @@ const guardar = async (): Promise<void> => {
           outlined
           autofocus
           autocomplete="new-password"
-          :rules="[(v) => !!v || 'Escribe tu nueva contraseña']"
+          lazy-rules
+          :rules="[requerido('Escribe tu nueva contraseña'), contrasenaSegura]"
         >
           <template #append>
             <q-icon
@@ -71,7 +73,8 @@ const guardar = async (): Promise<void> => {
           label="Confirmar contraseña"
           outlined
           autocomplete="new-password"
-          :rules="[(v) => !!v || 'Confirma tu contraseña']"
+          lazy-rules
+          :rules="[requerido('Confirma tu contraseña'), coincideCon(() => form.password)]"
         />
 
         <q-banner v-if="error" dense class="bg-red-1 text-negative">{{ error }}</q-banner>

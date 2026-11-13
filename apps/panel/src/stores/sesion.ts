@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { Usuario, SesionMovil } from '@aleacion-prima/types';
-import { peticionSesion, prepararCsrf, useApi } from '@/services/api';
+import { SIN_CONEXION, peticionSesion, prepararCsrf, useApi } from '@/services/api';
 import { desconectarEcho, obtenerEcho } from '@/services/echo';
 
 const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
@@ -67,9 +67,10 @@ export const useSesionStore = defineStore('sesion', () => {
   const iniciar = async (email: string, password: string): Promise<void> => {
     if (ES_MOVIL) {
       const { guardarToken } = await import('@/services/tokenMovil');
-      const { data, error } = await useApi('/movil/login')
+      const { data, error, statusCode } = await useApi('/movil/login')
         .post({ email, password })
         .json<Partial<SesionMovil> & { message?: string }>();
+      if (error.value && statusCode.value === null) throw new Error(SIN_CONEXION);
       if (error.value || !data.value?.token || !data.value.usuario) {
         throw new Error(data.value?.message ?? 'No se pudo iniciar sesión');
       }

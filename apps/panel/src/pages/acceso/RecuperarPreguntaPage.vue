@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import { coincideCon, contrasenaSegura, correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
 const sesion = useSesionStore();
@@ -62,7 +63,8 @@ const restablecer = async (): Promise<void> => {
           outlined
           autofocus
           autocomplete="username"
-          :rules="[(v) => !!v || 'Escribe tu correo']"
+          lazy-rules
+          :rules="[requerido('Escribe tu correo'), correo]"
         />
         <q-banner v-if="error" dense class="bg-red-1 text-negative">{{ error }}</q-banner>
         <q-btn type="submit" color="primary" label="Continuar" unelevated :loading="cargando" />
@@ -78,7 +80,7 @@ const restablecer = async (): Promise<void> => {
           label="Tu respuesta"
           outlined
           autofocus
-          :rules="[(v) => !!v || 'Escribe tu respuesta']"
+          :rules="[requerido('Escribe tu respuesta')]"
         />
         <q-input
           v-model="form.password"
@@ -87,7 +89,8 @@ const restablecer = async (): Promise<void> => {
           hint="Mínimo 8 caracteres, con mayúsculas, minúsculas y números"
           outlined
           autocomplete="new-password"
-          :rules="[(v) => !!v || 'Escribe tu nueva contraseña']"
+          lazy-rules
+          :rules="[requerido('Escribe tu nueva contraseña'), contrasenaSegura]"
         >
           <template #append>
             <q-icon
@@ -103,7 +106,8 @@ const restablecer = async (): Promise<void> => {
           label="Confirmar contraseña"
           outlined
           autocomplete="new-password"
-          :rules="[(v) => !!v || 'Confirma tu contraseña']"
+          lazy-rules
+          :rules="[requerido('Confirma tu contraseña'), coincideCon(() => form.password)]"
         />
         <q-banner v-if="error" dense class="bg-red-1 text-negative">{{ error }}</q-banner>
         <q-btn
