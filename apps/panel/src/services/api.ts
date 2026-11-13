@@ -1,5 +1,6 @@
 import { createFetch } from '@vueuse/core';
 
+const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
 export const API_URL = import.meta.env.PUBLIC_API_URL;
 
 const leerCookie = (nombre: string): string | undefined => {
@@ -22,12 +23,18 @@ export const prepararCsrf = async (): Promise<void> => {
 export const useApi = createFetch({
   baseUrl: `${API_URL}/api`,
   fetchOptions: {
-    credentials: 'include',
+    credentials: ES_MOVIL ? 'omit' : 'include',
   },
   options: {
     updateDataOnError: true,
-    beforeFetch({ options }) {
-      options.headers = cabecerasApi(options.headers);
+    async beforeFetch({ options }) {
+      const headers = cabecerasApi(options.headers);
+      if (ES_MOVIL) {
+        const { leerToken } = await import('./tokenMovil');
+        const token = await leerToken();
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+      }
+      options.headers = headers;
       return { options };
     },
   },

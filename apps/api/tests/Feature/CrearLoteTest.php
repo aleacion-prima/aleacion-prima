@@ -27,7 +27,7 @@ function entrarALotesComo(Rol $rol): User
 {
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     return $usuario;
 }

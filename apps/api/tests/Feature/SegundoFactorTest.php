@@ -124,7 +124,7 @@ it('un usuario activa y desactiva su segundo factor desde Mi cuenta', function (
     seed(RolesSeeder::class);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     putJson('/api/perfil/segundo-factor', ['activo' => true])
         ->assertOk()
@@ -141,7 +141,7 @@ it('el administrador no puede desactivar su segundo factor', function () {
     seed(RolesSeeder::class);
     $admin = User::factory()->conSegundoFactor()->create();
     $admin->assignRole(Rol::Administrador);
-    Sanctum::actingAs($admin);
+    Sanctum::actingAs($admin, ['*']);
 
     putJson('/api/perfil/segundo-factor', ['activo' => false])
         ->assertUnprocessable()
@@ -154,7 +154,7 @@ it('muestra el estado del segundo factor y si es obligatorio', function () {
     seed(RolesSeeder::class);
     $admin = User::factory()->conSegundoFactor()->create();
     $admin->assignRole(Rol::Administrador);
-    Sanctum::actingAs($admin);
+    Sanctum::actingAs($admin, ['*']);
 
     getJson('/api/perfil/segundo-factor')
         ->assertOk()

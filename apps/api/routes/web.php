@@ -10,7 +10,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post('/login', [SesionController::class, 'iniciar'])->middleware(['guest', 'throttle:login']);
+Route::post('/login', [SesionController::class, 'iniciar'])->middleware(['throttle:login']);
 Route::post('/logout', [SesionController::class, 'cerrar'])->middleware('auth');
 
 // Segundo factor: la sesión queda pendiente tras el login y entra con el código.

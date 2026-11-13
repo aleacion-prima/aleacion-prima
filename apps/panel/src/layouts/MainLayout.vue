@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
@@ -24,6 +24,21 @@ const salir = async (): Promise<void> => {
   await sesion.cerrar();
   await router.push('/login');
 };
+
+watch(
+  () => sesion.usuario,
+  async (actual, anterior) => {
+    if (!anterior) return;
+    if (!actual) {
+      await router.replace('/login');
+      return;
+    }
+    if (actual.rol !== anterior.rol) {
+      const { path, query, hash } = router.currentRoute.value;
+      await router.replace({ path, query, hash, force: true });
+    }
+  },
+);
 </script>
 
 <template>

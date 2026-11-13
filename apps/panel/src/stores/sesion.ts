@@ -1,16 +1,29 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Usuario } from '@aleacion-prima/types';
+import type { Usuario, SesionMovil } from '@aleacion-prima/types';
 import { peticionSesion, prepararCsrf, useApi } from '@/services/api';
 import { desconectarEcho, obtenerEcho } from '@/services/echo';
+
+const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
 
 export const useSesionStore = defineStore('sesion', () => {
   const usuario = ref<Usuario | null>(null);
   const cargada = ref<boolean>(false);
   const modulos = ref<Record<string, boolean>>({});
+  let canalUsuario: string | null = null;
   let suscritoModulos = false;
 
   const moduloActivo = (nombre: string): boolean => modulos.value[nombre] === true;
+
+  const suscribirUsuario = (id: number): void => {
+    if (canalUsuario) return;
+    canalUsuario = `App.Models.User.${id}`;
+    obtenerEcho()
+      .private(canalUsuario)
+      .listen('.usuario.actualizado', () => {
+        void cargar();
+      });
+  };
 
   // Escucha en vivo los cambios de módulos (canal privado, tras el login).
   const suscribirModulos = (): void => {
@@ -24,16 +37,50 @@ export const useSesionStore = defineStore('sesion', () => {
   };
 
   const cargar = async (): Promise<void> => {
-    const { data, error } = await useApi<Usuario>('/user').json<Usuario>();
+    if (ES_MOVIL) {
+      const { leerToken } = await import('@/services/tokenMovil');
+      if (!(await leerToken())) {
+        usuario.value = null;
+        cargada.value = true;
+        return;
+      }
+    }
+    const { data, error, statusCode } = await useApi<Usuario>('/user').json<Usuario>();
     usuario.value = error.value ? null : data.value;
     modulos.value = usuario.value?.modulos ?? {};
     cargada.value = true;
-    if (usuario.value) suscribirModulos();
+    if (ES_MOVIL && statusCode.value === 401) {
+      const { borrarToken } = await import('@/services/tokenMovil');
+      await borrarToken();
+    }
+    if (ES_MOVIL) return;
+    if (usuario.value) {
+      suscribirModulos();
+      suscribirUsuario(usuario.value.id);
+    } else if (canalUsuario) {
+      desconectarEcho();
+      suscritoModulos = false;
+      canalUsuario = null;
+    }
   };
 
   // Devuelve true si el usuario tiene segundo factor: la sesión queda pendiente
-  // y hay que verificar el código antes de entrar.
+  // y hay que verificar el código antes de entrar. En móvil siempre false.
   const iniciar = async (email: string, password: string): Promise<boolean> => {
+    if (ES_MOVIL) {
+      const { guardarToken } = await import('@/services/tokenMovil');
+      const { data, error } = await useApi('/movil/login')
+        .post({ email, password })
+        .json<Partial<SesionMovil> & { message?: string }>();
+      if (error.value || !data.value?.token || !data.value.usuario) {
+        throw new Error(data.value?.message ?? 'No se pudo iniciar sesión');
+      }
+      await guardarToken(data.value.token);
+      usuario.value = data.value.usuario;
+      modulos.value = usuario.value.modulos ?? {};
+      cargada.value = true;
+      return false;
+    }
     await prepararCsrf();
     const res = await peticionSesion('/login', { email, password });
     if (!res.ok) {
@@ -72,11 +119,18 @@ export const useSesionStore = defineStore('sesion', () => {
   };
 
   const cerrar = async (): Promise<void> => {
-    await peticionSesion('/logout');
-    desconectarEcho();
+    if (ES_MOVIL) {
+      const { borrarToken } = await import('@/services/tokenMovil');
+      await useApi('/logout').post();
+      await borrarToken();
+    } else {
+      await peticionSesion('/logout');
+      desconectarEcho();
+    }
     usuario.value = null;
     modulos.value = {};
     suscritoModulos = false;
+    canalUsuario = null;
   };
 
   const recuperar = async (email: string): Promise<string> => {

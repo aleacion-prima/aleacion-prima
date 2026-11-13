@@ -487,11 +487,11 @@ GitHub dice que hay conflicto cuando dos ramas cambiaron las mismas líneas del 
 
 **Qué significan "current" e "incoming"**
 
-| Dónde lo ves                         | "Current" / actual       | "Incoming" / entrante  |
-| ------------------------------------ | ------------------------ | ---------------------- |
-| Conflicto en GitHub (pestaña del PR) | Lo que ya está en `main` | Los cambios de tu rama |
-| `git merge origin/main` en tu rama   | Tu rama                  | `main`                 |
-| `git rebase origin/main` en tu rama  | `main`                   | Tus commits            |
+| Dónde lo ves                         | "Current" / actual | "Incoming" / entrante |
+| ------------------------------------ | ------------------ | --------------------- |
+| Conflicto en GitHub (pestaña del PR) | Tu rama (arriba)   | `main` (abajo)        |
+| `git merge origin/main` en tu rama   | Tu rama            | `main`                |
+| `git rebase origin/main` en tu rama  | `main`             | Tus commits           |
 
 > ⚠️ **En un rebase los papeles se invierten.** "Current" es `main` y "Accept current" descarta tu trabajo. Si rebasas, lee dos veces antes de aceptar un lado y prefiere resolver a mano.
 

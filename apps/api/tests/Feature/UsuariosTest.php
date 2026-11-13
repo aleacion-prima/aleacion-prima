@@ -1,9 +1,13 @@
 <?php
 
 use App\Enums\Rol;
+use App\Events\UsuarioActualizado;
 use App\Models\Area;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -36,7 +40,7 @@ function area(): Area
 }
 
 it('permite al administrador crear un encargado con áreas', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $areas = [area(), area()];
 
     postJson('/api/usuarios', [
@@ -53,7 +57,7 @@ it('permite al administrador crear un encargado con áreas', function () {
 });
 
 it('edita un usuario y sincroniza sus áreas', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
     $area = area();
@@ -70,7 +74,7 @@ it('edita un usuario y sincroniza sus áreas', function () {
 });
 
 it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?activo=1', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $activa = area();
     $inactiva = area();
     $inactiva->update(['activo' => false]);
@@ -84,7 +88,7 @@ it('ya no expone /api/areas-disponibles: las áreas activas salen de /api/areas?
 });
 
 it('da de baja sin borrar el usuario y revoca sus tokens', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create();
     $usuario->assignRole(Rol::Ventas);
 
@@ -96,7 +100,7 @@ it('da de baja sin borrar el usuario y revoca sus tokens', function () {
 
 it('no permite que el administrador se dé de baja a sí mismo', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     deleteJson("/api/usuarios/{$administrador->id}")
         ->assertStatus(422)
@@ -107,7 +111,7 @@ it('no permite que el administrador se dé de baja a sí mismo', function () {
 
 it('no permite que el administrador se desactive a sí mismo', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => $administrador->name,
@@ -123,7 +127,7 @@ it('no permite que el administrador se desactive a sí mismo', function () {
 
 it('no permite que el administrador se quite su propio rol', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => $administrador->name,
@@ -138,7 +142,7 @@ it('no permite que el administrador se quite su propio rol', function () {
 
 it('permite que el administrador edite sus propios datos', function () {
     $administrador = administrador();
-    Sanctum::actingAs($administrador);
+    Sanctum::actingAs($administrador, ['*']);
 
     putJson("/api/usuarios/{$administrador->id}", [
         'name' => 'Administrador renombrado',
@@ -150,7 +154,7 @@ it('permite que el administrador edite sus propios datos', function () {
 });
 
 it('reactiva un usuario dado de baja', function () {
-    Sanctum::actingAs(administrador());
+    Sanctum::actingAs(administrador(), ['*']);
     $usuario = User::factory()->create(['activo' => false]);
     $usuario->assignRole(Rol::Ventas);
 
@@ -169,8 +173,71 @@ it('reactiva un usuario dado de baja', function () {
 it('restringe la gestión de usuarios al administrador', function (Rol $rol) {
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     getJson('/api/usuarios')->assertForbidden();
     getJson('/api/areas')->assertForbidden();
 })->with([Rol::Ventas, Rol::Encargado]);
+
+it('avisa en vivo al usuario cuando el administrador lo edita', function () {
+    Event::fake([UsuarioActualizado::class]);
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create();
+    $usuario->assignRole(Rol::Encargado);
+
+    putJson("/api/usuarios/{$usuario->id}", [
+        'name' => 'Nombre editado',
+        'email' => $usuario->email,
+        'rol' => Rol::Encargado->value,
+        'area_ids' => [area()->id],
+    ])->assertOk();
+
+    Event::assertDispatchedTimes(UsuarioActualizado::class, 1);
+    Event::assertDispatched(UsuarioActualizado::class, fn (UsuarioActualizado $evento) => $evento->id === $usuario->id);
+});
+
+it('avisa en vivo al usuario cuando lo dan de baja', function () {
+    Event::fake([UsuarioActualizado::class]);
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create();
+    $usuario->assignRole(Rol::Encargado);
+
+    deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
+
+    Event::assertDispatched(UsuarioActualizado::class, fn (UsuarioActualizado $evento) => $evento->id === $usuario->id);
+});
+
+it('no avisa nada si el cambio se rechaza', function () {
+    Event::fake([UsuarioActualizado::class]);
+    $administrador = administrador();
+    Sanctum::actingAs($administrador, ['*']);
+
+    deleteJson("/api/usuarios/{$administrador->id}")->assertStatus(422);
+    putJson("/api/usuarios/{$administrador->id}", [
+        'name' => $administrador->name,
+        'email' => $administrador->email,
+        'rol' => Rol::Ventas->value,
+    ])->assertStatus(422);
+
+    Event::assertNotDispatched(UsuarioActualizado::class);
+});
+
+it('el aviso va solo al canal privado del usuario y solo lleva su id', function () {
+    $evento = new UsuarioActualizado(7);
+
+    expect($evento)->toBeInstanceOf(ShouldDispatchAfterCommit::class)
+        ->and($evento->broadcastOn()->name)->toBe('private-App.Models.User.7')
+        ->and($evento->broadcastAs())->toBe('usuario.actualizado')
+        ->and($evento->broadcastWith())->toBe(['id' => 7]);
+});
+
+it('el aviso sale hasta que se guardan los cambios', function () {
+    Event::fake([UsuarioActualizado::class]);
+
+    DB::transaction(function () {
+        UsuarioActualizado::dispatch(7);
+        Event::assertNotDispatched(UsuarioActualizado::class);
+    });
+
+    Event::assertDispatched(UsuarioActualizado::class);
+});

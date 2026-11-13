@@ -35,7 +35,7 @@ function adminDeCierre(): User
 {
     $admin = User::factory()->create();
     $admin->assignRole(Rol::Administrador);
-    Sanctum::actingAs($admin);
+    Sanctum::actingAs($admin, ['*']);
 
     return $admin;
 }
@@ -206,7 +206,7 @@ it('solo el administrador confirma o cancela', function (Rol $rol) {
 
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     postJson("/api/lotes/{$lote->codigo}/confirmar")->assertForbidden();
     postJson("/api/lotes/{$lote->codigo}/cancelar", ['motivo' => 'x'])->assertForbidden();
