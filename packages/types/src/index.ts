@@ -195,6 +195,7 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
   activo: boolean;
+  dado_de_baja_en: string | null;
   modulos: Record<string, boolean>;
   areas?: AreaAsignada[];
 }

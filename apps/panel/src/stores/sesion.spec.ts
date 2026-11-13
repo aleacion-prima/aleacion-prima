@@ -40,6 +40,7 @@ const encargado: Usuario = {
   email: 'juan@aleacionprima.test',
   rol: 'encargado',
   activo: true,
+  dado_de_baja_en: null,
   modulos: { ventas: false },
   areas: [],
 };
