@@ -82,6 +82,33 @@ class AppServiceProvider extends ServiceProvider
                 ));
         });
 
+        // Verificación del segundo factor: por la sesión pendiente (o IP), para
+        // frenar el adivinado del código además del tope de intentos por código.
+        RateLimiter::for('verificar', function (Request $request) {
+            $pendiente = $request->session()->get('acceso.pendiente');
+
+            return Limit::perMinute(10)
+                ->by('2fa|'.(is_int($pendiente) ? $pendiente : (string) $request->ip()))
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
+        // Reenvío del código: límite de frecuencia por la sesión pendiente (o IP).
+        RateLimiter::for('reenviar', function (Request $request) {
+            $pendiente = $request->session()->get('acceso.pendiente');
+
+            return Limit::perMinute(1)
+                ->by('2fa|'.(is_int($pendiente) ? $pendiente : (string) $request->ip()))
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
         // --- Módulos (feature flags con Pennant) ---
         // Scope global: una bandera vale igual para todos, no por usuario.
         Feature::resolveScopeUsing(fn () => null);

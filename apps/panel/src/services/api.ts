@@ -36,6 +36,8 @@ export const useApi = createFetch({
 export const peticionSesion = async (
   ruta:
     | '/login'
+    | '/login/verificar'
+    | '/login/reenviar'
     | '/logout'
     | '/forgot-password'
     | '/reset-password'

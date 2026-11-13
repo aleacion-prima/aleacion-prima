@@ -31,14 +31,44 @@ export const useSesionStore = defineStore('sesion', () => {
     if (usuario.value) suscribirModulos();
   };
 
-  const iniciar = async (email: string, password: string): Promise<void> => {
+  // Devuelve true si el usuario tiene segundo factor: la sesión queda pendiente
+  // y hay que verificar el código antes de entrar.
+  const iniciar = async (email: string, password: string): Promise<boolean> => {
     await prepararCsrf();
     const res = await peticionSesion('/login', { email, password });
     if (!res.ok) {
       const cuerpo = (await res.json()) as { message?: string };
       throw new Error(cuerpo.message ?? 'No se pudo iniciar sesión');
     }
+    // Sin 2FA el login responde 204 (ya entró). Con 2FA responde 200 con
+    // { segundo_factor: true } y la sesión queda pendiente de verificar.
+    if (res.status !== 204) {
+      const cuerpo = (await res.json()) as { segundo_factor?: boolean };
+      if (cuerpo.segundo_factor) return true;
+    }
     await cargar();
+    return false;
+  };
+
+  // Verifica el código del segundo factor y, si es correcto, inicia la sesión.
+  const verificarCodigo = async (codigo: string): Promise<void> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/login/verificar', { codigo });
+    if (!res.ok) {
+      const cuerpo = (await res.json()) as { message?: string; errors?: Record<string, string[]> };
+      throw new Error(
+        cuerpo.errors?.codigo?.[0] ?? cuerpo.message ?? 'No se pudo verificar el código',
+      );
+    }
+    await cargar();
+  };
+
+  const reenviarCodigo = async (): Promise<string> => {
+    await prepararCsrf();
+    const res = await peticionSesion('/login/reenviar');
+    const cuerpo = (await res.json()) as { message?: string };
+    if (!res.ok) throw new Error(cuerpo.message ?? 'No se pudo reenviar el código');
+    return cuerpo.message ?? 'Te enviamos un código nuevo.';
   };
 
   const cerrar = async (): Promise<void> => {
@@ -98,6 +128,8 @@ export const useSesionStore = defineStore('sesion', () => {
     moduloActivo,
     cargar,
     iniciar,
+    verificarCodigo,
+    reenviarCodigo,
     cerrar,
     recuperar,
     restablecer,

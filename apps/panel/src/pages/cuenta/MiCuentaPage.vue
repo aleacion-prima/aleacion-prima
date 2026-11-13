@@ -11,6 +11,10 @@ const form = reactive({ pregunta: '', respuesta: '' });
 const cargando = ref(true);
 const guardando = ref(false);
 
+const dosFactores = reactive({ activo: false, obligatorio: false });
+const cargandoDF = ref(true);
+const guardandoDF = ref(false);
+
 const cargar = async (): Promise<void> => {
   cargando.value = true;
   try {
@@ -57,7 +61,57 @@ const guardar = async (): Promise<void> => {
   }
 };
 
+const cargarDosFactores = async (): Promise<void> => {
+  cargandoDF.value = true;
+  try {
+    const res = await fetch(`${API_URL}/api/perfil/segundo-factor`, {
+      credentials: 'include',
+      headers: cabecerasApi(),
+    });
+    if (!res.ok) throw new Error('No se pudo cargar la verificación en dos pasos');
+    const datos = (await res.json()) as { activo: boolean; obligatorio: boolean };
+    dosFactores.activo = datos.activo;
+    dosFactores.obligatorio = datos.obligatorio;
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error instanceof Error ? error.message : 'Error de red',
+    });
+  } finally {
+    cargandoDF.value = false;
+  }
+};
+
+const cambiarDosFactores = async (valor: boolean): Promise<void> => {
+  guardandoDF.value = true;
+  try {
+    const res = await fetch(`${API_URL}/api/perfil/segundo-factor`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: cabecerasApi({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ activo: valor }),
+    });
+    const cuerpo = (await res.json()) as {
+      activo?: boolean;
+      message?: string;
+      errors?: Record<string, string[]>;
+    };
+    if (!res.ok) {
+      const mensaje =
+        Object.values(cuerpo.errors ?? {})[0]?.[0] ?? cuerpo.message ?? 'No se pudo guardar';
+      $q.notify({ type: 'negative', message: mensaje });
+      dosFactores.activo = !valor;
+      return;
+    }
+    dosFactores.activo = cuerpo.activo ?? valor;
+    $q.notify({ type: 'positive', message: cuerpo.message ?? 'Guardado.' });
+  } finally {
+    guardandoDF.value = false;
+  }
+};
+
 onMounted(cargar);
+onMounted(cargarDosFactores);
 </script>
 
 <template>
@@ -90,6 +144,23 @@ onMounted(cargar);
           <q-btn type="submit" color="primary" label="Guardar" unelevated :loading="guardando" />
         </div>
       </q-form>
+    </q-card>
+
+    <q-card flat bordered class="q-pa-lg q-mt-md" style="max-width: 560px">
+      <div class="text-subtitle1 q-mb-sm">Verificación en dos pasos</div>
+      <div class="text-body2 text-grey-7 q-mb-md">
+        Al iniciar sesión te pediremos un código que enviamos a tu correo, además de la contraseña.
+        <span v-if="dosFactores.obligatorio">
+          Es obligatoria para tu rol de administrador y no se puede desactivar.
+        </span>
+      </div>
+
+      <q-toggle
+        :model-value="dosFactores.activo"
+        :label="dosFactores.activo ? 'Activada' : 'Desactivada'"
+        :disable="cargandoDF || guardandoDF || (dosFactores.obligatorio && dosFactores.activo)"
+        @update:model-value="cambiarDosFactores"
+      />
     </q-card>
   </q-page>
 </template>
