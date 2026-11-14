@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Acceso\SegundoFactor;
-use App\Enums\Rol;
 use App\Http\Requests\ActualizarSegundoFactorRequest;
 use App\Http\Requests\VerificarCodigoRequest;
 use App\Models\User;
@@ -48,14 +47,14 @@ class SegundoFactorController extends Controller
     /**
      * Mi cuenta: estado del segundo factor del usuario en sesión.
      */
-    public function mostrar(Request $request): JsonResponse
+    public function mostrar(Request $request, SegundoFactor $segundoFactor): JsonResponse
     {
         $usuario = $request->user();
         abort_unless($usuario instanceof User, 401);
 
         return response()->json([
-            'activo' => (bool) $usuario->segundo_factor,
-            'obligatorio' => $usuario->hasRole(Rol::Administrador->value),
+            'activo' => $segundoFactor->activoPara($usuario),
+            'obligatorio' => $segundoFactor->obligatorioPara($usuario),
         ]);
     }
 
@@ -63,14 +62,14 @@ class SegundoFactorController extends Controller
      * Mi cuenta: el usuario activa o desactiva su segundo factor. El
      * administrador no puede desactivarlo (es obligatorio para su rol).
      */
-    public function actualizar(ActualizarSegundoFactorRequest $request): JsonResponse
+    public function actualizar(ActualizarSegundoFactorRequest $request, SegundoFactor $segundoFactor): JsonResponse
     {
         $usuario = $request->user();
         abort_unless($usuario instanceof User, 401);
 
         $activar = $request->boolean('activo');
 
-        if (! $activar && $usuario->hasRole(Rol::Administrador->value)) {
+        if (! $activar && $segundoFactor->obligatorioPara($usuario)) {
             throw ValidationException::withMessages([
                 'activo' => ['El administrador no puede desactivar su segundo factor.'],
             ]);
@@ -79,7 +78,7 @@ class SegundoFactorController extends Controller
         $usuario->forceFill(['segundo_factor' => $activar])->save();
 
         return response()->json([
-            'activo' => (bool) $usuario->segundo_factor,
+            'activo' => $segundoFactor->activoPara($usuario),
             'message' => $activar ? 'Segundo factor activado.' : 'Segundo factor desactivado.',
         ]);
     }

@@ -15,9 +15,9 @@ Route::post('/logout', [SesionController::class, 'cerrar'])->middleware('auth');
 
 // Segundo factor: la sesión queda pendiente tras el login y entra con el código.
 Route::post('/login/verificar', [SegundoFactorController::class, 'verificar'])
-    ->middleware(['guest', 'throttle:verificar']);
+    ->middleware('throttle:verificar');
 Route::post('/login/reenviar', [SegundoFactorController::class, 'reenviar'])
-    ->middleware(['guest', 'throttle:reenviar']);
+    ->middleware('throttle:reenviar');
 
 Route::post('/forgot-password', [RecuperacionController::class, 'enviarEnlace'])
     ->middleware(['guest', 'throttle:recuperacion']);

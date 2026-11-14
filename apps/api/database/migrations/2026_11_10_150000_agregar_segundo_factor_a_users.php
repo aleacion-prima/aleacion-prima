@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Cada usuario activa o desactiva su segundo factor; arranca apagado.
-            // Para el administrador es obligatorio: no puede desactivarlo (se valida
-            // en SegundoFactorController), pero los seeders lo dejan apagado para no
-            // romper el login automático de desarrollo y las pruebas E2E.
+            // Para el administrador es obligatorio por configuración
+            // (SEGUNDO_FACTOR_ADMINISTRADOR, revisado en el login y en el perfil),
+            // no por esta columna.
             $table->boolean('segundo_factor')->default(false);
         });
     }

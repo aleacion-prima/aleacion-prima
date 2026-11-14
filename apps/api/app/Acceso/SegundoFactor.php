@@ -2,6 +2,7 @@
 
 namespace App\Acceso;
 
+use App\Enums\Rol;
 use App\Models\CodigoAcceso;
 use App\Models\User;
 use App\Notifications\CodigoAccesoCorreo;
@@ -18,6 +19,25 @@ class SegundoFactor
      * Genera un código nuevo de 6 dígitos, lo guarda hasheado (reemplazando el
      * anterior del usuario, con los intentos en cero) y lo envía por correo.
      */
+    /**
+     * El segundo factor es obligatorio para el administrador cuando la
+     * configuración lo exige (config + rol, no la columna booleana).
+     */
+    public function obligatorioPara(User $usuario): bool
+    {
+        return (bool) config('segundo-factor.obligatorio_administrador', true)
+            && $usuario->hasRole(Rol::Administrador->value);
+    }
+
+    /**
+     * El segundo factor aplica si el usuario lo activó o si es obligatorio para
+     * su rol por configuración.
+     */
+    public function activoPara(User $usuario): bool
+    {
+        return $usuario->segundo_factor || $this->obligatorioPara($usuario);
+    }
+
     public function enviar(User $usuario): void
     {
         $codigo = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);

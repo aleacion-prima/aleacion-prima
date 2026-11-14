@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
-import { API_URL, cabecerasApi } from '@/services/api';
+import { API_URL, cabecerasApi, useApi } from '@/services/api';
 
 const $q = useQuasar();
 
@@ -63,51 +63,35 @@ const guardar = async (): Promise<void> => {
 
 const cargarDosFactores = async (): Promise<void> => {
   cargandoDF.value = true;
-  try {
-    const res = await fetch(`${API_URL}/api/perfil/segundo-factor`, {
-      credentials: 'include',
-      headers: cabecerasApi(),
-    });
-    if (!res.ok) throw new Error('No se pudo cargar la verificación en dos pasos');
-    const datos = (await res.json()) as { activo: boolean; obligatorio: boolean };
-    dosFactores.activo = datos.activo;
-    dosFactores.obligatorio = datos.obligatorio;
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error instanceof Error ? error.message : 'Error de red',
-    });
-  } finally {
-    cargandoDF.value = false;
+  const { data, error } = await useApi('/perfil/segundo-factor').json<{
+    activo: boolean;
+    obligatorio: boolean;
+  }>();
+  if (error.value || !data.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo cargar la verificación en dos pasos' });
+  } else {
+    dosFactores.activo = data.value.activo;
+    dosFactores.obligatorio = data.value.obligatorio;
   }
+  cargandoDF.value = false;
 };
 
 const cambiarDosFactores = async (valor: boolean): Promise<void> => {
   guardandoDF.value = true;
-  try {
-    const res = await fetch(`${API_URL}/api/perfil/segundo-factor`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: cabecerasApi({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ activo: valor }),
-    });
-    const cuerpo = (await res.json()) as {
-      activo?: boolean;
-      message?: string;
-      errors?: Record<string, string[]>;
-    };
-    if (!res.ok) {
-      const mensaje =
-        Object.values(cuerpo.errors ?? {})[0]?.[0] ?? cuerpo.message ?? 'No se pudo guardar';
-      $q.notify({ type: 'negative', message: mensaje });
-      dosFactores.activo = !valor;
-      return;
-    }
-    dosFactores.activo = cuerpo.activo ?? valor;
-    $q.notify({ type: 'positive', message: cuerpo.message ?? 'Guardado.' });
-  } finally {
-    guardandoDF.value = false;
+  const { data, error } = await useApi('/perfil/segundo-factor')
+    .put({ activo: valor })
+    .json<{ activo?: boolean; message?: string; errors?: Record<string, string[]> }>();
+  if (error.value) {
+    const cuerpo = data.value ?? {};
+    const mensaje =
+      Object.values(cuerpo.errors ?? {})[0]?.[0] ?? cuerpo.message ?? 'No se pudo guardar';
+    $q.notify({ type: 'negative', message: mensaje });
+    dosFactores.activo = !valor;
+  } else {
+    dosFactores.activo = data.value?.activo ?? valor;
+    $q.notify({ type: 'positive', message: data.value?.message ?? 'Guardado.' });
   }
+  guardandoDF.value = false;
 };
 
 onMounted(cargar);

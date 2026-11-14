@@ -160,3 +160,41 @@ it('muestra el estado del segundo factor y si es obligatorio', function () {
         ->assertOk()
         ->assertExactJson(['activo' => true, 'obligatorio' => true]);
 });
+
+it('reusar un código ya verificado responde 422', function () {
+    $usuario = User::factory()->conSegundoFactor()->create();
+    $codigo = iniciarConCodigo($usuario);
+
+    postJson('/login/verificar', ['codigo' => $codigo])->assertNoContent();
+
+    // El código es de un solo uso: al reusarlo ya no hay sesión pendiente ni código.
+    postJson('/login/verificar', ['codigo' => $codigo])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('codigo');
+});
+
+it('el administrador sin segundo_factor igual debe verificar por código', function () {
+    seed(RolesSeeder::class);
+    $admin = User::factory()->create(); // segundo_factor = false
+    $admin->assignRole(Rol::Administrador);
+
+    // Con SEGUNDO_FACTOR_ADMINISTRADOR por defecto (true en pruebas), el admin
+    // entra a la sesión pendiente aunque su columna esté en false.
+    iniciarConCodigo($admin);
+
+    assertGuest();
+    getJson('/api/user')->assertUnauthorized();
+});
+
+it('verificar con otra sesión ya activa responde 422, no redirige', function () {
+    seed(RolesSeeder::class);
+    $otro = User::factory()->create();
+    $otro->assignRole(Rol::Ventas);
+    Sanctum::actingAs($otro, ['*']);
+
+    // Sin el middleware guest, la ruta responde 422 (código inválido) en vez de
+    // un 302 que provocaba el NetworkError del #93.
+    postJson('/login/verificar', ['codigo' => '000000'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('codigo');
+});

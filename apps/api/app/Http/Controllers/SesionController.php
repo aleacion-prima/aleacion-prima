@@ -18,13 +18,15 @@ class SesionController extends Controller
         // Con segundo factor: no se inicia la sesión todavía. Se deja pendiente
         // de verificar y se envía el código; ninguna ruta protegida responde
         // hasta mandar el código a /login/verificar.
-        if ($usuario->segundo_factor) {
+        if ($segundoFactor->activoPara($usuario)) {
             $request->session()->put('acceso.pendiente', $usuario->id);
             $request->session()->put('acceso.recordar', $request->boolean('recordar'));
             $segundoFactor->enviar($usuario);
 
             return response()->json(['segundo_factor' => true]);
         }
+
+        $request->session()->forget(['acceso.pendiente', 'acceso.recordar']);
 
         Auth::login($usuario, $request->boolean('recordar'));
         $request->session()->regenerate();
