@@ -138,6 +138,7 @@ it('un usuario activa y desactiva su segundo factor desde Mi cuenta', function (
 });
 
 it('el administrador no puede desactivar su segundo factor', function () {
+    config(['segundo-factor.obligatorio_administrador' => true]);
     seed(RolesSeeder::class);
     $admin = User::factory()->conSegundoFactor()->create();
     $admin->assignRole(Rol::Administrador);
@@ -151,6 +152,7 @@ it('el administrador no puede desactivar su segundo factor', function () {
 });
 
 it('muestra el estado del segundo factor y si es obligatorio', function () {
+    config(['segundo-factor.obligatorio_administrador' => true]);
     seed(RolesSeeder::class);
     $admin = User::factory()->conSegundoFactor()->create();
     $admin->assignRole(Rol::Administrador);
@@ -174,6 +176,7 @@ it('reusar un código ya verificado responde 422', function () {
 });
 
 it('el administrador sin segundo_factor igual debe verificar por código', function () {
+    config(['segundo-factor.obligatorio_administrador' => true]);
     seed(RolesSeeder::class);
     $admin = User::factory()->create(); // segundo_factor = false
     $admin->assignRole(Rol::Administrador);
