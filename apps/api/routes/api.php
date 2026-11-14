@@ -11,6 +11,7 @@ use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\SegundoFactorController;
 use App\Http\Controllers\SesionMovilController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
@@ -32,6 +33,9 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::middleware('ability:panel')->group(function () {
         Route::get('/perfil/pregunta-secreta', [PreguntaSecretaController::class, 'mostrar']);
         Route::put('/perfil/pregunta-secreta', [PreguntaSecretaController::class, 'guardar']);
+
+        Route::get('/perfil/segundo-factor', [SegundoFactorController::class, 'mostrar']);
+        Route::put('/perfil/segundo-factor', [SegundoFactorController::class, 'actualizar']);
 
         Route::middleware('role:administrador')->group(function () {
             Route::apiResource('insumos', InsumoController::class);

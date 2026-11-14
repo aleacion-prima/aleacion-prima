@@ -126,6 +126,8 @@ it('cerrar sesión solo borra el token del dispositivo que la cierra', function 
 });
 
 it('la sesión del panel sigue pudiendo leer y escribir', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
     $admin = usuarioMovil(Rol::Administrador);
 
     postJson('/login', ['email' => $admin->email, 'password' => 'password'])->assertNoContent();

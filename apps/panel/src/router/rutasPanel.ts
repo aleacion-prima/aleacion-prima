@@ -79,6 +79,11 @@ const rutasPanel: RouteRecordRaw[] = [
     children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
   },
   {
+    path: '/verificar',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/CodigoAccesoPage.vue') }],
+  },
+  {
     path: '/olvide-contrasena',
     component: () => import('@/layouts/AccesoLayout.vue'),
     children: [{ path: '', component: () => import('@/pages/acceso/OlvideContrasenaPage.vue') }],

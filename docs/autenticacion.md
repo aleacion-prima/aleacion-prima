@@ -37,6 +37,32 @@ En el código:
 - `apps/panel/src/services/echo.ts`: `obtenerEcho()` crea el cliente de Echo de forma perezosa (nunca antes del login) con un `authorizer` propio que llama a `/broadcasting/auth` con cookie y CSRF. `desconectarEcho()` se llama al cerrar sesión.
 - Cerrar sesión: `POST /logout` y luego `desconectarEcho()`.
 
+## Segundo factor al iniciar sesión (MFA)
+
+Cualquier usuario puede exigir un segundo factor además de la contraseña: un código de 6 dígitos que llega por correo. **Para el administrador es obligatorio.** La app móvil queda fuera de esta función.
+
+El login usa un flujo de "sesión pendiente": `POST /login` con la contraseña correcta, si el usuario tiene el segundo factor activo, **no inicia la sesión**. Guarda el usuario pendiente en la sesión, envía el código y responde `200 { "segundo_factor": true }`. Como no hay sesión iniciada, ninguna ruta protegida responde hasta mandar el código a `POST /login/verificar`. Si el usuario no tiene segundo factor, `/login` responde `204` y entra directo, como siempre.
+
+```mermaid
+sequenceDiagram
+    participant P as Panel
+    participant A as API
+    participant C as Correo
+
+    P->>A: POST /login (contraseña correcta, usuario con 2FA)
+    A->>C: Código de 6 dígitos
+    A-->>P: 200 { segundo_factor: true } · sesión pendiente
+    Note over P,A: Ninguna ruta protegida responde todavía
+    P->>A: POST /login/verificar { codigo }
+    A-->>P: 204 · sesión autenticada
+```
+
+- **El código** se guarda **hasheado** en la tabla `codigos_acceso` (uno por usuario; al reenviar se reemplaza). Vence a los 10 minutos y admite 5 intentos fallidos; después pide uno nuevo. Los valores están en `config/segundo-factor.php` (`vigencia_minutos`, `max_intentos`).
+- **Rutas** (en `routes/web.php`, middleware `guest`): `POST /login/verificar` (`throttle:verificar`) comprueba el código y, si es correcto, inicia la sesión (`Auth::login`) y la regenera; `POST /login/reenviar` (`throttle:reenviar`, 1/min) manda un código nuevo. Un código vencido, ya usado o con los intentos agotados se rechaza con **422** y un mensaje claro.
+- **El correo** lo manda la notificación `CodigoAccesoCorreo` (canal `mail`), con el mismo mailer que la recuperación de contraseña: sin dependencias nuevas.
+- **Mi cuenta:** `GET /api/perfil/segundo-factor` devuelve `{ activo, obligatorio }` y `PUT` lo activa o desactiva. El **administrador no puede desactivarlo** (422). Los seeders dejan a todos con el segundo factor **apagado**, para no romper el login automático de desarrollo ni la prueba E2E del lote.
+- **Código:** `SegundoFactorController`, el servicio `App\Acceso\SegundoFactor` (único que escribe `codigos_acceso`) y `SesionController@iniciar`, que ramifica según `segundo_factor`. En el panel: `CodigoAccesoPage.vue` (ruta `/verificar`), las acciones `verificarCodigo`/`reenviarCodigo` en `stores/sesion.ts`, y el interruptor en `MiCuentaPage.vue`. Pruebas en `tests/Feature/SegundoFactorTest.php`.
+
 ## App móvil: token con abilities
 
 La app no puede usar la cookie (origen `https://localhost` de Capacitor, fuera del navegador), así que al iniciar sesión pide un token personal:
@@ -130,6 +156,7 @@ En el panel se definen en `build.define` de `quasar.config.ts` y se tipan en `sr
 | Config que Laravel ve | `pnpm artisan config:show cors` / `sanctum` / `reverb`                                                                         | Coincide con el `.env`; si no, `docker compose restart api` |
 | WebSocket             | Pestaña Network → WS → mensajes                                                                                                | `pusher:connection_established` (no solo el 101)            |
 | Canal privado         | Suscribirse tras login y revisar `POST /broadcasting/auth`                                                                     | 200 con `auth` en la respuesta                              |
+| Segundo factor        | Activarlo en Mi cuenta, cerrar sesión y volver a entrar; leer el código en el log de correo                                    | Redirige a `/verificar` y entra con el código               |
 
 ## Pendiente
 

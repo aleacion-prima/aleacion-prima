@@ -17,7 +17,15 @@ const entrar = async (): Promise<void> => {
   error.value = '';
   cargando.value = true;
   try {
-    await sesion.iniciar(credenciales.email, credenciales.password);
+    const pendiente = await sesion.iniciar(credenciales.email, credenciales.password);
+    if (pendiente) {
+      // Falta el segundo factor: a la pantalla del código, conservando "volver".
+      await router.push({
+        path: '/verificar',
+        query: typeof route.query.volver === 'string' ? { volver: route.query.volver } : {},
+      });
+      return;
+    }
     await router.push(typeof route.query.volver === 'string' ? route.query.volver : '/');
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'No se pudo iniciar sesión';
