@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { recordarEscaneado } from '@/services/escaneados';
 import { estadoDeParada, paradasDeLote } from '@/composables/recorridoLote';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
@@ -37,6 +38,14 @@ const cargar = async (): Promise<void> => {
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
   cargando.value = false;
+  if (lote.value) {
+    void recordarEscaneado({
+      codigo: lote.value.codigo,
+      producto: lote.value.producto.nombre,
+      estado: lote.value.estado,
+      consultado_en: new Date().toISOString(),
+    });
+  }
 };
 
 watch(() => route.params.codigo, cargar, { immediate: true });

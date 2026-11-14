@@ -92,8 +92,9 @@ export const useSesionStore = defineStore('sesion', () => {
   const cerrar = async (): Promise<void> => {
     if (ES_MOVIL) {
       const { borrarToken } = await import('@/services/tokenMovil');
+      const { borrarEscaneados } = await import('@/services/escaneados');
       await useApi('/logout').post();
-      await borrarToken();
+      await Promise.all([borrarToken(), borrarEscaneados()]);
     } else {
       await peticionSesion('/logout');
       desconectarEcho();

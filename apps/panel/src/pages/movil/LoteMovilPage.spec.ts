@@ -22,6 +22,10 @@ const useApi = vi.fn((url: string) => ({
 }));
 
 vi.mock('@/services/api', () => ({ useApi: (url: string) => useApi(url) }));
+const recordarEscaneado = vi.fn();
+vi.mock('@/services/escaneados', () => ({
+  recordarEscaneado: (lote: unknown) => recordarEscaneado(lote),
+}));
 vi.mock('vue-router', () => ({ useRoute: () => ({ params: { codigo: 'LOT-20261102-01' } }) }));
 
 const parada = (orden: number, nombre: string, cambios: Partial<LoteParada>): LoteParada => ({
@@ -82,6 +86,7 @@ const montar = async () => {
 
 beforeEach(() => {
   useApi.mockClear();
+  recordarEscaneado.mockClear();
   respuesta.data = null;
   respuesta.error = null;
   respuesta.statusCode = null;
@@ -101,6 +106,13 @@ describe('LoteMovilPage', () => {
     expect(texto).toContain('En Fusión desde el');
     expect(texto).toContain('Moldeo');
     expect(texto).toContain('Colada');
+    expect(recordarEscaneado).toHaveBeenCalledWith(
+      expect.objectContaining({
+        codigo: 'LOT-20261102-01',
+        producto: 'Disco de freno',
+        estado: 'en_proceso',
+      }),
+    );
   });
 
   it('no ofrece capturar ni editar nada', async () => {
@@ -123,5 +135,6 @@ describe('LoteMovilPage', () => {
     const boton = wrapper.findComponent(QBtn);
     expect(boton.text()).toContain('Escanear otro');
     expect(boton.props('to')).toBe('/escanear');
+    expect(recordarEscaneado).not.toHaveBeenCalled();
   });
 });
