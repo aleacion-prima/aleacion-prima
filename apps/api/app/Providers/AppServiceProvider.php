@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Events\LoteActualizado;
+use App\Events\StockMinimoAlcanzado;
 use App\Listeners\DifundirModulos;
+use App\Listeners\NotificarLotePorConfirmar;
+use App\Listeners\NotificarStockMinimo;
 use App\Lotes\RecalcularCostoAlActualizar;
 use App\Models\User;
 use App\Support\Modulos;
@@ -29,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Cada vez que un lote cambia, se recalcula su costo.
         Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
+
+        // Notificaciones en tiempo real a los administradores. El imprevisto
+        // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.
+        Event::listen(StockMinimoAlcanzado::class, NotificarStockMinimo::class);
+        Event::listen(LoteActualizado::class, NotificarLotePorConfirmar::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición

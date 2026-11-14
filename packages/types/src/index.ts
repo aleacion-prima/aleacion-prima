@@ -204,6 +204,15 @@ export interface SesionMovil {
   usuario: Usuario;
 }
 
+export interface Notificacion {
+  id: string;
+  tipo: string;
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
+}
+
 export interface AreaAsignada {
   id: number;
   codigo: string;

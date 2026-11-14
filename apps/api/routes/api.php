@@ -8,6 +8,7 @@ use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
@@ -53,6 +54,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::middleware('role:administrador|ventas')->group(function () {
             Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
             Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+        });
+
+        Route::middleware('role:administrador')->group(function () {
+            Route::get('/notificaciones', [NotificacionController::class, 'index']);
+            Route::patch('/notificaciones/{id}/leida', [NotificacionController::class, 'leida']);
+            Route::post('/notificaciones/leidas', [NotificacionController::class, 'leidas']);
         });
 
         Route::middleware('role:administrador')->group(function () {

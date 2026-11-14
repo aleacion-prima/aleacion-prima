@@ -127,6 +127,8 @@ Middleware: `auth:sanctum` y `role:administrador`.
 
 `GET /api/tablero` carga el estado inicial; después el tablero se mantiene al día por WebSocket.
 
+Las notificaciones son de Laravel (canales `database` + `broadcast`). Se guardan en `notifications` y se emiten por el canal privado de cada administrador, `App.Models.User.{id}` (autorizado en `routes/channels.php`). La respuesta de `GET /api/notificaciones` va paginada (15 por página; `?no_leidas=1` filtra las no leídas) y cada elemento lleva solo la carga mínima: `id`, `tipo` (`stock_minimo`, `lote_por_confirmar`, `imprevisto`), `mensaje`, `codigo` (del lote o del insumo), `leida` y `fecha`. **Sin costos ni el modelo completo.** Los avisos se disparan desde listeners (`NotificarStockMinimo` sobre `StockMinimoAlcanzado`, `NotificarLotePorConfirmar` sobre `LoteActualizado` solo al pasar a `por_confirmar`); el de imprevisto (`ImprevistoRegistrado`) queda listo y lo engancha T-43.
+
 ## Aplicación móvil
 
 Middleware: `auth:sanctum`, `role:encargado|administrador` y `ability:lotes:read`. La app solo lee: no tiene ninguna ruta de escritura.
