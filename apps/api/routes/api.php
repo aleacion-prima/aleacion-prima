@@ -12,6 +12,7 @@ use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\SegundoFactorController;
+use App\Http\Controllers\SesionActivaController;
 use App\Http\Controllers\SesionMovilController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
@@ -37,6 +38,12 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('/perfil/segundo-factor', [SegundoFactorController::class, 'mostrar']);
         Route::put('/perfil/segundo-factor', [SegundoFactorController::class, 'actualizar']);
 
+        // Sesiones activas del propio usuario (panel + tokens de la app).
+        Route::get('/sesiones', [SesionActivaController::class, 'index']);
+        Route::delete('/sesiones', [SesionActivaController::class, 'destroyOtras']);
+        Route::delete('/sesiones/{id}', [SesionActivaController::class, 'destroy'])
+            ->where('id', '[a-z]+:[A-Za-z0-9]+');
+
         Route::middleware('role:administrador')->group(function () {
             Route::apiResource('insumos', InsumoController::class);
         });
@@ -50,6 +57,13 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::middleware('role:administrador')->group(function () {
             Route::apiResource('usuarios', UsuarioController::class)
                 ->only(['index', 'store', 'update', 'destroy']);
+
+            // Admin: ver y cerrar las sesiones de otro usuario desde Usuarios.
+            Route::get('/usuarios/{usuario}/sesiones', [SesionActivaController::class, 'indexDe']);
+            Route::delete('/usuarios/{usuario}/sesiones', [SesionActivaController::class, 'destroyTodasDe']);
+            Route::delete('/usuarios/{usuario}/sesiones/{id}', [SesionActivaController::class, 'destroyDe'])
+                ->where('id', '[a-z]+:[A-Za-z0-9]+');
+
             Route::post('/insumos/{insumo}/entradas', [EntradaInsumoController::class, 'store']);
             Route::get('/insumos/{insumo}/movimientos', [MovimientoInsumoController::class, 'index']);
         });
