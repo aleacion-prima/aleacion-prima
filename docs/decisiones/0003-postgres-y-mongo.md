@@ -30,6 +30,21 @@ El anteproyecto define dos bases de datos: PostgreSQL para los datos críticos (
 - Mongo 7 en local y probablemente 8 en Atlas (Mongo 8 no arranca con kernels recientes). Diferencia conocida y aceptable mientras no se usen funciones nuevas de la 8.
 - Las consultas de reportes que crucen ambas fuentes (p. ej. "imprevistos por área en el mes") se resuelven en la aplicación: se consulta Mongo por `lote_id` y se une con Postgres en PHP, no al revés.
 
+## Implementación de la bitácora (T-41)
+
+Al escribir el primer modelo de Mongo (la colección `bitacora`) se fijó lo que esta ADR dejaba abierto:
+
+- **Un solo punto de entrada:** `App\Bitacora\Bitacora::registrar(...)`. Arma el documento (quién, cuándo, la marca `captura_tardia` con `planta.umbral_captura_tardia`) y delega la escritura en un escritor resuelto del contenedor, todo envuelto en `try/catch`: un fallo de la bitácora nunca revierte la operación del lote (RNF-05). Los servicios de `app/Lotes/` e `app/Inventario/` lo llaman dentro de su `DB::transaction`. T-43 (imprevistos) y T-45 (ajustes de lote terminado) reúsan este mismo punto.
+- **Escribir después del commit, detrás de una interfaz.** El contrato `App\Bitacora\EscritorBitacora` separa _qué_ se registra de _cómo y cuándo_ se escribe:
+  - `EscritorBitacoraMongo` (producción, singleton por defecto en `AppServiceProvider`): difiere la inserción real con `DB::afterCommit()` y la protege con su propio `try/catch`, porque cuando ese callback corre el `try/catch` de `registrar()` ya retornó.
+  - `EscritorBitacoraFake` (pruebas): registra en memoria de forma **síncrona** (bajo `RefreshDatabase`, `DB::afterCommit` nunca dispara) y tiene un modo `fallar()` para el criterio de tolerancia.
+- **Cómo se prueba:** `Bitacora::fake()` al inicio del caso devuelve el fake y lo deja en el contenedor; luego se asserta con `tipos()`, `assertRegistrado()` y `assertNingunRegistro()`. Así **ningún test toca Mongo**: el fake nunca instancia el escritor de Mongo y la migración de índices no corre bajo `RefreshDatabase`.
+- **Índices fuera del `migrate` por defecto.** La migración de la colección vive en `apps/api/database/migrations/mongodb/`; el migrador no entra a subcarpetas, así que ni el `migrate` normal ni `RefreshDatabase` la ejecutan. Se corre a mano en dev y en CI con Mongo:
+
+  ```bash
+  php artisan migrate --path=database/migrations/mongodb
+  ```
+
 ## Alternativas descartadas
 
 - **Solo PostgreSQL con columnas JSONB para bitácora e imprevistos.** Técnicamente bastaría y evitaría RI-10 por completo. Se descartó porque el anteproyecto compromete MongoDB y el equipo quiere la experiencia con ella. A cambio, el alcance de Mongo se mantiene pequeño (dos colecciones, siempre referenciadas por id) para que migrar a JSONB sea barato si Mongo estorba.

@@ -2,8 +2,10 @@
 
 namespace App\Lotes;
 
+use App\Bitacora\Bitacora;
 use App\Enums\CategoriaInsumo;
 use App\Enums\EstadoLote;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoInsumo;
 use App\Events\LoteActualizado;
 use App\Models\Insumo;
@@ -42,10 +44,12 @@ class CapturaParada
                 $this->fallar('ocurrido_en', 'La entrada no puede ser antes de la salida de la parada anterior.');
             }
 
+            $registrado = CarbonImmutable::now();
+
             $parada->forceFill([
                 'piezas_recibidas' => $piezas,
                 'entrada_ocurrido_en' => $ocurrido,
-                'entrada_registrado_en' => CarbonImmutable::now(),
+                'entrada_registrado_en' => $registrado,
                 'entrada_user_id' => $usuario->id,
             ])->save();
 
@@ -53,6 +57,17 @@ class CapturaParada
                 'estado' => EstadoLote::EnProceso,
                 'area_actual_id' => $parada->area_id,
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::EntradaArea,
+                "Entrada a {$parada->area?->nombre}: {$piezas} piezas.",
+                loteId: $lote->id,
+                areaId: $parada->area_id,
+                datos: ['piezas_recibidas' => $piezas],
+                userId: $usuario->id,
+                ocurridoEn: $ocurrido,
+                registradoEn: $registrado,
+            );
 
             LoteActualizado::dispatch($lote);
 
@@ -100,18 +115,51 @@ class CapturaParada
                 $this->validarRetorno($lote, $parada, $retorno);
             }
 
+            $registrado = CarbonImmutable::now();
+            $merma = $parada->piezas_recibidas - $piezas;
+
             $parada->forceFill([
                 'piezas_entregadas' => $piezas,
-                'merma_piezas' => $parada->piezas_recibidas - $piezas,
+                'merma_piezas' => $merma,
                 'merma_material' => $mermaMaterial,
                 'retorno_kg' => $retorno->isPositive() ? (string) $retorno : null,
                 'salida_ocurrido_en' => $ocurrido,
-                'salida_registrado_en' => CarbonImmutable::now(),
+                'salida_registrado_en' => $registrado,
                 'salida_user_id' => $usuario->id,
             ])->save();
 
+            Bitacora::registrar(
+                TipoEventoBitacora::SalidaArea,
+                "Salida de {$parada->area?->nombre}: {$piezas} piezas, merma {$merma}.",
+                loteId: $lote->id,
+                areaId: $parada->area_id,
+                datos: [
+                    'piezas_entregadas' => $piezas,
+                    'merma_piezas' => $merma,
+                    'merma_material' => $mermaMaterial,
+                    'retorno_kg' => $retorno->isPositive() ? (string) $retorno : null,
+                ],
+                userId: $usuario->id,
+                ocurridoEn: $ocurrido,
+                registradoEn: $registrado,
+            );
+
             if ($retorno->isPositive()) {
                 $this->registrarRetorno($lote, $retorno, $ocurrido, $usuario);
+
+                Bitacora::registrar(
+                    TipoEventoBitacora::Retorno,
+                    "Retorno de {$retorno} kg de metal al inventario.",
+                    loteId: $lote->id,
+                    areaId: $parada->area_id,
+                    datos: [
+                        'retorno_kg' => (string) $retorno,
+                        'insumo' => config('planta.insumo_retorno'),
+                    ],
+                    userId: $usuario->id,
+                    ocurridoEn: $ocurrido,
+                    registradoEn: $registrado,
+                );
             }
 
             $esUltima = ! $lote->paradas()->where('orden', '>', $parada->orden)->exists();

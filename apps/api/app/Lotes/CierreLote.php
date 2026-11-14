@@ -2,7 +2,9 @@
 
 namespace App\Lotes;
 
+use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoInsumo;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
@@ -47,6 +49,14 @@ class CierreLote
                 'confirmado_por' => $usuario->id,
                 'confirmado_en' => $ahora,
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::Confirmacion,
+                "Confirmación del lote {$lote->codigo}: {$piezas} piezas terminadas.",
+                loteId: $lote->id,
+                datos: ['piezas_terminadas' => $piezas],
+                userId: $usuario->id,
+            );
 
             LoteActualizado::dispatch($lote);
             DisponibilidadActualizada::dispatch($producto);
@@ -97,6 +107,14 @@ class CierreLote
                 'cancelado_en' => $ahora,
                 'motivo_cancelacion' => $motivo,
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::Cancelacion,
+                "Cancelación del lote {$lote->codigo}: {$motivo}",
+                loteId: $lote->id,
+                datos: ['motivo' => $motivo],
+                userId: $usuario->id,
+            );
 
             LoteActualizado::dispatch($lote);
 
@@ -150,6 +168,18 @@ class CierreLote
             $asignado->forceFill([
                 'cantidad_devuelta' => (string) BigDecimal::of((string) $asignado->cantidad_devuelta)->plus($cantidad),
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::DevolucionInsumo,
+                "Devolución de {$cantidad} {$insumo->unidad} de {$insumo->nombre} ({$insumo->codigo}).",
+                loteId: $lote->id,
+                datos: [
+                    'insumo_id' => $insumo->id,
+                    'codigo' => $insumo->codigo,
+                    'cantidad' => (string) $cantidad,
+                ],
+                userId: $usuario->id,
+            );
         }
     }
 
