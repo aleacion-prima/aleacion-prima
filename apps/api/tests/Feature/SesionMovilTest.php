@@ -108,8 +108,9 @@ it('con el token móvil no se reciben costos ni tarifas, aunque sea administrado
 
     withToken($token)->getJson('/api/lotes')
         ->assertOk()
-        ->assertJsonMissingPath('data.0.costo_total')
-        ->assertJsonMissingPath('data.0.paradas.0.tarifa_mano_obra_hora');
+        ->assertJsonPath('0.codigo', 'LOT-20261111-01')
+        ->assertJsonMissingPath('0.costo_total')
+        ->assertJsonMissingPath('0.paradas.0.tarifa_mano_obra_hora');
 });
 
 it('la sesión del panel de un administrador sí recibe los costos', function () {
