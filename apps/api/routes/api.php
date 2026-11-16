@@ -12,6 +12,7 @@ use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\SesionMovilController;
+use App\Http\Controllers\TableroController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Resources\UsuarioResource;
 use Illuminate\Http\Request;
@@ -64,6 +65,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
             Route::post('/lotes', [LoteController::class, 'store']);
             Route::post('/lotes/{lote}/confirmar', [CierreLoteController::class, 'confirmar']);
             Route::post('/lotes/{lote}/cancelar', [CierreLoteController::class, 'cancelar']);
+            Route::get('/tablero', TableroController::class);
         });
 
         Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
