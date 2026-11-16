@@ -66,6 +66,8 @@ Lo que hace cada integrante:
 4. **Espera el CI en verde y una aprobación** de otro integrante. Nadie hace push directo a `main`.
 5. **Fusiona con Squash and merge.** La tarea queda como un solo commit en `main` y la rama se borra.
 
+**Bugs.** Todo bug que se encuentre (en una revisión, un test, una prueba manual o en producción) se registra como issue con la plantilla de bug, aunque se arregle en el mismo PR donde apareció: pasos para reproducirlo, comportamiento esperado y actual, causa y solución. El PR que lo corrige incluye un test que falla sin el arreglo, y al cerrar el sprint el bug entra en la tabla de defectos del acta ([`docs/sprints/`](./docs/sprints/)).
+
 Los hooks se instalan solos con `pnpm install` y hacen cumplir lo anterior en cada máquina:
 
 | Hook         | Qué hace                                                                   |
