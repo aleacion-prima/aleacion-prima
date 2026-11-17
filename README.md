@@ -420,6 +420,8 @@ La app Android vive en el mismo proyecto que el panel (`apps/panel`) y se constr
 
 > ⚠️ **Windows:** Android Studio y el emulador funcionan mejor **instalados en Windows**, no dentro de WSL. Como el código está en WSL, la forma más simple es que quien trabaje la app móvil lo haga desde Linux nativo, o que en Windows abra el proyecto `apps/panel/src-capacitor/android` con el Android Studio de Windows a través de `\\wsl$\Ubuntu-24.04\home\...`. Si esto te complica, pregunta en el grupo antes de pelearte con ello.
 
+> **Plugins nativos:** `apps/panel/src-capacitor` tiene sus propias dependencias y su propio `pnpm-lock.yaml` (Quasar lo instala aparte y no forma parte del workspace). Un plugin nuevo se instala **en los dos lados**, con la misma versión fija: en `src-capacitor` para la parte de Android (`cd apps/panel/src-capacitor && pnpm add <plugin>@<versión>`) y en el panel para poder importarlo (`pnpm --filter panel add <plugin>@<versión>`). `@capacitor/core`, `cli` y `android` deben tener siempre la misma versión.
+
 #### 6.2 Correr la app en desarrollo
 
 ```bash
@@ -487,11 +489,11 @@ GitHub dice que hay conflicto cuando dos ramas cambiaron las mismas líneas del 
 
 **Qué significan "current" e "incoming"**
 
-| Dónde lo ves                         | "Current" / actual       | "Incoming" / entrante  |
-| ------------------------------------ | ------------------------ | ---------------------- |
-| Conflicto en GitHub (pestaña del PR) | Lo que ya está en `main` | Los cambios de tu rama |
-| `git merge origin/main` en tu rama   | Tu rama                  | `main`                 |
-| `git rebase origin/main` en tu rama  | `main`                   | Tus commits            |
+| Dónde lo ves                         | "Current" / actual | "Incoming" / entrante |
+| ------------------------------------ | ------------------ | --------------------- |
+| Conflicto en GitHub (pestaña del PR) | Tu rama (arriba)   | `main` (abajo)        |
+| `git merge origin/main` en tu rama   | Tu rama            | `main`                |
+| `git rebase origin/main` en tu rama  | `main`             | Tus commits           |
 
 > ⚠️ **En un rebase los papeles se invierten.** "Current" es `main` y "Accept current" descarta tu trabajo. Si rebasas, lee dos veces antes de aceptar un lado y prefiere resolver a mano.
 

@@ -20,7 +20,7 @@ function actuarComoProducto(Rol $rol): User
 {
     $usuario = User::factory()->create(['activo' => true]);
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     return $usuario;
 }

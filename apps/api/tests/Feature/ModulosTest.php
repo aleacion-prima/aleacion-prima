@@ -30,7 +30,7 @@ it('con el módulo apagado una ruta de ventas no responde, y prendido sí', func
     Route::middleware(['auth:sanctum', EnsureFeaturesAreActive::using('ventas')])
         ->get('/_test/ventas', fn () => response()->json(['ok' => true]));
 
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
 
     getJson('/_test/ventas')->assertStatus(400);
 
@@ -58,7 +58,7 @@ it('ModulosActualizados viaja por el canal privado modulos', function () {
 });
 
 it('/api/user incluye el estado de los módulos', function () {
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
 
     getJson('/api/user')->assertOk()->assertJsonPath('modulos.ventas', false);
 
@@ -74,7 +74,7 @@ it('el canal de módulos rechaza a quien no tiene sesión', function () {
         'socket_id' => '1.1',
     ])->assertUnauthorized();
 
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
     postJson('/broadcasting/auth', [
         'channel_name' => 'private-modulos',
         'socket_id' => '1.1',

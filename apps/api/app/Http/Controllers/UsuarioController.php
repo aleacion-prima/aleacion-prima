@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Rol;
+use App\Events\UsuarioActualizado;
 use App\Http\Requests\GuardarUsuarioRequest;
 use App\Http\Resources\UsuarioResource;
 use App\Models\User;
@@ -57,6 +58,7 @@ class UsuarioController extends Controller
             $usuario->update($this->atributos($datos, false));
             $usuario->syncRoles($datos['rol']);
             $usuario->areas()->sync($this->idsDeAreas($datos));
+            UsuarioActualizado::dispatch($usuario->id);
 
             return (new UsuarioResource($usuario->load('areas')))->response();
         });
@@ -73,6 +75,7 @@ class UsuarioController extends Controller
         DB::transaction(function () use ($usuario): void {
             $usuario->forceFill(['activo' => false])->save();
             $usuario->tokens()->delete();
+            UsuarioActualizado::dispatch($usuario->id);
         });
 
         return response()->noContent();

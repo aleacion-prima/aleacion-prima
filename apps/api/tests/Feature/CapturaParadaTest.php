@@ -34,7 +34,7 @@ function capturarComo(Rol $rol, array $areas = []): User
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
     $usuario->areas()->sync(Area::query()->whereIn('codigo', $areas)->pluck('id'));
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     return $usuario;
 }

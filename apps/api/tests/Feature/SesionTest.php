@@ -9,6 +9,7 @@ use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
+use function Pest\Laravel\withHeaders;
 
 it('inicia sesión con credenciales válidas', function () {
     $user = User::factory()->create();
@@ -96,4 +97,33 @@ it('cierra la sesión de un usuario desactivado', function () {
 
     app('auth')->forgetGuards();
     getJson('/api/user')->assertUnauthorized();
+});
+
+it('cambia de usuario si ya hay una sesión activa en el navegador', function () {
+    $encargado = User::factory()->create();
+    $administrador = User::factory()->create();
+
+    postJson('/login', ['email' => $encargado->email, 'password' => 'password'])->assertNoContent();
+    postJson('/login', ['email' => $administrador->email, 'password' => 'password'])->assertNoContent();
+
+    assertAuthenticatedAs($administrador);
+});
+
+it('detrás del proxy cuenta los intentos por la IP real del cliente', function () {
+    $user = User::factory()->create();
+    $desde = fn (string $ip) => withHeaders(['X-Forwarded-For' => $ip]);
+
+    foreach (range(1, 5) as $intento) {
+        $desde('203.0.113.10')
+            ->postJson('/login', ['email' => $user->email, 'password' => 'otra'])
+            ->assertUnprocessable();
+    }
+
+    $desde('203.0.113.10')
+        ->postJson('/login', ['email' => $user->email, 'password' => 'password'])
+        ->assertTooManyRequests();
+
+    $desde('198.51.100.20')
+        ->postJson('/login', ['email' => $user->email, 'password' => 'password'])
+        ->assertNoContent();
 });

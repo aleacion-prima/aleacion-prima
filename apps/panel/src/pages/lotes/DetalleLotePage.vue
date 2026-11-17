@@ -144,6 +144,15 @@ watch(
         </div>
         <div class="row items-center q-gutter-sm">
           <q-btn
+            v-if="esAdmin"
+            outline
+            no-caps
+            color="primary"
+            icon="qr_code_2"
+            label="Imprimir etiqueta"
+            :to="`/lotes/${lote.codigo}/etiqueta`"
+          />
+          <q-btn
             v-if="puedeCancelar"
             outline
             no-caps

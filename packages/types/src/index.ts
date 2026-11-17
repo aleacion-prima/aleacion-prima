@@ -199,6 +199,11 @@ export interface Usuario {
   areas?: AreaAsignada[];
 }
 
+export interface SesionMovil {
+  token: string;
+  usuario: Usuario;
+}
+
 export interface AreaAsignada {
   id: number;
   codigo: string;

@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
-import { useSesionStore } from '@/stores/sesion';
+import rutasMovil from './rutasMovil';
+import rutasPanel from './rutasPanel';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -103,5 +104,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/sistema/ErrorNotFound.vue'),
   },
 ];
+const routes: RouteRecordRaw[] =
+  import.meta.env.QUASAR_MODE === 'capacitor' ? rutasMovil : rutasPanel;
 
 export default routes;

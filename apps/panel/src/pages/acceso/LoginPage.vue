@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import { correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
 const route = useRoute();
@@ -42,7 +43,8 @@ const entrar = async (): Promise<void> => {
           outlined
           autofocus
           autocomplete="username"
-          :rules="[(v) => !!v || 'Escribe tu correo']"
+          lazy-rules
+          :rules="[requerido('Escribe tu correo'), correo]"
         />
 
         <q-input
@@ -51,7 +53,7 @@ const entrar = async (): Promise<void> => {
           label="Contraseña"
           outlined
           autocomplete="current-password"
-          :rules="[(v) => !!v || 'Escribe tu contraseña']"
+          :rules="[requerido('Escribe tu contraseña')]"
         >
           <template #append>
             <q-icon

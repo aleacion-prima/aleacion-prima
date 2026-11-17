@@ -138,7 +138,7 @@ Si algo falla y no es por tu cambio, repórtalo en lugar de "arreglarlo" por tu 
 - Los términos del dominio van en **español**, igual que en `packages/types`: `Lote`, `EstadoLote`, `merma`, `area`, `pedido`, `imprevisto`.
 - **Identificadores sin acentos ni ñ** (`area`, `anio`, `descripcion`); los acentos solo van en textos visibles y comentarios. Identificadores en `camelCase` (TS) o según la convención de Laravel (PHP).
 - Comentarios en español, solo donde expliquen el _porqué_.
-- Todos los archivos usan saltos de línea **LF** (lo fuerza `.gitattributes`). No introduzcas CRLF.
+- Todos los archivos usan saltos de línea **LF** (lo fuerza `.gitattributes`). No introduzcas CRLF. Única excepción: los scripts de Windows (`*.bat`, `*.cmd`, como `gradlew.bat`) van en CRLF, porque `cmd.exe` falla con LF.
 
 ### TypeScript
 
