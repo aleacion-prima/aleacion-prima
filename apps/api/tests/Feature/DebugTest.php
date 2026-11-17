@@ -1,14 +1,21 @@
 <?php
 
+use App\Enums\EstadoLote;
 use App\Enums\Rol;
+use App\Models\Area;
+use App\Models\Lote;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\RolesSeeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertAuthenticatedAs;
+use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\withHeaders;
 
@@ -80,5 +87,95 @@ describe('con las rutas cargadas', function () {
             ->assertUnprocessable();
 
         assertAuthenticatedAs($admin, 'web');
+    });
+
+    it('crea un lote de prueba con el primer producto activo', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+
+        postJson('/api/debug/lotes')
+            ->assertCreated()
+            ->assertJsonPath('estado', EstadoLote::Creado->value)
+            ->assertJsonPath('cantidad_objetivo', 10);
+    });
+
+    it('solo el administrador crea lotes de prueba', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Ventas), ['*']);
+
+        postJson('/api/debug/lotes')->assertForbidden();
+        expect(Lote::query()->count())->toBe(0);
+    });
+
+    it('avanza un paso y luego hasta el final', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+        $codigo = postJson('/api/debug/lotes')->json('codigo');
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar")
+            ->assertOk()
+            ->assertJsonPath('estado', EstadoLote::EnProceso->value)
+            ->assertJsonPath('paradas.0.piezas_recibidas', 10);
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar", ['hasta' => 'final'])
+            ->assertOk()
+            ->assertJsonPath('estado', EstadoLote::PorConfirmar->value);
+
+        $lote = Lote::query()->where('codigo', $codigo)->firstOrFail();
+        expect((float) $lote->costo_total)->toBeGreaterThan(0)
+            ->and($lote->paradas()->where('salida_ocurrido_en', '>', now())->exists())->toBeFalse();
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar")->assertUnprocessable();
+    });
+
+    it('aplica la merma en la salida y el faltante en la siguiente entrada', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+        $codigo = postJson('/api/debug/lotes')->json('codigo');
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar");
+        postJson("/api/debug/lotes/{$codigo}/avanzar", ['merma' => 2]);
+        postJson("/api/debug/lotes/{$codigo}/avanzar", ['faltante' => 1])
+            ->assertOk()
+            ->assertJsonPath('paradas.0.piezas_entregadas', 8)
+            ->assertJsonPath('paradas.0.merma_piezas', 2)
+            ->assertJsonPath('paradas.1.piezas_recibidas', 7)
+            ->assertJsonPath('paradas.1.discrepancia', -1);
+    });
+
+    it('respeta los permisos de captura', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+        $codigo = postJson('/api/debug/lotes')->json('codigo');
+        $lote = Lote::query()->where('codigo', $codigo)->firstOrFail();
+
+        Sanctum::actingAs(usuarioDebug(Rol::Ventas), ['*']);
+        postJson("/api/debug/lotes/{$codigo}/avanzar")->assertForbidden();
+
+        $encargado = usuarioDebug(Rol::Encargado);
+        $encargado->areas()->attach(Area::query()->whereKeyNot($lote->paradas()->orderBy('orden')->value('area_id'))->value('id'));
+        Sanctum::actingAs($encargado, ['*']);
+        postJson("/api/debug/lotes/{$codigo}/avanzar")->assertForbidden();
+
+        $encargado->areas()->attach($lote->paradas()->orderBy('orden')->value('area_id'));
+        postJson("/api/debug/lotes/{$codigo}/avanzar")->assertOk();
+    });
+
+    it('reinicia la BD con los seeders y cierra la sesión', function () {
+        Artisan::shouldReceive('call')->once()->with('migrate:fresh', ['--seed' => true, '--force' => true])->andReturn(0);
+        actingAs(usuarioDebug(Rol::Administrador), 'web');
+
+        withHeaders(['Referer' => 'http://localhost:9000'])
+            ->postJson('/api/debug/reiniciar')
+            ->assertNoContent();
+
+        assertGuest('web');
+    });
+
+    it('solo el administrador reinicia la BD', function () {
+        Artisan::shouldReceive('call')->never();
+        Sanctum::actingAs(usuarioDebug(Rol::Ventas), ['*']);
+
+        postJson('/api/debug/reiniciar')->assertForbidden();
     });
 });
