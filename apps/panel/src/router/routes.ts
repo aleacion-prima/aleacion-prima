@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'mi-area',
-        component: () => import('@/pages/area/MiAreaPage.vue'),
+        component: () => import('@/pages/areas/MiAreaPage.vue'),
         meta: { roles: ['encargado'] },
       },
       {
