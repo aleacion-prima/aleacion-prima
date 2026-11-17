@@ -164,6 +164,28 @@ it('no entrega más piezas de las que recibió', function () {
         ->assertJsonValidationErrors(['piezas_entregadas']);
 });
 
+it('no recibe más piezas de las que entregó el área anterior', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+    entrar($lote, 1, 20, '07:00');
+    salir($lote, 1, 19, '07:30');
+
+    postJson(urlCaptura($lote, paradaDe($lote, 2), 'entrada'), ['piezas_recibidas' => 20])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['piezas_recibidas']);
+
+    expect(paradaDe($lote, 2)->entrada_ocurrido_en)->toBeNull();
+});
+
+it('la primera parada no recibe más piezas que la cantidad objetivo', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+
+    postJson(urlCaptura($lote, paradaDe($lote, 1), 'entrada'), ['piezas_recibidas' => 21])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['piezas_recibidas']);
+});
+
 it('valida que las horas tengan sentido', function () {
     capturarComo(Rol::Administrador);
     $lote = loteParaCaptura();
