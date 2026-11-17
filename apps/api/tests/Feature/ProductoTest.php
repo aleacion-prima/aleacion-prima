@@ -1,15 +1,23 @@
 <?php
 
+use App\Enums\Rol;
 use App\Models\Area;
 use App\Models\Insumo;
 use App\Models\Producto;
 use App\Models\User;
+use Database\Seeders\RolesSeeder;
 use Laravel\Sanctum\Sanctum;
-use Spatie\Permission\Models\Role;
 
-function actuarComoProducto(string $rol): User
+use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Laravel\assertDatabaseMissing;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
+use function Pest\Laravel\putJson;
+use function Pest\Laravel\seed;
+
+function actuarComoProducto(Rol $rol): User
 {
-    Role::findOrCreate($rol, 'web');
     $usuario = User::factory()->create(['activo' => true]);
     $usuario->assignRole($rol);
     Sanctum::actingAs($usuario, ['*']);
@@ -40,33 +48,38 @@ function payloadProducto(array $areas, Insumo $insumo, array $cambios = []): arr
         'especificaciones' => ['material' => 'Hierro gris clase 30', 'peso_kg' => 8.5],
         'precio_mayoreo' => '280.00',
         'precio_menudeo' => '340.00',
-        'recorrido' => collect(['MOL', 'FUS', 'COL', 'DES'])->map(fn ($c) => $areas[$c]->id)->all(),
+        'recorrido' => idsDeRecorrido($areas, 'MOL', 'FUS', 'COL', 'DES'),
         'receta' => [['insumo_id' => $insumo->id, 'cantidad_por_pieza' => '5.5700']],
         'activo' => true,
     ], $cambios);
 }
 
-beforeEach(function () {
-    $this->areas = catalogoAreas();
-    $this->insumo = Insumo::factory()->create(['activo' => true]);
-    actuarComoProducto('administrador');
-});
-
-function ids(array $areas, string ...$codigos): array
+/** @return list<int> */
+function idsDeRecorrido(array $areas, string ...$codigos): array
 {
     return array_map(fn ($c) => $areas[$c]->id, $codigos);
 }
 
-describe('recorrido', function () {
-    it('guarda el orden del recorrido según la posición enviada', function () {
-        $recorrido = ids($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA');
+beforeEach(function () {
+    seed(RolesSeeder::class);
+    $this->areas = catalogoAreas();
+    $this->insumo = Insumo::factory()->create(['activo' => true]);
+});
 
-        $id = $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+describe('recorrido', function () {
+    beforeEach(function () {
+        actuarComoProducto(Rol::Administrador);
+    });
+
+    it('guarda el orden del recorrido según la posición enviada', function () {
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA');
+
+        $id = postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertCreated()
             ->json('id');
 
         foreach ($recorrido as $indice => $areaId) {
-            $this->assertDatabaseHas('producto_area', [
+            assertDatabaseHas('producto_area', [
                 'producto_id' => $id,
                 'area_id' => $areaId,
                 'orden' => $indice + 1,
@@ -75,31 +88,15 @@ describe('recorrido', function () {
     });
 
     it('no crea el producto si el recorrido es inválido', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
-            'recorrido' => ids($this->areas, 'MOL', 'FUS'),
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
+            'recorrido' => idsDeRecorrido($this->areas, 'MOL', 'FUS'),
         ]))->assertUnprocessable();
 
-        $this->assertDatabaseMissing('productos', ['codigo' => 'DIS-FRE-G']);
-    });
-
-    it('al editar borra las áreas del recorrido anterior', function () {
-        $producto = Producto::factory()->create(['codigo' => 'DIS-FRE-G']);
-        $producto->areas()->attach([
-            $this->areas['MOL']->id => ['orden' => 1],
-            $this->areas['GRA']->id => ['orden' => 2],
-        ]);
-
-        $this->putJson("/api/productos/{$producto->id}", payloadProducto($this->areas, $this->insumo))->assertOk();
-
-        expect($producto->areas()->count())->toBe(4);
-        $this->assertDatabaseMissing('producto_area', [
-            'producto_id' => $producto->id,
-            'area_id' => $this->areas['GRA']->id,
-        ]);
+        assertDatabaseMissing('productos', ['codigo' => 'DIS-FRE-G']);
     });
 
     it('acepta un recorrido válido con las obligatorias en orden', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo))
             ->assertCreated()
             ->assertJsonPath('recorrido.0.codigo', 'MOL')
             ->assertJsonPath('recorrido.3.codigo', 'DES')
@@ -107,84 +104,84 @@ describe('recorrido', function () {
     });
 
     it('acepta áreas opcionales intercaladas sin alterar el orden de las obligatorias', function () {
-        $recorrido = ids($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA', 'CAL');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA', 'CAL');
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertCreated()
             ->assertJsonCount(6, 'recorrido');
     });
 
     it('rechaza un recorrido que no es una lista', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => 'MOL,FUS']))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => 'MOL,FUS']))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido']);
     });
 
     it('rechaza ids de área que no son enteros', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => ['abc']]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => ['abc']]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido.0']);
     });
 
     it('rechaza un recorrido al que le falta una obligatoria', function () {
-        $recorrido = ids($this->areas, 'MOL', 'FUS', 'DES');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'FUS', 'DES');
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido'])
             ->assertJsonPath('errors.recorrido.0', 'Falta el área obligatoria COL.');
     });
 
     it('rechaza un recorrido al que le faltan varias obligatorias', function () {
-        $recorrido = ids($this->areas, 'MOL', 'GRA');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'GRA');
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonPath('errors.recorrido.0', 'Faltan las áreas obligatorias FUS, COL, DES.');
     });
 
     it('rechaza obligatorias fuera de orden', function () {
-        $recorrido = ids($this->areas, 'MOL', 'COL', 'FUS', 'DES');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'COL', 'FUS', 'DES');
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonPath('errors.recorrido.0', 'Las áreas obligatorias deben estar en este orden: MOL → FUS → COL → DES.');
     });
 
     it('rechaza un área inactiva', function () {
         $this->areas['GRA']->update(['activo' => false]);
-        $recorrido = ids($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA');
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonPath('errors.recorrido.0', 'Las áreas GRA están inactivas y no pueden entrar en un recorrido nuevo.');
     });
 
     it('rechaza un recorrido vacío', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => []]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => []]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido']);
     });
 
     it('rechaza un área repetida', function () {
-        $recorrido = [...ids($this->areas, 'MOL', 'FUS', 'COL', 'DES'), $this->areas['MOL']->id];
+        $recorrido = [...idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES'), $this->areas['MOL']->id];
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido.4']);
     });
 
     it('rechaza un área que no existe', function () {
-        $recorrido = [...ids($this->areas, 'MOL', 'FUS', 'COL', 'DES'), 99999];
+        $recorrido = [...idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES'), 99999];
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['recorrido.4']);
     });
 
     it('rechaza un recorrido con solo áreas opcionales', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
-            'recorrido' => ids($this->areas, 'GRA', 'CAL'),
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
+            'recorrido' => idsDeRecorrido($this->areas, 'GRA', 'CAL'),
         ]))->assertUnprocessable()
             ->assertJsonPath('errors.recorrido.0', 'Faltan las áreas obligatorias MOL, FUS, COL, DES.');
     });
@@ -193,16 +190,20 @@ describe('recorrido', function () {
         $this->areas['GRA']->update(['activo' => false]);
         $this->areas['CAL']->update(['activo' => false]);
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
-            'recorrido' => ids($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA', 'CAL'),
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, [
+            'recorrido' => idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'GRA', 'CAL'),
         ]))->assertUnprocessable()
             ->assertJsonPath('errors.recorrido.0', 'Las áreas GRA, CAL están inactivas y no pueden entrar en un recorrido nuevo.');
     });
 });
 
 describe('receta', function () {
+    beforeEach(function () {
+        actuarComoProducto(Rol::Administrador);
+    });
+
     it('rechaza una receta vacía', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => []]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => []]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['receta']);
     });
@@ -213,7 +214,7 @@ describe('receta', function () {
             ['insumo_id' => $this->insumo->id, 'cantidad_por_pieza' => '2.0000'],
         ];
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['receta.0.insumo_id', 'receta.1.insumo_id']);
     });
@@ -222,7 +223,7 @@ describe('receta', function () {
         $inactivo = Insumo::factory()->create(['activo' => false]);
         $receta = [['insumo_id' => $inactivo->id, 'cantidad_por_pieza' => '1.0000']];
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['receta.0.insumo_id']);
     });
@@ -230,60 +231,73 @@ describe('receta', function () {
     it('rechaza cantidades en cero, negativas o con más de 4 decimales', function (string|int|float $cantidad) {
         $receta = [['insumo_id' => $this->insumo->id, 'cantidad_por_pieza' => $cantidad]];
 
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo, ['receta' => $receta]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['receta.0.cantidad_por_pieza']);
     })->with([0, '0.0000', -1, '1.23456']);
 
     it('devuelve cantidad_por_pieza como texto (RNF-07)', function () {
-        $this->postJson('/api/productos', payloadProducto($this->areas, $this->insumo))
+        postJson('/api/productos', payloadProducto($this->areas, $this->insumo))
             ->assertCreated()
             ->assertJsonPath('receta.0.cantidad_por_pieza', '5.5700');
 
-        $cantidad = $this->getJson('/api/productos')->json('0.receta.0.cantidad_por_pieza');
+        $cantidad = getJson('/api/productos')->json('0.receta.0.cantidad_por_pieza');
         expect($cantidad)->toBeString();
     });
 });
 
 describe('edición', function () {
-    it('conserva su propio código al editar y reemplaza el recorrido', function () {
+    beforeEach(function () {
+        actuarComoProducto(Rol::Administrador);
+    });
+
+    it('conserva su propio código y reemplaza el recorrido anterior', function () {
         $producto = Producto::factory()->create(['codigo' => 'DIS-FRE-G']);
-        $producto->areas()->attach($this->areas['MOL']->id, ['orden' => 1]);
+        $producto->areas()->attach([
+            $this->areas['MOL']->id => ['orden' => 1],
+            $this->areas['GRA']->id => ['orden' => 2],
+        ]);
 
-        $recorrido = ids($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'CAL');
+        $recorrido = idsDeRecorrido($this->areas, 'MOL', 'FUS', 'COL', 'DES', 'CAL');
 
-        $this->putJson("/api/productos/{$producto->id}", payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
+        putJson("/api/productos/{$producto->id}", payloadProducto($this->areas, $this->insumo, ['recorrido' => $recorrido]))
             ->assertOk()
             ->assertJsonCount(5, 'recorrido')
             ->assertJsonPath('recorrido.4.codigo', 'CAL');
+
+        expect($producto->areas()->count())->toBe(5);
+        assertDatabaseMissing('producto_area', [
+            'producto_id' => $producto->id,
+            'area_id' => $this->areas['GRA']->id,
+        ]);
     });
 
     it('aplica las mismas reglas de recorrido al editar', function () {
         $producto = Producto::factory()->create();
 
-        $this->putJson("/api/productos/{$producto->id}", payloadProducto($this->areas, $this->insumo, [
+        putJson("/api/productos/{$producto->id}", payloadProducto($this->areas, $this->insumo, [
             'codigo' => $producto->codigo,
-            'recorrido' => ids($this->areas, 'FUS', 'MOL', 'COL', 'DES'),
+            'recorrido' => idsDeRecorrido($this->areas, 'FUS', 'MOL', 'COL', 'DES'),
         ]))->assertUnprocessable()->assertJsonValidationErrors(['recorrido']);
     });
 });
 
 describe('acceso', function () {
-    it('responde 403 a roles distintos de administrador', function (string $rol) {
+    it('responde 403 a roles distintos de administrador', function (Rol $rol) {
         actuarComoProducto($rol);
         $producto = Producto::factory()->create();
         $payload = payloadProducto($this->areas, $this->insumo);
 
-        $this->getJson('/api/productos')->assertForbidden();
-        $this->getJson('/api/productos/opciones')->assertForbidden();
-        $this->postJson('/api/productos', $payload)->assertForbidden();
-        $this->putJson("/api/productos/{$producto->id}", $payload)->assertForbidden();
-        $this->deleteJson("/api/productos/{$producto->id}")->assertForbidden();
-    })->with(['ventas', 'encargado', 'cliente']);
+        getJson('/api/productos')->assertForbidden();
+        getJson('/api/productos/opciones')->assertForbidden();
+        postJson('/api/productos', $payload)->assertForbidden();
+        putJson("/api/productos/{$producto->id}", $payload)->assertForbidden();
+        deleteJson("/api/productos/{$producto->id}")->assertForbidden();
+    })->with([Rol::Ventas, Rol::Encargado, Rol::Cliente]);
 
-    it('responde 401 sin autenticar', function () {
-        $this->app['auth']->forgetGuards();
-
-        $this->getJson('/api/productos')->assertUnauthorized();
+    describe('sin sesión', function () {
+        it('responde 401 sin autenticar', function () {
+            getJson('/api/productos')->assertUnauthorized();
+        });
     });
 });
