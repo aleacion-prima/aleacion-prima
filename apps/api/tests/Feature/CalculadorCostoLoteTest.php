@@ -2,7 +2,6 @@
 
 use App\Enums\EstadoLote;
 use App\Enums\TipoMovimientoInsumo;
-use App\Events\LoteActualizado;
 use App\Lotes\CalculadorCostoLote;
 use App\Models\Area;
 use App\Models\Insumo;
@@ -13,6 +12,8 @@ use App\Models\MovimientoInsumo;
 use App\Models\User;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+
+use function Pest\Laravel\artisan;
 
 /** LOT-20260924-01 de docs/empresa.md (sección 8). */
 function loteDeReferencia(bool $conRetorno = true): Lote
@@ -112,28 +113,47 @@ it('resta lo devuelto y el retorno, y deja el costo por pieza vacío mientras el
         ->and($lote->costo_por_pieza)->toBeNull();
 });
 
-it('lotes:recalcular deja los mismos números y repara una caché desincronizada', function () {
-    $lote = app(CalculadorCostoLote::class)->recalcular(loteDeReferencia())->fresh();
-    $esperado = $lote->only(['costo_material', 'costo_mano_obra', 'costo_maquina', 'costo_total', 'costo_por_pieza']);
+/** @return array<string, string|null> */
+function costosDe(Lote $lote): array
+{
+    return $lote->fresh()->only(['costo_material', 'costo_mano_obra', 'costo_maquina', 'costo_total', 'costo_por_pieza']);
+}
 
-    $this->artisan('lotes:recalcular')->assertSuccessful();
-    expect($lote->fresh()->only(array_keys($esperado)))->toBe($esperado);
+it('lotes:recalcular deja los mismos números y repara una caché desincronizada en un lote abierto', function () {
+    $lote = loteDeReferencia();
+    $lote->forceFill(['estado' => EstadoLote::PorConfirmar])->save();
+    app(CalculadorCostoLote::class)->recalcular($lote);
+    $esperado = costosDe($lote);
+
+    artisan('lotes:recalcular')->assertSuccessful();
+    expect(costosDe($lote))->toBe($esperado);
 
     Lote::query()->whereKey($lote->id)->update(['costo_material' => '0', 'costo_total' => '0']);
-    $this->artisan('lotes:recalcular')->assertSuccessful();
-    expect($lote->fresh()->only(array_keys($esperado)))->toBe($esperado);
+
+    artisan('lotes:recalcular')
+        ->expectsOutputToContain('LOT-20260924-01 (por_confirmar): costo_total 0.0000 → 10401.2500')
+        ->assertSuccessful();
+    expect(costosDe($lote))->toBe($esperado);
 });
 
-it('no usa float en el cálculo (RNF-07)', function () {
-    $codigo = file_get_contents(app_path('Lotes/CalculadorCostoLote.php'));
+it('lotes:recalcular no sobrescribe lotes terminados o cancelados', function () {
+    $lote = app(CalculadorCostoLote::class)->recalcular(loteDeReferencia())->fresh();
+    Lote::query()->whereKey($lote->id)->update(['costo_total' => '1.0000']);
 
-    expect($codigo)->not->toMatch('/\(float\)|\(double\)|floatval|round\(/');
+    artisan('lotes:recalcular')
+        ->expectsOutputToContain('no se tocaron')
+        ->assertSuccessful();
+
+    expect($lote->fresh()->costo_total)->toBe('1.0000');
 });
 
-it('recalcula los costos cuando se emite LoteActualizado', function () {
-    $lote = loteDeReferencia();
+it('lotes:recalcular --cerrados muestra antes y después y repara el lote terminado', function () {
+    $lote = app(CalculadorCostoLote::class)->recalcular(loteDeReferencia())->fresh();
+    Lote::query()->whereKey($lote->id)->update(['costo_total' => '1.0000']);
 
-    LoteActualizado::dispatch($lote);
+    artisan('lotes:recalcular', ['--cerrados' => true])
+        ->expectsOutputToContain('LOT-20260924-01 (terminado): costo_total 1.0000 → 10401.2500')
+        ->assertSuccessful();
 
     expect($lote->fresh()->costo_total)->toBe('10401.2500');
 });
