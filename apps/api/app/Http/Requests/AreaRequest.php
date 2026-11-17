@@ -37,7 +37,7 @@ class AreaRequest extends FormRequest
      */
     public function rules(): array
     {
-        $area = $this->route('area') ?? $this->route('areas');
+        $area = $this->route('area');
         $tarifa = ['required', 'numeric', 'min:0', 'max:9999999999', 'decimal:0,4'];
 
         return [
@@ -56,7 +56,7 @@ class AreaRequest extends FormRequest
                 'distinct',
                 Rule::exists('users', 'id'),
                 function (string $atributo, mixed $valor, Closure $fail): void {
-                    if (! User::role(Rol::Encargado->value)->whereKey($valor)->exists()) {
+                    if (! User::query()->role(Rol::Encargado->value)->whereKey($valor)->exists()) {
                         $fail('Solo se puede asignar como encargado a un usuario con rol encargado.');
                     }
                 },
@@ -86,7 +86,7 @@ class AreaRequest extends FormRequest
         $conErrores = collect($validador->errors()->keys())
             ->contains(fn (string $llave) => str_starts_with($llave, 'encargados'));
 
-        $area = $this->route('area') ?? $this->route('areas');
+        $area = $this->route('area');
 
         if (! $this->has('encargados') || $conErrores || ! $area instanceof Area) {
             return;
