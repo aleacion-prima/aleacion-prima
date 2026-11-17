@@ -19,6 +19,10 @@ use Illuminate\Validation\ValidationException;
 
 class CierreLote
 {
+    public function __construct(
+        private CalculadorCostoLote $calculador
+    ) {}
+
     public function confirmar(Lote $lote, User $usuario): Lote
     {
         return DB::transaction(function () use ($lote, $usuario): Lote {
@@ -47,6 +51,8 @@ class CierreLote
                 'confirmado_por' => $usuario->id,
                 'confirmado_en' => $ahora,
             ])->save();
+
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
             DisponibilidadActualizada::dispatch($producto);
@@ -97,6 +103,8 @@ class CierreLote
                 'cancelado_en' => $ahora,
                 'motivo_cancelacion' => $motivo,
             ])->save();
+
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
 
