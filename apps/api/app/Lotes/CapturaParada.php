@@ -41,10 +41,13 @@ class CapturaParada
             if ($anterior?->salida_ocurrido_en !== null && $ocurrido->lessThan($anterior->salida_ocurrido_en)) {
                 $this->fallar('ocurrido_en', 'La entrada no puede ser antes de la salida de la parada anterior.');
             }
-            $maximo = $anterior !== null ? $anterior->piezas_entregadas : $lote->cantidad_objetivo;
 
-            if ($piezas > $maximo) {
-                $this->fallar('piezas_recibidas', "No puedes recibir más piezas de las que se entregaron ({$maximo}).");
+            if ($anterior === null && $piezas > $lote->cantidad_objetivo) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas que la cantidad objetivo ({$lote->cantidad_objetivo}).");
+            }
+
+            if ($anterior !== null && $piezas > $anterior->piezas_entregadas) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas de las que se entregaron ({$anterior->piezas_entregadas}).");
             }
 
             $parada->forceFill([
