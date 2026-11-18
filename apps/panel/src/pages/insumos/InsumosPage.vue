@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+import { formatearCantidad, formatearMoneda } from '@/composables/formato';
 import { CATEGORIAS_INSUMO, type CategoriaInsumo, type Insumo } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 
@@ -18,6 +20,9 @@ interface ErrorApi {
   message?: string;
   errors?: Record<string, string[]>;
 }
+
+const conUnidad = (valor: string, unidad: string): string =>
+  `${formatearCantidad(valor)} ${unidad}`.trim();
 
 const ETIQUETAS_CATEGORIA: Record<CategoriaInsumo, string> = {
   metal: 'Metal',
@@ -56,23 +61,11 @@ const formulario = reactive<FormularioInsumo>({
 
 /* ---------- Formato ---------- */
 
-const dinero = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
-});
-const cantidades = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 3 });
-
-const formatearCosto = (valor: string): string => dinero.format(Number(valor));
-const formatearCantidad = (valor: string, unidad: string): string =>
-  `${cantidades.format(Number(valor))} ${unidad}`.trim();
-
 /** Existencia que se muestra en el modal: la real al editar, cero al registrar. */
 const existenciaModal = computed(() =>
   editando.value
-    ? formatearCantidad(editando.value.existencia, editando.value.unidad)
-    : formatearCantidad('0', formulario.unidad ?? ''),
+    ? conUnidad(editando.value.existencia, editando.value.unidad)
+    : conUnidad('0', formulario.unidad ?? ''),
 );
 
 /** Un insumo con una unidad fuera de la lista no la pierde al editarlo. */
@@ -122,7 +115,31 @@ const abrir = (insumo?: Insumo): void => {
   dialogo.value = true;
 };
 
+const confirmarDesactivacion = (insumo: Insumo): Promise<boolean> =>
+  new Promise((resolver) => {
+    $q.dialog({
+      title: 'Desactivar insumo',
+      message: `¿Desactivar ${insumo.codigo} · ${insumo.nombre}? Dejará de ofrecerse en recetas nuevas. Podrás reactivarlo editándolo.`,
+      cancel: true,
+      persistent: true,
+    })
+      .onOk(() => {
+        resolver(true);
+      })
+      .onCancel(() => {
+        resolver(false);
+      })
+      .onDismiss(() => {
+        resolver(false);
+      });
+  });
+
 const guardar = async (): Promise<void> => {
+  const insumo = editando.value;
+  if (insumo?.activo && formulario.activo === false && !(await confirmarDesactivacion(insumo))) {
+    return;
+  }
+
   const esEdicion = editando.value !== null;
   const cuerpo = {
     codigo: formulario.codigo,
@@ -131,7 +148,6 @@ const guardar = async (): Promise<void> => {
     unidad: formulario.unidad,
     costo_unitario: formulario.costo_unitario,
     stock_minimo: formulario.stock_minimo,
-    // Sin estado elegido, el alta lo toma como activo.
     ...(formulario.activo !== null ? { activo: formulario.activo } : {}),
   };
 
@@ -164,13 +180,13 @@ onMounted(cargar);
   <q-page padding>
     <div class="row items-center justify-between q-mb-lg">
       <div>
-        <div class="text-h4 titulo-pagina">Catálogo de insumos</div>
-        <div class="text-body2 texto-suave">
+        <div class="text-h4 catalogo-titulo">Catálogo de insumos</div>
+        <div class="text-body2 text-secundario">
           Administra los insumos con su código, costo unitario y stock mínimo.
         </div>
       </div>
       <q-btn
-        unelevated
+        outline
         color="primary"
         icon="add"
         label="Registrar insumo"
@@ -181,41 +197,52 @@ onMounted(cargar);
 
     <q-linear-progress v-if="cargando" indeterminate color="primary" />
 
-    <div v-else-if="insumos.length === 0" class="texto-suave">Aún no hay insumos.</div>
+    <EstadoVacio v-else-if="insumos.length === 0" titulo="Aún no hay insumos" />
 
     <div v-else class="row q-col-gutter-md">
       <div v-for="insumo in insumos" :key="insumo.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <q-card flat bordered class="tarjeta full-height column">
+        <q-card flat bordered class="catalogo-tarjeta full-height column">
           <q-card-section class="row items-start no-wrap">
             <div class="col">
-              <div class="tarjeta__codigo">{{ insumo.codigo }}</div>
-              <div class="tarjeta__nombre">{{ insumo.nombre }}</div>
+              <div class="catalogo-codigo">{{ insumo.codigo }}</div>
+              <div class="catalogo-nombre">{{ insumo.nombre }}</div>
             </div>
-            <span v-if="!insumo.activo" class="insignia insignia--gris">Inactivo</span>
+            <q-chip
+              v-if="!insumo.activo"
+              class="q-ma-none"
+              color="grey-3"
+              text-color="grey-8"
+              label="Inactivo"
+            />
           </q-card-section>
 
-          <q-card-section class="campos q-pt-none">
-            <div class="campos__fila">
-              <div class="campo">
-                <div class="campo__etiqueta">Costo unitario</div>
-                <div class="campo__valor campo__valor--mono">
-                  {{ formatearCosto(insumo.costo_unitario) }} / {{ insumo.unidad }}
+          <q-card-section class="catalogo-campos q-pt-none">
+            <div class="catalogo-fila">
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Costo unitario</div>
+                <div class="catalogo-valor catalogo-valor--mono">
+                  {{ formatearMoneda(insumo.costo_unitario) }} / {{ insumo.unidad }}
                 </div>
               </div>
-              <div class="campo">
-                <div class="campo__etiqueta">Stock mínimo</div>
-                <div class="campo__valor campo__valor--mono">
-                  {{ formatearCantidad(insumo.stock_minimo, insumo.unidad) }}
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Stock mínimo</div>
+                <div class="catalogo-valor catalogo-valor--mono">
+                  {{ conUnidad(insumo.stock_minimo, insumo.unidad) }}
                 </div>
               </div>
             </div>
-            <div class="campo">
-              <div class="campo__etiqueta">Existencias actuales</div>
-              <div class="campo__valor campo__valor--mono">
-                {{ cantidades.format(Number(insumo.existencia)) }}
-                <q-badge v-if="insumo.bajo_minimo" color="negative" class="q-ml-xs"
-                  >Bajo mínimo</q-badge
-                >
+            <div class="catalogo-campo">
+              <div class="catalogo-etiqueta">Existencias actuales</div>
+              <div class="catalogo-valor catalogo-valor--mono">
+                {{ conUnidad(insumo.existencia, insumo.unidad) }}
+                <q-chip
+                  v-if="insumo.bajo_minimo"
+                  dense
+                  color="negative"
+                  text-color="white"
+                  class="q-ml-xs"
+                  label="Bajo mínimo"
+                />
               </div>
             </div>
           </q-card-section>
@@ -223,10 +250,10 @@ onMounted(cargar);
           <q-space />
           <q-card-actions align="right">
             <q-btn
-              class="btn-editar"
+              class="catalogo-boton"
               outline
               no-caps
-              color="dark"
+              color="secondary"
               label="Editar insumo"
               @click="abrir(insumo)"
             />
@@ -240,7 +267,7 @@ onMounted(cargar);
         <q-card-section class="row items-start no-wrap">
           <div class="col">
             <div class="text-h6">{{ editando ? 'Editar insumo' : 'Registrar insumo' }}</div>
-            <div class="text-caption texto-suave">
+            <div class="text-caption text-secundario">
               {{
                 editando
                   ? 'Actualiza los datos del insumo en el catálogo.'
@@ -287,8 +314,7 @@ onMounted(cargar);
             />
             <q-select
               v-model="formulario.categoria"
-              class="col-12"
-              :class="editando ? 'col-sm-6' : 'col-sm-12'"
+              class="col-sm-6"
               :options="opcionesCategoria"
               label="Categoría"
               emit-value
@@ -298,7 +324,6 @@ onMounted(cargar);
               :error-message="campoError('categoria')"
             />
             <q-select
-              v-if="editando"
               v-model="formulario.activo"
               class="col-12 col-sm-6"
               :options="opcionesEstado"
@@ -341,7 +366,6 @@ onMounted(cargar);
               :model-value="existenciaModal"
               class="col-12"
               label="Existencia"
-              hint="Solo lectura: la calculan las entradas y salidas de inventario."
               readonly
               outlined
             />
@@ -363,89 +387,3 @@ onMounted(cargar);
     </q-dialog>
   </q-page>
 </template>
-
-<style scoped lang="scss">
-.titulo-pagina {
-  font-family: $fuente-titulos;
-  font-weight: 700;
-  color: $dark;
-}
-.texto-suave {
-  color: $grafito-medio;
-}
-.opcion-tipo {
-  border: 1px solid $acero-claro;
-}
-.tarjeta {
-  border-radius: 16px;
-  border-color: $acero-claro;
-}
-.tarjeta__codigo {
-  font-family: $fuente-codigo;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: $grafito-medio;
-}
-.tarjeta__nombre {
-  font-family: $fuente-titulos;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: $dark;
-}
-.campos {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.campos__fila {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.campo {
-  background: $blanco-humo;
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-.campo__etiqueta {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: $grafito-medio;
-  margin-bottom: 4px;
-}
-.campo__valor {
-  font-size: 16px;
-  line-height: 1.4;
-  color: $dark;
-}
-.campo__valor--mono {
-  font-family: $fuente-codigo;
-}
-.insignia {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: #fff;
-}
-.insignia--azul {
-  background: $info;
-}
-.insignia--verde {
-  background: $positive;
-}
-.insignia--gris {
-  background: $acero-claro;
-  color: $grafito-medio;
-}
-.btn-editar {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color $duracion-rapida $curva-salida;
-}
-</style>

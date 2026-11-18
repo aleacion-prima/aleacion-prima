@@ -164,7 +164,7 @@ return [
         'age' => 'edad',
         'amount' => 'cantidad',
         'announcement' => 'anuncio',
-        'areas' => 'área',
+        'area' => 'área',
         'audience_prize' => 'premio del público',
         'audience_winner' => 'ganador del público',
         'available' => 'disponible',

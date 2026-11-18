@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue';
 import { useSesionStore } from '@/stores/sesion';
+import { correo, requerido } from '@/composables/reglas';
 
 const sesion = useSesionStore();
 
@@ -59,7 +60,8 @@ onUnmounted(() => {
           outlined
           autofocus
           autocomplete="username"
-          :rules="[(v) => !!v || 'Escribe tu correo']"
+          lazy-rules
+          :rules="[requerido('Escribe tu correo'), correo]"
         />
 
         <q-banner v-if="mensaje" dense class="bg-green-1 text-positive">{{ mensaje }}</q-banner>
