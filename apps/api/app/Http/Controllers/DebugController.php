@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\Rol;
 use App\Http\Resources\LoteResource;
 use App\Http\Resources\UsuarioResource;
+use App\Inventario\RegistroEntrada;
 use App\Lotes\CapturaParada;
 use App\Lotes\CreadorLote;
+use App\Models\Area;
+use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\LoteArea;
 use App\Models\Producto;
@@ -17,10 +20,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class DebugController extends Controller
 {
+    private const EXISTENCIA_DEBUG = 10000;
+
     public function usuarios(): AnonymousResourceCollection
     {
         return UsuarioResource::collection(
@@ -70,14 +76,89 @@ class DebugController extends Controller
             'faltante' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $merma = $datos['merma'] ?? 0;
-        $faltante = $datos['faltante'] ?? 0;
         $pasos = $this->pasosPendientes($lote);
 
         abort_if($pasos === [], Response::HTTP_UNPROCESSABLE_ENTITY, 'El lote ya terminó su recorrido.');
 
         if (($datos['hasta'] ?? 'siguiente') === 'siguiente') {
             $pasos = [$pasos[0]];
+        }
+
+        $this->capturar($lote, $pasos, $usuario, $captura, $datos['merma'] ?? 0, $datos['faltante'] ?? 0);
+
+        return new LoteResource($lote->fresh()?->load(['producto', 'areaActual', 'paradas.area', 'insumos.insumo']));
+    }
+
+    public function crearVarios(Request $request, CreadorLote $creador, CapturaParada $captura): AnonymousResourceCollection
+    {
+        $usuario = $this->usuario($request);
+        abort_unless($usuario->hasRole(Rol::Administrador), Response::HTTP_FORBIDDEN);
+
+        $datos = $request->validate([
+            'lotes' => ['sometimes', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $productos = Producto::query()->where('activo', true)->get();
+        abort_if($productos->isEmpty(), Response::HTTP_UNPROCESSABLE_ENTITY, 'No hay productos activos.');
+
+        $lotes = DB::transaction(fn () => collect(range(1, $datos['lotes'] ?? 5))->map(function () use ($productos, $creador, $captura, $usuario): Lote {
+            $lote = $creador->crear($productos->random(), random_int(5, 20), null, $usuario);
+            $pasos = $this->pasosPendientes($lote);
+            $this->capturar($lote, array_slice($pasos, 0, random_int(0, count($pasos) - 1)), $usuario, $captura);
+
+            return $lote->fresh()?->load(['producto', 'areaActual', 'paradas.area', 'insumos.insumo']) ?? $lote;
+        }));
+
+        return LoteResource::collection($lotes);
+    }
+
+    public function rellenarInventario(Request $request, RegistroEntrada $registro): Response
+    {
+        $usuario = $this->usuario($request);
+        abort_unless($usuario->hasRole(Rol::Administrador), Response::HTTP_FORBIDDEN);
+
+        Insumo::query()->where('activo', true)->where('existencia', '<', self::EXISTENCIA_DEBUG)->each(
+            fn (Insumo $insumo) => $registro->ejecutar($insumo, [
+                'cantidad' => self::EXISTENCIA_DEBUG - (float) $insumo->existencia,
+                'costo_unitario' => $insumo->costo_unitario,
+                'proveedor' => 'Modo debug',
+            ], $usuario->id),
+        );
+
+        return response()->noContent();
+    }
+
+    public function alternarAreas(Request $request): UsuarioResource
+    {
+        $usuario = $this->usuario($request);
+        abort_unless($usuario->hasRole(Rol::Encargado), Response::HTTP_UNPROCESSABLE_ENTITY, 'Solo los encargados tienen áreas.');
+
+        $todas = Area::query()->pluck('id');
+        $usuario->areas()->sync($usuario->areas()->count() === $todas->count() ? [] : $todas->all());
+
+        return new UsuarioResource($usuario->load('areas'));
+    }
+
+    public function reiniciar(Request $request): Response
+    {
+        abort_unless($this->usuario($request)->hasRole(Rol::Administrador), Response::HTTP_FORBIDDEN);
+
+        Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->noContent();
+    }
+
+    /**
+     * @param  list<array{0: 'entrada'|'salida', 1: LoteArea}>  $pasos
+     */
+    private function capturar(Lote $lote, array $pasos, User $usuario, CapturaParada $captura, int $merma = 0, int $faltante = 0): void
+    {
+        if ($pasos === []) {
+            return;
         }
 
         $hora = $this->horaInicial($lote, count($pasos));
@@ -99,21 +180,6 @@ class DebugController extends Controller
 
             $hora = $hora->addSeconds($paso);
         }
-
-        return new LoteResource($lote->fresh()?->load(['producto', 'areaActual', 'paradas.area', 'insumos.insumo']));
-    }
-
-    public function reiniciar(Request $request): Response
-    {
-        abort_unless($this->usuario($request)->hasRole(Rol::Administrador), Response::HTTP_FORBIDDEN);
-
-        Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
-
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return response()->noContent();
     }
 
     /**

@@ -3,6 +3,7 @@
 use App\Enums\EstadoLote;
 use App\Enums\Rol;
 use App\Models\Area;
+use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -159,6 +160,53 @@ describe('con las rutas cargadas', function () {
 
         $encargado->areas()->attach($lote->paradas()->orderBy('orden')->value('area_id'));
         postJson("/api/debug/lotes/{$codigo}/avanzar")->assertOk();
+    });
+
+    it('crea varios lotes repartidos sin terminar su recorrido', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+        postJson('/api/debug/inventario/rellenar')->assertNoContent();
+
+        postJson('/api/debug/lotes/varios', ['lotes' => 6])
+            ->assertOk()
+            ->assertJsonCount(6);
+
+        expect(Lote::query()->count())->toBe(6)
+            ->and(Lote::query()->where('estado', EstadoLote::PorConfirmar)->exists())->toBeFalse();
+    });
+
+    it('rellena el inventario hasta la existencia de debug', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+
+        postJson('/api/debug/inventario/rellenar')->assertNoContent();
+
+        Insumo::query()->where('activo', true)->each(function (Insumo $insumo) {
+            expect((float) $insumo->existencia)->toBeGreaterThanOrEqual(10000.0);
+        });
+    });
+
+    it('solo el administrador rellena el inventario y crea varios lotes', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Encargado), ['*']);
+
+        postJson('/api/debug/inventario/rellenar')->assertForbidden();
+        postJson('/api/debug/lotes/varios')->assertForbidden();
+    });
+
+    it('alterna todas las áreas del encargado', function () {
+        seed(DatabaseSeeder::class);
+        $encargado = usuarioDebug(Rol::Encargado);
+        Sanctum::actingAs($encargado, ['*']);
+
+        postJson('/api/debug/areas/alternar')->assertOk()->assertJsonCount(Area::query()->count(), 'areas');
+        postJson('/api/debug/areas/alternar')->assertOk()->assertJsonCount(0, 'areas');
+    });
+
+    it('no alterna áreas si no es encargado', function () {
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+
+        postJson('/api/debug/areas/alternar')->assertUnprocessable();
     });
 
     it('reinicia la BD con los seeders y cierra la sesión', function () {
