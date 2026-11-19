@@ -47,6 +47,18 @@ describe('AccesoMovilPage', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('no envía un correo con formato inválido', async () => {
+    const wrapper = montar();
+
+    await wrapper.find('input[type="email"]').setValue('juan@aleacion');
+    await wrapper.find('input[type="password"]').setValue('password');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Escribe un correo válido');
+    expect(iniciar).not.toHaveBeenCalled();
+  });
+
   it('no envía el formulario vacío', async () => {
     const wrapper = montar();
 

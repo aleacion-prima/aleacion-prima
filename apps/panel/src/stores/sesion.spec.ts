@@ -109,6 +109,16 @@ describe('sesión en la app móvil', () => {
     expect(sesion.usuario).toBeNull();
   });
 
+  it('avisa que no hay conexión si la petición no llega al servidor', async () => {
+    fetchFalso.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const sesion = await crearSesion('capacitor');
+
+    await expect(sesion.iniciar('juan@aleacionprima.test', 'password')).rejects.toThrow(
+      'No hay conexión con el servidor',
+    );
+    expect(preferencias.has('token')).toBe(false);
+  });
+
   it('manda el token guardado como Bearer en las peticiones', async () => {
     preferencias.set('token', '1|abc');
     fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
@@ -167,6 +177,16 @@ describe('sesión en el panel', () => {
 
     expect(llamada('/api/user')?.credentials).toBe('include');
     expect(cabecera('/api/user', 'Authorization')).toBeNull();
+  });
+
+  it('avisa que no hay conexión si la petición no llega al servidor', async () => {
+    fetchFalso.mockRejectedValue(new TypeError('Failed to fetch'));
+    const sesion = await crearSesion('spa');
+
+    await expect(sesion.iniciar('juan@aleacionprima.test', 'password')).rejects.toThrow(
+      'No hay conexión con el servidor',
+    );
+    expect(sesion.usuario).toBeNull();
   });
 });
 

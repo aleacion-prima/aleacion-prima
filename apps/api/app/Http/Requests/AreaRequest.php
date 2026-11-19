@@ -2,8 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Rol;
+use App\Models\Area;
+use App\Models\User;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -32,7 +37,7 @@ class AreaRequest extends FormRequest
      */
     public function rules(): array
     {
-        $area = $this->route('area') ?? $this->route('areas');
+        $area = $this->route('area');
         $tarifa = ['required', 'numeric', 'min:0', 'max:9999999999', 'decimal:0,4'];
 
         return [
@@ -42,10 +47,20 @@ class AreaRequest extends FormRequest
             'tarifa_mano_obra_hora' => $tarifa,
             'costo_maquina_hora' => $tarifa,
             'obligatoria' => ['required', 'boolean'],
-            'orden_catalogo' => ['sometimes', 'integer', 'min:1', Rule::unique('areas', 'orden_catalogo')->ignore($area)],
+            'orden_catalogo' => ['required', 'integer', 'min:1', Rule::unique('areas', 'orden_catalogo')->ignore($area)],
             'activo' => $this->isMethod('POST') ? ['sometimes', 'boolean'] : ['required', 'boolean'],
             'encargados' => ['sometimes', 'array'],
-            'encargados.*' => ['integer', 'distinct', Rule::exists('users', 'id')],
+            'encargados.*' => [
+                'bail',
+                'integer',
+                'distinct',
+                Rule::exists('users', 'id'),
+                function (string $atributo, mixed $valor, Closure $fail): void {
+                    if (! User::query()->role(Rol::Encargado->value)->whereKey($valor)->exists()) {
+                        $fail('Solo se puede asignar como encargado a un usuario con rol encargado.');
+                    }
+                },
+            ],
         ];
     }
 
@@ -57,7 +72,44 @@ class AreaRequest extends FormRequest
                     $validador->errors()->add('activo', 'Un área obligatoria no puede desactivarse: todo recorrido la incluye.');
                 }
             },
+            function (Validator $validador): void {
+                $this->validarEncargados($validador);
+            },
         ];
+    }
+
+    /**
+     * Ningún encargado se queda sin áreas al quitarlo de esta.
+     */
+    private function validarEncargados(Validator $validador): void
+    {
+        $conErrores = collect($validador->errors()->keys())
+            ->contains(fn (string $llave) => str_starts_with($llave, 'encargados'));
+
+        $area = $this->route('area');
+
+        if (! $this->has('encargados') || $conErrores || ! $area instanceof Area) {
+            return;
+        }
+
+        /** @var list<int> $ids */
+        $ids = array_map('intval', array_values((array) $this->input('encargados')));
+
+        $retirados = $area->encargados()
+            ->role(Rol::Encargado->value)
+            ->whereNotIn('users.id', $ids)
+            ->get(['users.id', 'users.name']);
+
+        foreach ($retirados as $usuario) {
+            $tieneOtra = DB::table('area_user')
+                ->where('user_id', $usuario->id)
+                ->where('area_id', '!=', $area->id)
+                ->exists();
+
+            if (! $tieneOtra) {
+                $validador->errors()->add('encargados', "{$usuario->name} se quedaría sin áreas: asígnale otra antes de quitarlo de esta.");
+            }
+        }
     }
 
     public function messages(): array
@@ -77,12 +129,13 @@ class AreaRequest extends FormRequest
             'costo_maquina_hora.numeric' => 'El costo de máquina debe ser un número.',
             'costo_maquina_hora.min' => 'El costo de máquina no puede ser negativo.',
             'costo_maquina_hora.decimal' => 'El costo de máquina admite hasta :decimal decimales.',
+            'orden_catalogo.required' => 'El orden en el catálogo es obligatorio.',
             'orden_catalogo.integer' => 'El orden debe ser un número entero.',
             'orden_catalogo.min' => 'El orden empieza en :min.',
             'orden_catalogo.unique' => 'Otra área ya ocupa ese lugar en el catálogo.',
             'obligatoria.required' => 'Indica si el área es obligatoria.',
             'encargados.array' => 'Los encargados deben enviarse como una lista.',
-            'encargados.*.exists' => 'Alguno de los encargados seleccionados ya no existe.',
+            'encargados.*.exists' => 'El usuario seleccionado no existe.',
             'encargados.*.distinct' => 'Un encargado no puede repetirse.',
             'activo.required' => 'Indica si el área está activa.',
         ];
