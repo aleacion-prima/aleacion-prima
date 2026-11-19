@@ -13,6 +13,7 @@ use App\Notifications\StockMinimoBajo;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
@@ -126,6 +127,77 @@ it('no deja marcar como leída una notificación ajena', function () {
     patchJson("/api/notificaciones/{$idDeB}/leida")->assertNotFound();
 
     expect($b->notifications()->firstOrFail()->read_at)->toBeNull();
+});
+
+it('no avisa a un administrador inactivo', function () {
+    Notification::fake();
+    $activo = admin();
+    $inactivo = admin(false);
+    $insumo = Insumo::factory()->create(['stock_minimo' => 5, 'existencia' => 0]);
+
+    event(new StockMinimoAlcanzado($insumo->id, 0, 5));
+
+    // Llega al activo pero no al inactivo (así el assertNotSentTo no es vacío).
+    Notification::assertSentTo($activo, StockMinimoBajo::class);
+    Notification::assertNotSentTo($inactivo, StockMinimoBajo::class);
+});
+
+it('no avisa a un usuario que no es administrador', function () {
+    Notification::fake();
+    $ventas = User::factory()->create();
+    $ventas->assignRole(Rol::Ventas);
+    $insumo = Insumo::factory()->create(['stock_minimo' => 5, 'existencia' => 0]);
+
+    event(new StockMinimoAlcanzado($insumo->id, 0, 5));
+
+    Notification::assertNotSentTo($ventas, StockMinimoBajo::class);
+});
+
+it('las rutas de notificaciones son solo de administrador', function (Rol $rol) {
+    $usuario = User::factory()->create();
+    $usuario->assignRole($rol);
+    Sanctum::actingAs($usuario, ['*']);
+
+    getJson('/api/notificaciones')->assertForbidden();
+    patchJson('/api/notificaciones/'.Str::uuid()->toString().'/leida')->assertForbidden();
+    postJson('/api/notificaciones/leidas')->assertForbidden();
+})->with([Rol::Ventas, Rol::Encargado]);
+
+it('ignora un id que no es UUID al marcar como leída', function () {
+    $admin = admin();
+    Sanctum::actingAs($admin, ['*']);
+
+    // whereUuid en la ruta: en Postgres un id no-UUID reventaría la consulta; sin
+    // la restricción, 500 en vez de 404 (SQLite no lo detecta, por eso el test).
+    patchJson('/api/notificaciones/no-es-uuid/leida')->assertNotFound();
+});
+
+it('marcar todas como leídas no toca las de otro usuario', function () {
+    $a = admin();
+    $b = admin();
+    $insumo = Insumo::factory()->create();
+    $b->notify(new StockMinimoBajo($insumo));
+    $b->notify(new StockMinimoBajo($insumo));
+
+    Sanctum::actingAs($a, ['*']);
+
+    // A no ve las de B.
+    getJson('/api/notificaciones')->assertOk()->assertJsonCount(0, 'data');
+
+    // Y marcar todas como leídas no marca las de B.
+    postJson('/api/notificaciones/leidas')->assertNoContent();
+
+    expect($b->unreadNotifications()->count())->toBe(2);
+});
+
+it('las tres notificaciones se envían por base de datos y broadcast', function () {
+    $admin = admin();
+    $insumo = Insumo::factory()->create();
+    $lote = Lote::factory()->create();
+
+    expect((new StockMinimoBajo($insumo))->via($admin))->toBe(['database', 'broadcast']);
+    expect((new LotePorConfirmar($lote))->via($admin))->toBe(['database', 'broadcast']);
+    expect((new ImprevistoRegistrado('LOT-20260101-01', 'Falla'))->via($admin))->toBe(['database', 'broadcast']);
 });
 
 it('el canal privado del usuario solo autoriza a su dueño', function () {

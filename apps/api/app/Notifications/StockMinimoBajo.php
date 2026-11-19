@@ -26,9 +26,10 @@ class StockMinimoBajo extends Notification
     }
 
     /**
-     * Carga mínima que se guarda y se difunde: tipo, mensaje corto y código del
-     * insumo. Sin costos ni el modelo completo. La fecha es el created_at de la
-     * notificación.
+     * Carga mínima que se guarda y se difunde: tipo, mensaje corto, código del
+     * insumo y fecha. Sin costos ni el modelo completo. La fecha se incluye en el
+     * arreglo para que viaje también por WebSocket (el broadcast no tiene
+     * created_at).
      *
      * @return array<string, mixed>
      */
@@ -38,6 +39,7 @@ class StockMinimoBajo extends Notification
             'tipo' => 'stock_minimo',
             'mensaje' => "Stock bajo: {$this->insumo->nombre} ({$this->insumo->existencia}/{$this->insumo->stock_minimo})",
             'codigo' => $this->insumo->codigo,
+            'fecha' => now()->toISOString(),
         ];
     }
 

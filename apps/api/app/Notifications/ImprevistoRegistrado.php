@@ -34,6 +34,7 @@ class ImprevistoRegistrado extends Notification
             'tipo' => 'imprevisto',
             'mensaje' => $this->mensaje,
             'codigo' => $this->codigo,
+            'fecha' => now()->toISOString(),
         ];
     }
 

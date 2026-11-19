@@ -24,7 +24,9 @@ class NotificacionResource extends JsonResource
             'mensaje' => $this->data['mensaje'] ?? null,
             'codigo' => $this->data['codigo'] ?? null,
             'leida' => $this->read_at !== null,
-            'fecha' => $this->created_at?->toISOString(),
+            // La fecha viaja en data (para que el broadcast la lleve); para
+            // notificaciones anteriores a ese cambio, cae en el created_at.
+            'fecha' => $this->data['fecha'] ?? $this->created_at?->toISOString(),
         ];
     }
 }

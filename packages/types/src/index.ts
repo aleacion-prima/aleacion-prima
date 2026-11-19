@@ -206,7 +206,7 @@ export interface SesionMovil {
 
 export interface Notificacion {
   id: string;
-  tipo: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
   mensaje: string;
   codigo: string | null;
   leida: boolean;

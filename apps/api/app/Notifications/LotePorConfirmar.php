@@ -35,6 +35,7 @@ class LotePorConfirmar extends Notification
             'tipo' => 'lote_por_confirmar',
             'mensaje' => "Lote {$this->lote->codigo} listo para confirmar",
             'codigo' => $this->lote->codigo,
+            'fecha' => now()->toISOString(),
         ];
     }
 

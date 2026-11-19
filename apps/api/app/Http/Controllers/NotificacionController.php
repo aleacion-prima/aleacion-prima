@@ -44,7 +44,8 @@ class NotificacionController extends Controller
      */
     public function leidas(Request $request): Response
     {
-        $this->usuario($request)->unreadNotifications->markAsRead();
+        // Un solo UPDATE sobre la relación en vez de cargar y marcar una a una.
+        $this->usuario($request)->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->noContent();
     }

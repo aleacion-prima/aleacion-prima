@@ -58,7 +58,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
 
         Route::middleware('role:administrador')->group(function () {
             Route::get('/notificaciones', [NotificacionController::class, 'index']);
-            Route::patch('/notificaciones/{id}/leida', [NotificacionController::class, 'leida']);
+            Route::patch('/notificaciones/{id}/leida', [NotificacionController::class, 'leida'])
+                ->whereUuid('id');
             Route::post('/notificaciones/leidas', [NotificacionController::class, 'leidas']);
         });
 
