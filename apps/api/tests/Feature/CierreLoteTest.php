@@ -66,11 +66,13 @@ function recorrerHasta(Lote $lote, User $admin, int $hasta, int $entregadas = 20
 {
     $captura = app(CapturaParada::class);
     $hora = CarbonImmutable::parse('2026-11-03 08:00:00');
+    $piezas = 20;
 
     foreach ($lote->paradas()->where('orden', '<=', $hasta)->get() as $parada) {
-        $captura->entrada($lote, $parada, 20, $hora, $admin);
+        $captura->entrada($lote, $parada, $piezas, $hora, $admin);
         $hora = $hora->addMinutes(30);
         $captura->salida($lote, $parada->fresh(), $entregadas, null, null, $hora, $admin);
+        $piezas = $entregadas;
     }
 }
 

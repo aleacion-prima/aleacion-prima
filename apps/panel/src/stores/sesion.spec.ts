@@ -153,6 +153,7 @@ describe('sesión en la app móvil', () => {
 
   it('al cerrar sesión revoca el token en la API y lo borra del dispositivo', async () => {
     preferencias.set('token', '1|abc');
+    preferencias.set('ultimos-escaneados', '[]');
     fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
     fetchFalso.mockResolvedValueOnce(respuesta(204));
     const sesion = await crearSesion('capacitor');
@@ -163,6 +164,7 @@ describe('sesión en la app móvil', () => {
     expect(llamada('/api/logout')?.method).toBe('POST');
     expect(cabecera('/api/logout', 'Authorization')).toBe('Bearer 1|abc');
     expect(preferencias.has('token')).toBe(false);
+    expect(preferencias.has('ultimos-escaneados')).toBe(false);
     expect(sesion.usuario).toBeNull();
   });
 });
