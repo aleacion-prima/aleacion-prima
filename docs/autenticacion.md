@@ -41,7 +41,7 @@ En el código:
 
 Cualquier usuario puede exigir un segundo factor además de la contraseña: un código de 6 dígitos que llega por correo. **Para el administrador es obligatorio.** La app móvil queda fuera de esta función.
 
-El login usa un flujo de "sesión pendiente": `POST /login` con la contraseña correcta, si el usuario tiene el segundo factor activo, **no inicia la sesión**. Guarda el usuario pendiente en la sesión, envía el código y responde `200 { "segundo_factor": true }`. Como no hay sesión iniciada, ninguna ruta protegida responde hasta mandar el código a `POST /login/verificar`. Si el usuario no tiene segundo factor, `/login` responde `204` y entra directo, como siempre.
+El login usa un flujo de "sesión pendiente": `POST /login` con la contraseña correcta llama a `activoPara()`, que decide si se pide el código según la columna `segundo_factor` del usuario **o** si es administrador y el segundo factor obligatorio está encendido por config. Si aplica, **no inicia la sesión**: además cierra cualquier sesión ya abierta en el navegador (`Auth::guard('web')->logout()`), para que deje de responder en rutas protegidas mientras el código está pendiente. Guarda el usuario pendiente en la sesión, envía el código y responde `200 { "segundo_factor": true }`. Como no hay sesión iniciada, ninguna ruta protegida responde hasta mandar el código a `POST /login/verificar`. Si no aplica, `/login` responde `204` y entra directo, como siempre.
 
 ```mermaid
 sequenceDiagram
@@ -58,7 +58,8 @@ sequenceDiagram
 ```
 
 - **El código** se guarda **hasheado** en la tabla `codigos_acceso` (uno por usuario; al reenviar se reemplaza). Vence a los 10 minutos y admite 5 intentos fallidos; después pide uno nuevo. Los valores están en `config/segundo-factor.php` (`vigencia_minutos`, `max_intentos`).
-- **Rutas** (en `routes/web.php`, middleware `guest`): `POST /login/verificar` (`throttle:verificar`) comprueba el código y, si es correcto, inicia la sesión (`Auth::login`) y la regenera; `POST /login/reenviar` (`throttle:reenviar`, 1/min) manda un código nuevo. Un código vencido, ya usado o con los intentos agotados se rechaza con **422** y un mensaje claro.
+- **Rutas** (en `routes/web.php`): `POST /login/verificar` (`throttle:verificar`) comprueba el código y, si es correcto, inicia la sesión (`Auth::login`) y la regenera; `POST /login/reenviar` (`throttle:reenviar`, 1/min) manda un código nuevo. Un código vencido, ya usado o con los intentos agotados se rechaza con **422** y un mensaje claro.
+- **`SEGUNDO_FACTOR_ADMINISTRADOR`** (`config/segundo-factor.php` → `obligatorio_administrador`) decide si el administrador está obligado a usar segundo factor aunque su columna esté en `false`. Vale `false` en desarrollo y en la prueba E2E (para no romper el login automático), y `true` por defecto en producción.
 - **El correo** lo manda la notificación `CodigoAccesoCorreo` (canal `mail`), con el mismo mailer que la recuperación de contraseña: sin dependencias nuevas.
 - **Mi cuenta:** `GET /api/perfil/segundo-factor` devuelve `{ activo, obligatorio }` y `PUT` lo activa o desactiva. El **administrador no puede desactivarlo** (422). Los seeders dejan a todos con el segundo factor **apagado**, para no romper el login automático de desarrollo ni la prueba E2E del lote.
 - **Código:** `SegundoFactorController`, el servicio `App\Acceso\SegundoFactor` (único que escribe `codigos_acceso`) y `SesionController@iniciar`, que ramifica según `segundo_factor`. En el panel: `CodigoAccesoPage.vue` (ruta `/verificar`), las acciones `verificarCodigo`/`reenviarCodigo` en `stores/sesion.ts`, y el interruptor en `MiCuentaPage.vue`. Pruebas en `tests/Feature/SegundoFactorTest.php`.
