@@ -2,10 +2,12 @@
 
 namespace App\Acceso;
 
+use App\Events\UsuarioActualizado;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -21,10 +23,15 @@ class SesionesActivas
      *
      * @return Collection<int, array{id: string, tipo: string, dispositivo: string, ip: string|null, ultima_actividad: string|null, actual: bool}>
      */
-    public function listar(User $usuario, ?string $sesionActualId, ?string $tokenActualId): Collection
+    public function listar(User $usuario, ?string $sesionActualId): Collection
     {
+        // La limpieza del driver `database` es por lotería, así que quedan filas
+        // vencidas; mostramos solo las que sigan dentro de `session.lifetime`.
+        $limite = now()->subMinutes((int) config('session.lifetime'))->getTimestamp();
+
         $sesiones = DB::table('sessions')
             ->where('user_id', $usuario->id)
+            ->where('last_activity', '>=', $limite)
             ->get()
             ->map(fn (\stdClass $fila): array => [
                 'id' => "panel:{$fila->id}",
@@ -35,6 +42,8 @@ class SesionesActivas
                 'actual' => $fila->id === $sesionActualId,
             ]);
 
+        // Ningún Bearer llega a estas rutas (van bajo `ability:panel`), así que un
+        // token de la app nunca es "la sesión actual".
         $tokens = $usuario->tokens
             ->map(fn (PersonalAccessToken $token): array => [
                 'id' => "app:{$token->id}",
@@ -42,7 +51,7 @@ class SesionesActivas
                 'dispositivo' => $token->name === 'movil' ? 'App Android' : $token->name,
                 'ip' => null,
                 'ultima_actividad' => ($token->last_used_at ?? $token->created_at)?->toISOString(),
-                'actual' => (string) $token->id === $tokenActualId,
+                'actual' => false,
             ]);
 
         return $sesiones
@@ -68,7 +77,7 @@ class SesionesActivas
 
         [$tipo, $id] = $partes;
 
-        return match ($tipo) {
+        $borrado = match ($tipo) {
             'panel' => DB::table('sessions')
                 ->where('id', $id)
                 ->where('user_id', $usuario->id)
@@ -76,6 +85,19 @@ class SesionesActivas
             'app' => $usuario->tokens()->whereKey($id)->delete() > 0,
             default => false,
         };
+
+        if ($borrado) {
+            // Al cerrar una sesión del panel invalidamos el "recordarme" del
+            // usuario: si no, su cookie `remember_web_*` lo volvería a autenticar.
+            if ($tipo === 'panel') {
+                $this->rotarRemember($usuario);
+            }
+
+            // El panel escucha este evento en su canal privado y recibe 401 ya.
+            UsuarioActualizado::dispatch($usuario->id);
+        }
+
+        return $borrado;
     }
 
     /**
@@ -90,6 +112,21 @@ class SesionesActivas
             ->delete();
 
         $usuario->tokens()->delete();
+
+        // Siempre cierra sesiones del panel: invalidamos el "recordarme" en todos
+        // los dispositivos y avisamos al panel para que reciba 401 de inmediato.
+        $this->rotarRemember($usuario);
+        UsuarioActualizado::dispatch($usuario->id);
+    }
+
+    /**
+     * Rota el `remember_token` del usuario para invalidar sus cookies
+     * `remember_web_*`; sin esto el "recordarme" lo volvería a autenticar.
+     */
+    private function rotarRemember(User $usuario): void
+    {
+        $usuario->setRememberToken(Str::random(60));
+        $usuario->save();
     }
 
     /**

@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
-use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Sesiones activas del usuario: las del panel (cookie) y los tokens de la app.
@@ -27,7 +26,7 @@ class SesionActivaController extends Controller
         $usuario = $this->usuario($request);
 
         return SesionActivaResource::collection(
-            $this->sesiones->listar($usuario, $this->sesionActualId($request), $this->tokenActual($request)),
+            $this->sesiones->listar($usuario, $this->sesionActualId($request)),
         );
     }
 
@@ -60,7 +59,7 @@ class SesionActivaController extends Controller
      */
     public function indexDe(User $usuario): AnonymousResourceCollection
     {
-        return SesionActivaResource::collection($this->sesiones->listar($usuario, null, null));
+        return SesionActivaResource::collection($this->sesiones->listar($usuario, null));
     }
 
     /**
@@ -99,23 +98,5 @@ class SesionActivaController extends Controller
         abort_unless($usuario instanceof User, Response::HTTP_UNAUTHORIZED);
 
         return $usuario;
-    }
-
-    /**
-     * Id del token con el que entró la petición, o null. La sesión del panel no
-     * manda Bearer (usa cookie y un TransientToken sin clave), así que solo un
-     * token persistido de la app tiene id que marcar como actual.
-     */
-    private function tokenActual(Request $request): ?string
-    {
-        $bearer = $request->bearerToken();
-
-        if ($bearer === null) {
-            return null;
-        }
-
-        $token = PersonalAccessToken::findToken($bearer);
-
-        return $token !== null ? (string) $token->getKey() : null;
     }
 }

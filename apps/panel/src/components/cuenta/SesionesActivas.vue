@@ -15,6 +15,12 @@ const ruta = computed(() =>
   props.usuarioId !== undefined ? `/usuarios/${props.usuarioId}/sesiones` : '/sesiones',
 );
 
+// En modo admin (con `usuarioId`) se cierran todas; en modo propio, todas menos
+// la del propio navegador, que no se puede cerrar desde aquí.
+const etiquetaCerrarOtras = computed(() =>
+  props.usuarioId !== undefined ? 'Cerrar todas' : 'Cerrar las demás',
+);
+
 const fecha = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
 const formatearFecha = (iso: string | null): string => (iso ? fecha.format(new Date(iso)) : '—');
 
@@ -60,15 +66,12 @@ onMounted(cargar);
 
 <template>
   <div>
-    <div class="row items-center justify-between q-mb-sm">
-      <div class="text-body2 text-grey-7">
-        Dispositivos y apps con sesión abierta en tu cuenta. Cierra las que no reconozcas.
-      </div>
+    <div class="row items-center justify-end q-mb-sm">
       <q-btn
         flat
         no-caps
         color="primary"
-        label="Cerrar las demás"
+        :label="etiquetaCerrarOtras"
         :disable="cargando || cerrando || sesiones.length < 2"
         @click="cerrarOtras"
       />
