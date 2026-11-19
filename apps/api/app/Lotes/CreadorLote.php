@@ -206,11 +206,12 @@ class CreadorLote
                 TipoEventoBitacora::AsignacionInsumo,
                 "Asignación de {$necesario} {$insumo->unidad} de {$insumo->nombre} ({$insumo->codigo}).",
                 loteId: $lote->id,
+                // Sin costos: el historial (T-44) lo leen el encargado y la app,
+                // que no deben ver costos.
                 datos: [
                     'insumo_id' => $insumo->id,
                     'codigo' => $insumo->codigo,
                     'cantidad' => (string) $necesario,
-                    'costo_unitario' => (string) $insumo->costo_unitario,
                 ],
                 userId: $usuario->id,
             );

@@ -17,6 +17,10 @@ class Bitacora extends Model
 
     protected $collection = 'bitacora';
 
+    // El documento solo tiene created_at (docs/modelo-datos.md); sin esto
+    // Eloquent intentaría mantener un updated_at que no existe.
+    public const UPDATED_AT = null;
+
     /**
      * @var list<string>
      */

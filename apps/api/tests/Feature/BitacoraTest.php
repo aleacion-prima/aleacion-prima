@@ -17,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\seed;
@@ -202,4 +203,82 @@ it('no revierte la operación ni lanza excepción si la bitácora falla', functi
 
     Log::shouldHaveReceived('error')
         ->withArgs(fn (string $mensaje) => $mensaje === 'No se pudo escribir en la bitácora');
+});
+
+it('un rollback al cancelar no deja devolucion_insumo ni cancelacion', function () {
+    $admin = adminBitacora();
+    $lote = loteBitacora($admin);
+    $chatarra = insumoRetornoBitacora();
+
+    $fake = Bitacora::fake();
+
+    // La primera devolución es válida (registra devolucion_insumo); la segunda
+    // excede lo que queda del insumo y lanza dentro de la transacción.
+    expect(fn () => app(CierreLote::class)->cancelar(
+        $lote,
+        'Pedido cancelado',
+        [
+            ['insumo_id' => $chatarra->id, 'cantidad' => '100'],
+            ['insumo_id' => $chatarra->id, 'cantidad' => '200'],
+        ],
+        $admin,
+    ))->toThrow(ValidationException::class);
+
+    // Como la cancelación se revirtió, el after-commit se descarta: ni la
+    // devolución ya registrada ni la cancelación llegan a la bitácora.
+    expect($fake->tipos())->not->toContain('devolucion_insumo');
+    $fake->assertNingunRegistro();
+});
+
+it('una salida que falla en registrarRetorno no deja salida_area', function () {
+    $admin = adminBitacora();
+    $lote = loteBitacora($admin);
+    $captura = app(CapturaParada::class);
+
+    // Avanza el lote hasta la entrada de Desmolde (orden 4).
+    foreach ([1, 2, 3] as $orden) {
+        $captura->entrada($lote, paradaBitacora($lote, $orden), 20, null, $admin);
+        $captura->salida($lote, paradaBitacora($lote, $orden)->fresh(), 20, null, null, null, $admin);
+    }
+    $captura->entrada($lote, paradaBitacora($lote, 4), 20, null, $admin);
+
+    // El insumo de retorno "desaparece" (cambia de código): validarRetorno pasa
+    // (sigue contando como metal asignado) pero registrarRetorno no lo encuentra
+    // y lanza, cuando salida_area ya se registró.
+    insumoRetornoBitacora()->update(['codigo' => 'NO-RETORNO']);
+
+    $fake = Bitacora::fake();
+
+    expect(fn () => $captura->salida(
+        $lote,
+        paradaBitacora($lote, 4)->fresh(),
+        19,
+        null,
+        '35.5',
+        null,
+        $admin,
+    ))->toThrow(ValidationException::class);
+
+    // La salida se revirtió: su salida_area (y el retorno) no quedan registrados.
+    expect($fake->tipos())->not->toContain('salida_area');
+    $fake->assertNingunRegistro();
+});
+
+it('al cancelar con una parada abierta deja su area y merma en la cancelacion', function () {
+    $admin = adminBitacora();
+    $lote = loteBitacora($admin);
+    $captura = app(CapturaParada::class);
+
+    // Entra a la primera parada: queda abierta cuando se cancela.
+    $parada = $captura->entrada($lote, paradaBitacora($lote, 1), 20, null, $admin);
+
+    $fake = Bitacora::fake();
+
+    app(CierreLote::class)->cancelar($lote, 'Pedido cancelado', [], $admin);
+
+    $fake->assertRegistrado(
+        TipoEventoBitacora::Cancelacion,
+        fn (array $doc) => $doc['datos']['area_id'] === $parada->area_id
+            && $doc['datos']['merma_piezas'] === 20,
+    );
 });

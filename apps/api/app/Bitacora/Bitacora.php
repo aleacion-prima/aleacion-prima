@@ -5,18 +5,22 @@ namespace App\Bitacora;
 use App\Enums\TipoEventoBitacora;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Único punto de entrada de la bitácora del lote. Arma el documento (quién,
- * cuándo, la marca de captura tardía) y delega la escritura en el escritor del
- * contenedor (Mongo en producción, fake en pruebas).
+ * cuándo, la marca de captura tardía) y encola su escritura para después del
+ * commit, delegándola en el escritor del contenedor (Mongo en producción, fake
+ * en pruebas).
  *
- * La escritura va envuelta en try/catch: la bitácora es secundaria, así que un
- * fallo al registrarla nunca debe revertir la operación del lote (RNF-05). Se
- * llama dentro de la transacción de cada servicio; el escritor de Mongo se
- * encarga de diferir la inserción real a después del commit (ADR-0003).
+ * Se llama dentro de la transacción de cada servicio. La escritura se difiere
+ * con DB::afterCommit, así que solo corre si la operación del lote hace commit:
+ * un rollback nunca deja un documento huérfano (RNF-05, ADR-0003). Además va
+ * envuelta en try/catch: la bitácora es secundaria y un fallo al escribirla
+ * (p. ej. Mongo caído) nunca debe reventar la operación, que para entonces ya
+ * confirmó.
  *
  * T-43 (imprevistos) y T-45 (ajustes de lote terminado) reúsan este mismo punto.
  */
@@ -50,20 +54,23 @@ class Bitacora
             'captura_tardia' => $ocurrido->diffInMinutes($registrado) > (int) config('planta.umbral_captura_tardia'),
         ];
 
-        try {
-            app(EscritorBitacora::class)->escribir($doc);
-        } catch (Throwable $e) {
-            Log::error('No se pudo escribir en la bitácora', [
-                'tipo' => $tipo->value,
-                'lote_id' => $loteId,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        DB::afterCommit(function () use ($doc, $tipo, $loteId): void {
+            try {
+                app(EscritorBitacora::class)->escribir($doc);
+            } catch (Throwable $e) {
+                Log::error('No se pudo escribir en la bitácora', [
+                    'tipo' => $tipo->value,
+                    'lote_id' => $loteId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
     }
 
     /**
-     * Reemplaza el escritor del contenedor por un fake síncrono y lo devuelve
-     * para hacer aserciones en los tests.
+     * Reemplaza el escritor del contenedor por un fake en memoria y lo devuelve
+     * para hacer aserciones en los tests. El after-commit de registrar() sigue
+     * vigente: el fake solo captura eventos de operaciones que hacen commit.
      */
     public static function fake(): EscritorBitacoraFake
     {

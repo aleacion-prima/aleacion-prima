@@ -7,9 +7,10 @@ use PHPUnit\Framework\Assert;
 use RuntimeException;
 
 /**
- * Escritor de pruebas: guarda los documentos en memoria, de forma síncrona, en
- * vez de diferirlos a after-commit (que bajo RefreshDatabase nunca dispara). Así
- * los tests ven los eventos en el mismo orden en que se registraron.
+ * Escritor de pruebas: solo guarda en memoria el documento que se le pide
+ * escribir. El after-commit vive en Bitacora::registrar(), así que el fake
+ * recibe únicamente los eventos de operaciones que hacen commit (los de una
+ * operación revertida nunca llegan).
  *
  * Con fallar() simula que Mongo está caído, para comprobar que un fallo de la
  * bitácora no revierte la operación del lote.

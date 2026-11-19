@@ -20,7 +20,9 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::connection('mongodb')->create('bitacora', function (Blueprint $collection): void {
+        // table(), no create(): en producción la colección ya existe (la crea la
+        // primera inserción de la bitácora). Solo agregamos los índices.
+        Schema::connection('mongodb')->table('bitacora', function (Blueprint $collection): void {
             $collection->index(['lote_id' => 1, 'created_at' => 1]);
             $collection->index(['tipo' => 1, 'created_at' => -1]);
             $collection->index(['captura_tardia' => 1, 'created_at' => -1]);
@@ -29,6 +31,12 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('mongodb')->drop('bitacora');
+        // Borra solo los tres índices que creó up(), nunca la colección: la
+        // bitácora es append-only y revertir no debe perder datos.
+        Schema::connection('mongodb')->table('bitacora', function (Blueprint $collection): void {
+            $collection->dropIndex(['lote_id' => 1, 'created_at' => 1]);
+            $collection->dropIndex(['tipo' => 1, 'created_at' => -1]);
+            $collection->dropIndex(['captura_tardia' => 1, 'created_at' => -1]);
+        });
     }
 };

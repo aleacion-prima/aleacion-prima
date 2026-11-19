@@ -108,11 +108,20 @@ class CierreLote
                 'motivo_cancelacion' => $motivo,
             ])->save();
 
+            // Si la cancelación cerró en cero una parada abierta, deja constancia
+            // del área y la merma resultante (docs/modelo-datos.md).
+            $datos = ['motivo' => $motivo];
+
+            if ($abierta !== null) {
+                $datos['area_id'] = $abierta->area_id;
+                $datos['merma_piezas'] = $abierta->merma_piezas;
+            }
+
             Bitacora::registrar(
                 TipoEventoBitacora::Cancelacion,
                 "Cancelación del lote {$lote->codigo}: {$motivo}",
                 loteId: $lote->id,
-                datos: ['motivo' => $motivo],
+                datos: $datos,
                 userId: $usuario->id,
             );
 
