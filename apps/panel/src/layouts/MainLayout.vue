@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import type { Rol } from '@aleacion-prima/types';
@@ -10,6 +10,11 @@ import { useSesionStore } from '@/stores/sesion';
 const $q = useQuasar();
 const router = useRouter();
 const sesion = useSesionStore();
+
+const MenuDebug = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('@/components/debug/MenuDebug.vue'))
+  : null;
+const recarga = ref(0);
 
 const menuAbierto = ref(false);
 const menuMini = ref(false);
@@ -64,9 +69,11 @@ watch(
     <q-page-container>
       <router-view #default="{ Component }">
         <transition name="pagina" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="recarga" />
         </transition>
       </router-view>
     </q-page-container>
+
+    <component :is="MenuDebug" v-if="MenuDebug" @actualizado="recarga++" />
   </q-layout>
 </template>
