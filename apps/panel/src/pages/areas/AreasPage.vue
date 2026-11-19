@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+import { formatearMoneda } from '@/composables/formato';
 import type { Area } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 
@@ -11,6 +13,7 @@ interface FormularioArea {
   descripcion: string;
   tarifa_mano_obra_hora: number | null;
   costo_maquina_hora: number | null;
+  orden_catalogo: number | null;
   encargados: number[];
   activo: boolean;
 }
@@ -45,20 +48,20 @@ const formulario = reactive<FormularioArea>({
   descripcion: '',
   tarifa_mano_obra_hora: null,
   costo_maquina_hora: null,
+  orden_catalogo: null,
   encargados: [],
   activo: true,
 });
 
+/** Un área obligatoria no puede estar inactiva: al elegirla, el estado pasa a activa. */
+watch(
+  () => formulario.obligatoria,
+  (obligatoria) => {
+    if (obligatoria === true) formulario.activo = true;
+  },
+);
+
 /* ---------- Formato ---------- */
-
-const dinero = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
-
-const formatearTarifa = (valor: string): string => dinero.format(Number(valor));
 
 const encargadosLegible = (area: Area): string =>
   (area.encargados ?? []).map((encargado) => encargado.name).join(', ') || 'Sin encargados';
@@ -116,13 +119,33 @@ const abrir = (area?: Area): void => {
   formulario.descripcion = area?.descripcion ?? '';
   formulario.tarifa_mano_obra_hora = area ? Number(area.tarifa_mano_obra_hora) : null;
   formulario.costo_maquina_hora = area ? Number(area.costo_maquina_hora) : null;
+  formulario.orden_catalogo =
+    area?.orden_catalogo ?? Math.max(0, ...areas.value.map((a) => a.orden_catalogo)) + 1;
   formulario.encargados = (area?.encargados ?? []).map((encargado) => encargado.id);
   formulario.activo = area?.activo ?? true;
   dialogo.value = true;
 };
 
+const confirmarDesactivacion = (area: Area): Promise<boolean> =>
+  new Promise((resolver) => {
+    $q.dialog({
+      title: `¿Desactivar el área de ${area.nombre}?`,
+      message: 'Dejará de aparecer en recorridos nuevos. Los lotes que ya la usaron la conservan.',
+      cancel: true,
+      persistent: true,
+    })
+      .onOk(() => resolver(true))
+      .onCancel(() => resolver(false))
+      .onDismiss(() => resolver(false));
+  });
+
 const guardar = async (): Promise<void> => {
-  const esEdicion = editando.value !== null;
+  const area = editando.value;
+  // Una obligatoria siempre se guarda activa, aunque el estado venga desfasado.
+  const activo = formulario.obligatoria === true ? true : formulario.activo;
+  if (area?.activo && !activo && !(await confirmarDesactivacion(area))) return;
+
+  const esEdicion = area !== null;
   const cuerpo = {
     codigo: formulario.codigo,
     nombre: formulario.nombre,
@@ -130,14 +153,15 @@ const guardar = async (): Promise<void> => {
     tarifa_mano_obra_hora: formulario.tarifa_mano_obra_hora,
     costo_maquina_hora: formulario.costo_maquina_hora,
     obligatoria: formulario.obligatoria,
+    orden_catalogo: formulario.orden_catalogo,
     encargados: formulario.encargados,
-    ...(esEdicion ? { activo: formulario.activo } : {}),
+    ...(esEdicion ? { activo } : {}),
   };
 
   guardando.value = true;
   errores.value = {};
   const { error, data } = esEdicion
-    ? await useApi(`/areas/${editando.value?.id ?? ''}`)
+    ? await useApi(`/areas/${area?.id ?? ''}`)
         .put(cuerpo)
         .json<Area>()
     : await useApi('/areas').post(cuerpo).json<Area>();
@@ -163,13 +187,13 @@ onMounted(cargar);
   <q-page padding>
     <div class="row items-center justify-between q-mb-lg">
       <div>
-        <div class="text-h4 titulo-pagina">Áreas y tarifas</div>
-        <div class="text-body2 texto-suave">
+        <div class="text-h4 catalogo-titulo">Áreas y tarifas</div>
+        <div class="text-body2 text-secundario">
           Gestión de áreas, tarifas por hora y encargados asignados.
         </div>
       </div>
       <q-btn
-        outline
+        unelevated
         color="primary"
         icon="add"
         label="Nueva área"
@@ -180,48 +204,68 @@ onMounted(cargar);
 
     <q-linear-progress v-if="cargando" indeterminate color="primary" />
 
-    <div v-else-if="areas.length === 0" class="texto-suave">Aún no hay áreas.</div>
+    <EstadoVacio v-else-if="areas.length === 0" titulo="Aún no hay áreas" />
 
     <div v-else class="row q-col-gutter-md">
       <div v-for="area in areas" :key="area.id" class="col-12 col-md-6">
-        <q-card flat bordered class="tarjeta full-height column">
+        <q-card flat bordered class="catalogo-tarjeta full-height column">
           <q-card-section class="row items-start no-wrap">
             <div class="col">
-              <div class="tarjeta__codigo">{{ area.codigo }}</div>
-              <div class="tarjeta__nombre">{{ area.nombre }}</div>
+              <div class="catalogo-codigo">{{ area.codigo }}</div>
+              <div class="catalogo-nombre">{{ area.nombre }}</div>
             </div>
-            <div class="row items-center no-wrap q-gutter-xs">
-              <span v-if="!area.activo" class="insignia insignia--gris">Inactiva</span>
-              <span v-if="area.obligatoria" class="insignia insignia--azul">Obligatoria</span>
-              <span v-else class="insignia insignia--gris">Opcional</span>
+            <div class="chips row items-center no-wrap">
+              <q-chip
+                v-if="!area.activo"
+                class="q-ma-none"
+                color="grey-3"
+                text-color="grey-8"
+                label="Inactiva"
+              />
+              <q-chip
+                v-if="area.obligatoria"
+                class="q-ma-none"
+                color="info"
+                text-color="white"
+                label="Obligatoria"
+              />
+              <q-chip
+                v-else
+                class="q-ma-none"
+                color="grey-3"
+                text-color="grey-8"
+                label="Opcional"
+              />
             </div>
           </q-card-section>
 
-          <q-card-section class="campos q-pt-none">
-            <div class="campo">
-              <div class="campo__etiqueta">Descripción y proceso</div>
-              <div class="campo__valor">{{ area.descripcion || '—' }}</div>
+          <q-card-section class="catalogo-campos q-pt-none">
+            <div class="catalogo-campo">
+              <div class="catalogo-etiqueta">Descripción y proceso</div>
+              <div class="catalogo-valor">{{ area.descripcion || '—' }}</div>
             </div>
-            <div class="campos__fila">
-              <div class="campo">
-                <div class="campo__etiqueta">Mano de obra ($/h)</div>
-                <div class="campo__valor">{{ formatearTarifa(area.tarifa_mano_obra_hora) }}</div>
+            <div class="catalogo-fila">
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Mano de obra ($/h)</div>
+                <div class="catalogo-valor">
+                  {{ formatearMoneda(area.tarifa_mano_obra_hora) }}
+                </div>
               </div>
-              <div class="campo">
-                <div class="campo__etiqueta">Máquina ($/h)</div>
-                <div class="campo__valor">{{ formatearTarifa(area.costo_maquina_hora) }}</div>
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Máquina ($/h)</div>
+                <div class="catalogo-valor">{{ formatearMoneda(area.costo_maquina_hora) }}</div>
               </div>
             </div>
-            <div class="campo">
-              <div class="campo__etiqueta">Encargados asignados</div>
-              <div class="campo__valor">{{ encargadosLegible(area) }}</div>
+            <div class="catalogo-campo">
+              <div class="catalogo-etiqueta">Encargados asignados</div>
+              <div class="catalogo-valor">{{ encargadosLegible(area) }}</div>
             </div>
           </q-card-section>
 
           <q-space />
           <q-card-actions align="right">
             <q-btn
-              class="btn-editar"
+              class="catalogo-boton"
               outline
               no-caps
               color="secondary"
@@ -238,7 +282,7 @@ onMounted(cargar);
         <q-card-section class="row items-start no-wrap">
           <div class="col">
             <div class="text-h6">{{ editando ? 'Editar área' : 'Nueva área' }}</div>
-            <div class="text-caption texto-suave">
+            <div class="text-caption text-secundario">
               {{
                 editando
                   ? 'Actualiza la información, las tarifas y los encargados del área.'
@@ -257,7 +301,7 @@ onMounted(cargar);
           <div class="row q-col-gutter-md">
             <q-input
               v-model="formulario.codigo"
-              class="col-12 col-sm-4"
+              class="col-12 col-sm-3"
               :label="editando ? 'Código' : 'Código del área'"
               placeholder="Ingresa el código"
               stack-label
@@ -268,7 +312,7 @@ onMounted(cargar);
             />
             <q-input
               v-model="formulario.nombre"
-              class="col-12 col-sm-8"
+              class="col-12 col-sm-6"
               label="Nombre del área"
               placeholder="Ingresa el nombre del área"
               stack-label
@@ -276,15 +320,24 @@ onMounted(cargar);
               :error="campoError('nombre') !== ''"
               :error-message="campoError('nombre')"
             />
+            <q-input
+              v-model.number="formulario.orden_catalogo"
+              class="col-12 col-sm-3"
+              label="Orden en el catálogo"
+              stack-label
+              type="number"
+              min="1"
+              outlined
+              :error="campoError('orden_catalogo') !== ''"
+              :error-message="campoError('orden_catalogo')"
+            />
 
-            <!-- Edición: lista desplegable; alta: dos opciones en tarjeta -->
             <q-select
               v-if="editando"
               v-model="formulario.obligatoria"
               class="col-12"
               :options="opcionesTipo"
               label="Tipo"
-              hint="Selecciona Obligatoria u Opcional."
               emit-value
               map-options
               outlined
@@ -292,7 +345,7 @@ onMounted(cargar);
               :error-message="campoError('obligatoria')"
             />
             <div v-else class="col-12">
-              <div class="text-caption texto-suave q-mb-xs">Tipo de área</div>
+              <div class="text-caption text-secundario q-mb-xs">Tipo de área</div>
               <div class="row q-col-gutter-md">
                 <div v-for="opcion in opcionesTipo" :key="opcion.label" class="col-12 col-sm-6">
                   <q-item v-ripple tag="label" class="opcion-tipo rounded-borders">
@@ -314,6 +367,26 @@ onMounted(cargar);
               </div>
             </div>
 
+            <div v-if="editando" class="col-12">
+              <div class="estado-area row items-center justify-between no-wrap rounded-borders">
+                <div>
+                  <div class="estado-area__etiqueta">Estado</div>
+                  <div class="estado-area__valor">
+                    {{ formulario.activo ? 'Activa' : 'Inactiva' }}
+                  </div>
+                </div>
+                <q-toggle
+                  v-model="formulario.activo"
+                  color="positive"
+                  aria-label="Estado del área"
+                  :disable="formulario.obligatoria === true"
+                />
+              </div>
+              <div v-if="campoError('activo') !== ''" class="text-negative text-caption q-mt-xs">
+                {{ campoError('activo') }}
+              </div>
+            </div>
+
             <q-input
               v-model="formulario.descripcion"
               class="col-12"
@@ -331,7 +404,7 @@ onMounted(cargar);
           <q-separator class="q-my-lg" />
 
           <div class="text-subtitle1 text-weight-bold">Tarifas por hora</div>
-          <div v-if="!editando" class="text-caption texto-suave">
+          <div v-if="!editando" class="text-caption text-secundario">
             Ingrese el importe por hora para cada recurso.
           </div>
           <div class="row q-col-gutter-md">
@@ -370,6 +443,7 @@ onMounted(cargar);
               option-value="id"
               option-label="name"
               label="Encargados asignados"
+              placeholder="Selecciona uno o más encargados"
               stack-label
               :hint="editando ? undefined : 'Selecciona al personal responsable de esta área.'"
               multiple
@@ -377,19 +451,9 @@ onMounted(cargar);
               emit-value
               map-options
               outlined
-              :error="campoError('encargados') !== ''"
-              :error-message="campoError('encargados')"
+              :error="campoError('encargados') !== '' || campoError('encargados.0') !== ''"
+              :error-message="campoError('encargados') || campoError('encargados.0')"
             />
-            <div v-if="editando" class="col-12">
-              <q-toggle
-                v-model="formulario.activo"
-                label="Área activa"
-                :disable="formulario.obligatoria === true"
-              />
-              <div v-if="campoError('activo') !== ''" class="text-negative text-caption">
-                {{ campoError('activo') }}
-              </div>
-            </div>
           </div>
         </q-card-section>
 
@@ -410,87 +474,25 @@ onMounted(cargar);
 </template>
 
 <style scoped lang="scss">
-.titulo-pagina {
-  font-family: $fuente-titulos;
-  font-weight: 700;
-  color: $dark;
-}
-.texto-suave {
-  color: $grafito-medio;
+.chips {
+  gap: 8px;
 }
 .opcion-tipo {
   border: 1px solid $acero-claro;
 }
-.tarjeta {
-  border-radius: 16px;
-  border-color: $acero-claro;
+.estado-area {
+  border: 1px solid $acero-claro;
+  padding: 8px 16px;
 }
-.tarjeta__codigo {
-  font-family: $fuente-codigo;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: $grafito-medio;
-}
-.tarjeta__nombre {
-  font-family: $fuente-titulos;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: $dark;
-}
-.campos {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.campos__fila {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.campo {
-  background: $blanco-humo;
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-.campo__etiqueta {
+.estado-area__etiqueta {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   color: $grafito-medio;
-  margin-bottom: 4px;
 }
-.campo__valor {
+.estado-area__valor {
   font-size: 16px;
   line-height: 1.4;
   color: $dark;
-}
-.campo__valor--mono {
-  font-family: $fuente-codigo;
-}
-.insignia {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: #fff;
-}
-.insignia--azul {
-  background: $info;
-}
-.insignia--verde {
-  background: $positive;
-}
-.insignia--gris {
-  background: $acero-claro;
-  color: $grafito-medio;
-}
-.btn-editar {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color $duracion-rapida $curva-salida;
 }
 </style>
