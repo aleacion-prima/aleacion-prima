@@ -1,6 +1,6 @@
 # API
 
-Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes`, `GET /api/lotes/{codigo}`, `confirmar` y `cancelar`, y en Captura por área la entrada y la salida de cada parada; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
+Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes`, `GET /api/lotes/{codigo}`, `confirmar` y `cancelar`, en Tablero `GET /api/tablero`, y en Captura por área la entrada y la salida de cada parada; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
 
 Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles y el middleware de [autenticacion.md](autenticacion.md) y las operaciones sobre un lote de [flujo-lote.md](flujo-lote.md).
 
@@ -127,7 +127,7 @@ Middleware: `auth:sanctum` y `role:administrador`.
 | `POST`  | `/api/notificaciones/leidas`     | Administrador | RF-38        |
 | `POST`  | `/broadcasting/auth`             | Administrador | RF-34, RF-37 |
 
-`GET /api/tablero` carga el estado inicial; después el tablero se mantiene al día por WebSocket.
+`GET /api/tablero` carga el estado inicial (lotes creados, en proceso y por confirmar, con su recorrido y costo a la fecha); después el tablero se mantiene al día con `lote.actualizado` del canal `tablero`.
 
 ## Aplicación móvil
 
@@ -160,10 +160,10 @@ Contrato de los campos (RNF-04):
 
 ## Tiempo real
 
-| Canal                 | Acceso                            | Eventos                                                           | RF            |
-| --------------------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
-| `catalogo`            | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
-| `tablero` (propuesta) | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
+| Canal      | Acceso                            | Eventos                                                           | RF            |
+| ---------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
+| `catalogo` | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
+| `tablero`  | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
 
 ## Ventas (recortable)
 
@@ -197,5 +197,4 @@ Se recorta en este orden si el tiempo no alcanza: chat de cotizaciones, clientes
 - **Quién crea lotes.** RF-16 dice Administrador; [flujo-lote.md](flujo-lote.md) y el diagrama de estados dicen Ventas o Administrador. Aquí se sigue el RF. Si ventas también crea, `POST /api/lotes` pasa a `role:ventas|administrador` y se actualizan RF-16 y autenticacion.md.
 - **Costos para el encargado.** Se propone que `historial` y `GET /api/lotes/{codigo}` no devuelvan costos al encargado de área ni a la app móvil; solo `costo` y `bitacora` los exponen, y solo a Ventas y Administrador. Confirmar con el equipo.
 - **Ability en el panel.** `ability:lotes:read` aplica a tokens de la app; confirmar con una prueba que las peticiones con cookie del panel pasan por las mismas rutas de lectura.
-- **Nombre del canal privado.** `tablero` es una propuesta; se fija al implementar los canales de `routes/channels.php`.
 - **Rol ventas en autenticacion.md.** Su fila no menciona RF-13 ni RF-35 (ya anotado en requerimientos.md).
