@@ -15,7 +15,7 @@ class Bitacora extends Model
 {
     protected $connection = 'mongodb';
 
-    protected $collection = 'bitacora';
+    protected $table = 'bitacora';
 
     // El documento solo tiene created_at (docs/modelo-datos.md); sin esto
     // Eloquent intentaría mantener un updated_at que no existe.

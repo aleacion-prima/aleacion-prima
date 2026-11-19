@@ -39,7 +39,7 @@ Al escribir el primer modelo de Mongo (la colección `bitacora`) se fijó lo que
   - `EscritorBitacoraMongo` (producción, singleton por defecto en `AppServiceProvider`): solo inserta el documento en Mongo.
   - `EscritorBitacoraFake` (pruebas): guarda en memoria lo que se le pide escribir y tiene un modo `fallar()` para el criterio de tolerancia. Como el `afterCommit` vive en `registrar()`, bajo `RefreshDatabase` el callback corre al hacer commit de la transacción de la operación y se descarta en el rollback: así el fake captura los eventos de operaciones que confirman y **no** los de operaciones revertidas, lo que permite probar ambos casos.
 - **Cómo se prueba:** `Bitacora::fake()` al inicio del caso devuelve el fake y lo deja en el contenedor; luego se asserta con `tipos()`, `assertRegistrado()` y `assertNingunRegistro()`. Así **ningún test toca Mongo**: el fake nunca instancia el escritor de Mongo y la migración de índices no corre bajo `RefreshDatabase`.
-- **Índices fuera del `migrate` por defecto.** La migración de la colección vive en `apps/api/database/migrations/mongodb/`; el migrador no entra a subcarpetas, así que ni el `migrate` normal ni `RefreshDatabase` la ejecutan. Se corre a mano en dev y en CI con Mongo:
+- **Índices fuera del `migrate` por defecto.** La migración de la colección vive en `apps/api/database/migrations/mongodb/`; el migrador no entra a subcarpetas, así que ni el `migrate` normal ni `RefreshDatabase` la ejecutan. Se corre a mano en dev y en cada deploy (`deploy.yml`):
 
   ```bash
   php artisan migrate --path=database/migrations/mongodb

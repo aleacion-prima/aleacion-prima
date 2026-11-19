@@ -10,7 +10,7 @@ use MongoDB\Laravel\Schema\Blueprint;
  * Vive en database/migrations/mongodb/ —fuera del directorio que corre el
  * `migrate` por defecto— porque el migrador no entra a subcarpetas. Así los
  * tests (RefreshDatabase sobre SQLite) nunca lo ejecutan ni tocan Mongo. Se
- * corre a mano en dev y en CI con Mongo:
+ * corre a mano en dev y en cada deploy (deploy.yml):
  *
  *   php artisan migrate --path=database/migrations/mongodb
  */
