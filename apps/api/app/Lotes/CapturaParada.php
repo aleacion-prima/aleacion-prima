@@ -17,6 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class CapturaParada
 {
+    public function __construct(
+        private CalculadorCostoLote $calculador
+    ) {}
+
     public function entrada(Lote $lote, LoteArea $parada, int $piezas, ?CarbonImmutable $ocurridoEn, User $usuario): LoteArea
     {
         return DB::transaction(function () use ($lote, $parada, $piezas, $ocurridoEn, $usuario): LoteArea {
@@ -40,6 +44,14 @@ class CapturaParada
 
             if ($anterior?->salida_ocurrido_en !== null && $ocurrido->lessThan($anterior->salida_ocurrido_en)) {
                 $this->fallar('ocurrido_en', 'La entrada no puede ser antes de la salida de la parada anterior.');
+            }
+
+            if ($anterior === null && $piezas > $lote->cantidad_objetivo) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas que la cantidad objetivo ({$lote->cantidad_objetivo}).");
+            }
+
+            if ($anterior !== null && $piezas > $anterior->piezas_entregadas) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas de las que se entregaron ({$anterior->piezas_entregadas}).");
             }
 
             $parada->forceFill([
@@ -120,6 +132,8 @@ class CapturaParada
                 'area_actual_id' => null,
                 'estado' => $esUltima ? EstadoLote::PorConfirmar : EstadoLote::EnProceso,
             ])->save();
+
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
 
