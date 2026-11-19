@@ -2,6 +2,8 @@
 
 namespace App\Inventario;
 
+use App\Bitacora\Bitacora;
+use App\Enums\TipoEventoBitacora;
 use App\Events\StockMinimoAlcanzado;
 
 // Revisa, después de un movimiento que cambió la existencia de un insumo, si
@@ -28,6 +30,18 @@ class DetectorStockMinimo
         // repite el aviso aunque la existencia baje más.
         if ($estabaArriba && $ahoraEstaAbajo) {
             StockMinimoAlcanzado::dispatch($insumoId, $existenciaNueva, $stockMinimo);
+
+            Bitacora::registrar(
+                TipoEventoBitacora::StockMinimo,
+                "El insumo {$insumoId} llegó al stock mínimo: {$existenciaNueva} (mínimo {$stockMinimo}).",
+                loteId: null,
+                areaId: null,
+                datos: [
+                    'insumo_id' => $insumoId,
+                    'existencia' => $existenciaNueva,
+                    'stock_minimo' => $stockMinimo,
+                ],
+            );
         }
     }
 }

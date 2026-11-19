@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Bitacora\EscritorBitacora;
+use App\Bitacora\EscritorBitacoraMongo;
 use App\Listeners\DifundirModulos;
 use App\Models\User;
 use App\Support\Modulos;
@@ -19,7 +21,12 @@ use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        // Escritor de bitácora por defecto: inserta en Mongo después del commit
+        // de Postgres. Los tests lo reemplazan con un fake vía Bitacora::fake().
+        $this->app->singleton(EscritorBitacora::class, EscritorBitacoraMongo::class);
+    }
 
     public function boot(): void
     {

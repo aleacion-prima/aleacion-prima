@@ -84,6 +84,7 @@ Route::get('/lotes/{codigo}', ...)
 - No expiran por sí solos salvo que se configure `expiration` en `config/sanctum.php`.
 - La app inicia sesión con `POST /api/movil/login` (solo encargados y administradores activos) y la cierra con `POST /api/logout`, que borra únicamente el token de ese dispositivo.
 - En `routes/api.php`, todo lo que no es lectura de lotes va dentro del grupo `ability:panel`. Ningún token se emite con esa ability, así que el token móvil recibe 403; la sesión del panel pasa porque Sanctum le asigna un `TransientToken`, que tiene todas las abilities. **Las rutas nuevas van dentro de ese grupo**, salvo que la app las necesite.
+- Los costos usan la misma regla: `User::veCostos()` exige rol Administrador o Ventas **y** `tokenCan('panel')`, así que la app no los recibe aunque entre un administrador.
 - Por eso los tests autentican con `Sanctum::actingAs($usuario, ['*'])`: sin abilities, el token falso de Sanctum no pasa `ability:panel` ni `ability:lotes:read`.
 - El cliente HTTP del panel necesita una rama para el modo Capacitor (`import.meta.env.QUASAR_MODE === 'capacitor'`) que mande la cabecera `Authorization` en vez de la cookie y **no** llame a `/sanctum/csrf-cookie`.
 
