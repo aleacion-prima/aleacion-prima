@@ -23,6 +23,7 @@ class CreadorLote
     public function __construct(
         private GeneradorCodigoLote $generador,
         private DetectorStockMinimo $detector,
+        private CalculadorCostoLote $calculador,
     ) {}
 
     /**
@@ -52,6 +53,7 @@ class CreadorLote
 
             $this->crearParadas($lote, $idsRecorrido);
             $this->asignarInsumos($lote, $insumos, $necesidades, $usuario);
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
 

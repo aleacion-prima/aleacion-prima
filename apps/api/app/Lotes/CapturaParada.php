@@ -17,6 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class CapturaParada
 {
+    public function __construct(
+        private CalculadorCostoLote $calculador
+    ) {}
+
     public function entrada(Lote $lote, LoteArea $parada, int $piezas, ?CarbonImmutable $ocurridoEn, User $usuario): LoteArea
     {
         return DB::transaction(function () use ($lote, $parada, $piezas, $ocurridoEn, $usuario): LoteArea {
@@ -128,6 +132,8 @@ class CapturaParada
                 'area_actual_id' => null,
                 'estado' => $esUltima ? EstadoLote::PorConfirmar : EstadoLote::EnProceso,
             ])->save();
+
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
 
