@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
-use App\Events\LoteActualizado;
 use App\Listeners\DifundirModulos;
 use App\Models\User;
 use App\Support\Modulos;
