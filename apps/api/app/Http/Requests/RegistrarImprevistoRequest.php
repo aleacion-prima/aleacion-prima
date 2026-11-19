@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\TipoImprevisto;
+use App\Models\LoteArea;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class RegistrarImprevistoRequest extends CapturaParadaRequest
 {
@@ -20,6 +22,25 @@ class RegistrarImprevistoRequest extends CapturaParadaRequest
             'duracion_minutos' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'resuelto' => ['sometimes', 'boolean'],
             'ocurrido_en' => ['nullable', 'date', 'before_or_equal:now'],
+        ];
+    }
+
+    /**
+     * Un imprevisto es de un área que ya empezó: sin entrada registrada no hay dónde ligarlo.
+     * Las paradas ya terminadas sí aceptan imprevistos (se capturan con retraso).
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validador): void {
+                $parada = $this->route('parada');
+
+                if ($parada instanceof LoteArea && $parada->entrada_ocurrido_en === null) {
+                    $validador->errors()->add('parada', 'Esa área aún no empieza: registra primero su entrada.');
+                }
+            },
         ];
     }
 

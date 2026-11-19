@@ -56,7 +56,10 @@ const paradaActual = computed(() =>
 );
 
 const paradasParaImprevisto = computed(
-  () => lote.value?.paradas.filter((parada) => parada.puede_capturar) ?? [],
+  () =>
+    lote.value?.paradas.filter(
+      (parada) => parada.puede_capturar && parada.entrada_ocurrido_en !== null,
+    ) ?? [],
 );
 
 const ubicacion = computed(() => {

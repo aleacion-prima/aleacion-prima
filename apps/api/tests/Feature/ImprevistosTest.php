@@ -40,11 +40,13 @@ function loteParaImprevistos(): Lote
     $lote = Lote::factory()->enProceso()->create();
 
     foreach (['MOL', 'FUS', 'COL', 'DES'] as $indice => $codigo) {
-        $lote->paradas()->create([
+        LoteArea::factory()->create([
+            'lote_id' => $lote->id,
             'area_id' => Area::query()->where('codigo', $codigo)->value('id'),
             'orden' => $indice + 1,
             'tarifa_mano_obra_hora' => 180,
             'costo_maquina_hora' => 220,
+            'entrada_ocurrido_en' => $codigo === 'DES' ? null : '2026-11-02 06:00',
         ]);
     }
 
@@ -149,6 +151,17 @@ it('rechaza a ventas y paradas de otro lote', function () {
     entrarParaImprevistos(Rol::Administrador);
     postJson(rutaDeImprevistos($lote, paradaParaImprevistos($otro, 'MOL')), cuerpoDeImprevisto())
         ->assertNotFound();
+});
+
+it('no deja registrar en un área que aún no empieza', function () {
+    entrarParaImprevistos(Rol::Administrador);
+    $lote = loteParaImprevistos();
+
+    postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'DES')), cuerpoDeImprevisto())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['parada']);
+
+    getJson("/api/lotes/{$lote->codigo}/imprevistos")->assertJsonCount(0);
 });
 
 it('responde 422 con un tipo fuera del catálogo o una hora futura', function () {
