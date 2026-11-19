@@ -6,7 +6,6 @@ use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
 use App\Events\LoteActualizado;
 use App\Listeners\DifundirModulos;
-use App\Lotes\RecalcularCostoAlActualizar;
 use App\Models\User;
 use App\Support\Modulos;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -33,9 +32,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::withoutWrapping();
-
-        // Cada vez que un lote cambia, se recalcula su costo.
-        Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición
