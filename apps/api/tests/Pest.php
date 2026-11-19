@@ -1,5 +1,7 @@
 <?php
 
+use App\Imprevistos\AlmacenImprevistos;
+use App\Imprevistos\AlmacenImprevistosFake;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,6 +18,9 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        app()->instance(AlmacenImprevistos::class, new AlmacenImprevistosFake);
+    })
     ->in('Feature');
 
 /*
