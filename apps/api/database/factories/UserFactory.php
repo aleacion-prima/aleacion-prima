@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'activo' => true,
+            'segundo_factor' => false,
         ];
     }
 
@@ -41,6 +42,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * El usuario tiene activado el segundo factor al iniciar sesión.
+     */
+    public function conSegundoFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'segundo_factor' => true,
         ]);
     }
 }

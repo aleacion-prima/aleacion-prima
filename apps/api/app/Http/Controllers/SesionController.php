@@ -2,16 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Acceso\SegundoFactor;
 use App\Http\Requests\LoginRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 class SesionController extends Controller
 {
-    public function iniciar(LoginRequest $request): Response
+    public function iniciar(LoginRequest $request, SegundoFactor $segundoFactor): JsonResponse|Response
     {
-        $request->autenticar();
+        $usuario = $request->usuarioAutenticado();
+
+        // Con segundo factor: no se inicia la sesión todavía. Se deja pendiente
+        // de verificar y se envía el código; ninguna ruta protegida responde
+        // hasta mandar el código a /login/verificar.
+        if ($segundoFactor->activoPara($usuario)) {
+            // Si ya había una sesión abierta en el navegador, se cierra: deja de
+            // responder en rutas protegidas mientras el código está pendiente.
+            Auth::guard('web')->logout();
+            $request->session()->put('acceso.pendiente', $usuario->id);
+            $request->session()->put('acceso.recordar', $request->boolean('recordar'));
+            $segundoFactor->enviar($usuario);
+
+            return response()->json(['segundo_factor' => true]);
+        }
+
+        $request->session()->forget(['acceso.pendiente', 'acceso.recordar']);
+
+        Auth::login($usuario, $request->boolean('recordar'));
         $request->session()->regenerate();
 
         return response()->noContent();
