@@ -88,7 +88,8 @@ Para abrir el acta del Sprint 2:
 3. Llena las tablas con los datos del tablero, enlazando `#issue` y `#PR`, y anotando puntos y responsable.
 4. Recorre la retro con el equipo: qué salió bien, qué salió mal y qué cambiamos. Cada cambio debe ser una acción concreta, no un deseo.
 5. Revisa la tabla de riesgos al inicio y al cierre: agrega los que aparecieron, actualiza el estado de los que ya estaban y quita los que dejaron de aplicar.
-6. Enlaza el archivo nuevo desde [`docs/README.md`](../README.md) y ciérralo con un PR `docs:`.
+6. Llena la tabla de defectos con cada bug encontrado en el sprint, se haya arreglado o no: su issue con la plantilla de bug, la severidad, cómo se detectó (revisión de PR, test, prueba manual, producción), la causa, el PR que lo corrige y el test que evita que regrese.
+7. Enlaza el archivo nuevo desde [`docs/README.md`](../README.md) y ciérralo con un PR `docs:`.
 
 Esqueleto:
 
@@ -111,6 +112,9 @@ Esqueleto:
 ### Salió bien
 ### Salió mal
 ### Qué cambiamos
+
+## Defectos
+| Bug | Severidad | Cómo se detectó | Causa | PR | Test que lo cubre |
 
 ## Riesgos
 | Riesgo | Probabilidad | Impacto | Mitigación | Estado |

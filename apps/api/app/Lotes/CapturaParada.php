@@ -48,6 +48,14 @@ class CapturaParada
                 $this->fallar('ocurrido_en', 'La entrada no puede ser antes de la salida de la parada anterior.');
             }
 
+            if ($anterior === null && $piezas > $lote->cantidad_objetivo) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas que la cantidad objetivo ({$lote->cantidad_objetivo}).");
+            }
+
+            if ($anterior !== null && $piezas > $anterior->piezas_entregadas) {
+                $this->fallar('piezas_recibidas', "No puedes recibir más piezas de las que se entregaron ({$anterior->piezas_entregadas}).");
+            }
+
             $registrado = CarbonImmutable::now();
 
             $parada->forceFill([
