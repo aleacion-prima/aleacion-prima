@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { esCodigoLote, normalizarCodigo } from '@/composables/codigoLote';
+import { leerEscaneados, type LoteEscaneado } from '@/services/escaneados';
+import ChipEstado from '@/components/lotes/ChipEstado.vue';
 
 const router = useRouter();
 const codigo = ref('');
+const escaneados = ref<LoteEscaneado[]>([]);
+
+const fecha = new Intl.DateTimeFormat('es-MX', {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+onMounted(async () => {
+  escaneados.value = await leerEscaneados();
+});
 
 const reglaCodigo = (valor: string): true | string =>
   esCodigoLote(valor) || 'Usa el formato LOT-AAAAMMDD-NN';
@@ -55,6 +70,23 @@ const buscar = async (): Promise<void> => {
         class="boton-buscar"
       />
     </q-form>
+
+    <section v-if="escaneados.length" class="recientes">
+      <div class="recientes__titulo">Últimos escaneados</div>
+      <q-card v-for="lote in escaneados" :key="lote.codigo" flat bordered class="reciente">
+        <q-item clickable :to="`/lotes/${lote.codigo}`">
+          <q-item-section>
+            <q-item-label class="codigo">{{ lote.codigo }}</q-item-label>
+            <q-item-label caption>
+              {{ lote.producto }} · {{ fecha.format(new Date(lote.consultado_en)) }}
+            </q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <ChipEstado :estado="lote.estado" />
+          </q-item-section>
+        </q-item>
+      </q-card>
+    </section>
   </q-page>
 </template>
 
@@ -87,5 +119,25 @@ const buscar = async (): Promise<void> => {
 
 .boton-buscar {
   min-height: 40px;
+}
+
+.recientes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recientes__titulo {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $grey-7;
+}
+
+.reciente {
+  border-radius: 8px;
+  overflow: hidden;
 }
 </style>
