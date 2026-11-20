@@ -231,6 +231,16 @@ export interface SesionMovil {
   usuario: Usuario;
 }
 
+export interface SesionActiva {
+  // Id compuesto `tipo:id` (`panel:<id>` o `app:<id>`); se manda tal cual al cerrar.
+  id: string;
+  tipo: 'panel' | 'app';
+  dispositivo: string;
+  ip: string | null;
+  ultima_actividad: string | null;
+  actual: boolean;
+}
+
 export interface Notificacion {
   id: string;
   tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';

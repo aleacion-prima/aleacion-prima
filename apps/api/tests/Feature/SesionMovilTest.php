@@ -7,8 +7,10 @@ use App\Models\LoteInsumo;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
@@ -142,6 +144,8 @@ it('con el token móvil se rechaza todo lo que no sea lectura de lotes', functio
     'listar áreas' => ['GET', '/api/areas'],
     'crear usuario' => ['POST', '/api/usuarios'],
     'pregunta secreta' => ['PUT', '/api/perfil/pregunta-secreta'],
+    'ver sesiones' => ['GET', '/api/sesiones'],
+    'cerrar sesiones' => ['DELETE', '/api/sesiones'],
 ]);
 
 it('al cerrar sesión borra el token y deja de servir', function () {
@@ -175,4 +179,22 @@ it('la sesión del panel sigue pudiendo leer y escribir', function () {
     getJson('/api/lotes')->assertOk();
     getJson('/api/areas')->assertOk();
     putJson('/api/perfil/pregunta-secreta', [])->assertUnprocessable();
+});
+
+it('un administrador puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $admin = usuarioMovil(Rol::Administrador);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertNoContent();
+});
+
+it('un usuario de ventas no puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $ventas = usuarioMovil(Rol::Ventas);
+
+    Sanctum::actingAs($ventas, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertForbidden();
 });

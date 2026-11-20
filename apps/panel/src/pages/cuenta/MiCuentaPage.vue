@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { API_URL, cabecerasApi, useApi } from '@/services/api';
+import SesionesActivas from '@/components/cuenta/SesionesActivas.vue';
 
 const $q = useQuasar();
 
@@ -145,6 +146,11 @@ onMounted(cargarDosFactores);
         :disable="cargandoDF || guardandoDF || (dosFactores.obligatorio && dosFactores.activo)"
         @update:model-value="cambiarDosFactores"
       />
+    </q-card>
+
+    <q-card flat bordered class="q-pa-lg q-mt-md" style="max-width: 560px">
+      <div class="text-subtitle1 q-mb-sm">Sesiones activas</div>
+      <SesionesActivas />
     </q-card>
   </q-page>
 </template>

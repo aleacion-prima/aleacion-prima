@@ -88,6 +88,15 @@ Route::get('/lotes/{codigo}', ...)
 - Por eso los tests autentican con `Sanctum::actingAs($usuario, ['*'])`: sin abilities, el token falso de Sanctum no pasa `ability:panel` ni `ability:lotes:read`.
 - El cliente HTTP del panel necesita una rama para el modo Capacitor (`import.meta.env.QUASAR_MODE === 'capacitor'`) que mande la cabecera `Authorization` en vez de la cookie y **no** llame a `/sanctum/csrf-cookie`.
 
+## Sesiones activas y cierre remoto
+
+El usuario ve y cierra sus sesiones abiertas desde **Mi cuenta**, y el administrador las de cualquier usuario desde **Usuarios**. Una "sesión" es tanto una sesión del panel (fila en `sessions`, driver `database`) como un token de la app (fila en `personal_access_tokens`): la lista une ambas tablas con una forma uniforme (dispositivo, IP, última actividad y si es la actual).
+
+- `GET /api/sesiones` — mis sesiones; `DELETE /api/sesiones/{id}` cierra una; `DELETE /api/sesiones` cierra todas menos la actual.
+- Admin, anidado bajo `role:administrador`: `GET /api/usuarios/{usuario}/sesiones`, `DELETE /api/usuarios/{usuario}/sesiones/{id}` y `DELETE /api/usuarios/{usuario}/sesiones` (cierra todas).
+- **Id compuesto `tipo:id`**: cada elemento se identifica con `panel:<id_de_sessions>` o `app:<id_de_token>`, y ese mismo id viaja en el `DELETE`. Así una sola ruta sabe de qué tabla borrar; se valida con `->where('id', '[a-z]+:[A-Za-z0-9]+')`.
+- **Revocar = borrar la fila** (la sesión del panel o el token de la app). Al borrar un token, la siguiente petición de la app con ese `Bearer` ya no resuelve usuario y responde 401; al borrar la sesión del panel, el navegador deja de estar autenticado. Cerrar una sesión del panel además **rota el `remember_token`** del usuario, para que la cookie de "recordarme" no la reviva; como Laravel guarda un solo token por usuario, eso le quita el "recordarme" a todos sus dispositivos. La lista solo muestra sesiones del panel con actividad dentro de `session.lifetime`, y cada cierre emite `UsuarioActualizado` para refrescar la sesión del afectado. La lógica vive en el servicio `App\Acceso\SesionesActivas` (único que decide, a partir del `tipo`, de qué tabla borrar), con `SesionActivaController` y `SesionActivaResource`. Las rutas propias van dentro del grupo `ability:panel`; el token de la app no las alcanza (403). En el panel, el componente compartido `SesionesActivas.vue` (prop opcional `usuarioId`) sirve tanto a Mi cuenta como al diálogo del admin. Pruebas en `tests/Feature/SesionActivaTest.php`.
+
 ## Sitio público
 
 No se autentica. Solo consume rutas públicas de lectura (catálogo, disponibilidad inicial) y el canal público `catalogo` de Reverb, que no requiere `/broadcasting/auth`. Si el chat de cotizaciones del cliente registrado se implementa, vive en el panel (con una vista reducida para el rol `cliente`), no en el sitio, para que el sitio siga sin sesión.
