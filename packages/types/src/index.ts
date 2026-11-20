@@ -195,8 +195,20 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
   activo: boolean;
-  modulos: Record<string, boolean>;
   areas?: AreaAsignada[];
+}
+
+// Módulos de config('modulos'): unión de los nombres de bandera (Pennant).
+export type Modulo = 'ventas';
+
+// GET /api/user: el usuario de la sesión más el estado de los módulos.
+export interface Sesion extends Usuario {
+  modulos: Record<Modulo, boolean>;
+}
+
+// Carga del evento `.modulos.actualizados` por el canal privado `modulos`.
+export interface ModulosActualizados {
+  modulos: Record<Modulo, boolean>;
 }
 
 export interface SesionMovil {

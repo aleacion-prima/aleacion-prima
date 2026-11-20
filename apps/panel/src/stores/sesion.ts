@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Usuario, SesionMovil } from '@aleacion-prima/types';
+import type { Usuario, Sesion, ModulosActualizados, SesionMovil } from '@aleacion-prima/types';
 import { SIN_CONEXION, peticionSesion, prepararCsrf, useApi } from '@/services/api';
 import { desconectarEcho, obtenerEcho } from '@/services/echo';
 
@@ -31,7 +31,7 @@ export const useSesionStore = defineStore('sesion', () => {
     suscritoModulos = true;
     obtenerEcho()
       .private('modulos')
-      .listen('.modulos.actualizados', (e: { modulos: Record<string, boolean> }) => {
+      .listen('.modulos.actualizados', (e: ModulosActualizados) => {
         modulos.value = e.modulos;
       });
   };
@@ -45,9 +45,10 @@ export const useSesionStore = defineStore('sesion', () => {
         return;
       }
     }
-    const { data, error, statusCode } = await useApi<Usuario>('/user').json<Usuario>();
-    usuario.value = error.value ? null : data.value;
-    modulos.value = usuario.value?.modulos ?? {};
+    const { data, error, statusCode } = await useApi<Sesion>('/user').json<Sesion>();
+    const sesion = error.value ? null : data.value;
+    usuario.value = sesion;
+    modulos.value = sesion?.modulos ?? {};
     cargada.value = true;
     if (ES_MOVIL && statusCode.value === 401) {
       const { borrarToken } = await import('@/services/tokenMovil');
@@ -78,7 +79,6 @@ export const useSesionStore = defineStore('sesion', () => {
       }
       await guardarToken(data.value.token);
       usuario.value = data.value.usuario;
-      modulos.value = usuario.value.modulos ?? {};
       cargada.value = true;
       return false;
     }

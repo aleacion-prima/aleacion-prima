@@ -44,6 +44,20 @@ watch(
     }
   },
 );
+
+// Si el módulo de la pantalla actual se apaga en vivo, sacar al tablero. El
+// guard del router ya bloquea navegar hacia una ruta de módulo apagado; esto
+// cubre a quien ya está en la pantalla cuando el módulo se apaga.
+watch(
+  () => sesion.modulos,
+  () => {
+    const modulo = router.currentRoute.value.meta.modulo;
+    if (modulo && !sesion.moduloActivo(modulo)) {
+      void router.replace('/');
+    }
+  },
+  { deep: true },
+);
 </script>
 
 <template>
