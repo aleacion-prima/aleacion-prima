@@ -8,7 +8,6 @@ const simulado = vi.hoisted((): { respuesta: unknown; falla: boolean } => ({
   respuesta: null,
   falla: false,
 }));
-
 vi.mock('@/services/api', async () => {
   const { ref } = await import('vue');
   return {
@@ -83,5 +82,40 @@ describe('DesgloseCosto', () => {
     simulado.respuesta = null;
 
     expect((await montar()).text()).toContain('No se pudo cargar el costo');
+  });
+
+  it('se actualiza solo cuando sube la versión, sin volver a abrir la pestaña', async () => {
+    simulado.falla = false;
+    simulado.respuesta = {
+      ...referencia,
+      estado: 'en_proceso',
+      congelado: false,
+      piezas_terminadas: null,
+      total: '865.0000',
+      por_pieza: null,
+    };
+    const wrapper = await montar();
+    expect(wrapper.text()).toContain('$865.00');
+    expect(wrapper.text()).toContain('Costo a la fecha');
+
+    simulado.respuesta = referencia;
+    await wrapper.setProps({ version: 1 });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('$10,401.25');
+    expect(wrapper.text()).toContain('Costo final');
+  });
+
+  it('si la recarga falla, conserva lo que ya mostraba', async () => {
+    simulado.falla = false;
+    simulado.respuesta = referencia;
+    const wrapper = await montar();
+
+    simulado.falla = true;
+    await wrapper.setProps({ version: 1 });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('$10,401.25');
+    expect(wrapper.text()).not.toContain('No se pudo cargar el costo');
   });
 });

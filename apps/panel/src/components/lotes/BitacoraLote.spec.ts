@@ -89,4 +89,30 @@ describe('BitacoraLote', () => {
 
     expect((await montar()).text()).toContain('No se pudo cargar la bitácora');
   });
+
+  it('agrega los eventos nuevos cuando sube la versión, sin volver a abrir la pestaña', async () => {
+    simulado.falla = false;
+    simulado.respuesta = [eventos[0]];
+    const wrapper = await montar();
+    expect(wrapper.text()).not.toContain('Salida de Moldeo');
+
+    simulado.respuesta = eventos;
+    await wrapper.setProps({ version: 1 });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Salida de Moldeo: 19 piezas, merma 1.');
+  });
+
+  it('si la recarga falla, conserva los eventos que ya mostraba', async () => {
+    simulado.falla = false;
+    simulado.respuesta = eventos;
+    const wrapper = await montar();
+
+    simulado.falla = true;
+    await wrapper.setProps({ version: 1 });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Entrada a Moldeo: 20 piezas.');
+    expect(wrapper.text()).not.toContain('No se pudo cargar la bitácora');
+  });
 });

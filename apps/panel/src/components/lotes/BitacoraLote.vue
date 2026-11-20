@@ -18,13 +18,25 @@ const quien = (evento: EventoBitacora): string =>
     .filter((dato) => dato !== null && dato !== undefined)
     .join(' · ');
 
+let solicitud = 0;
+let cargadaUnaVez = false;
+
 const cargar = async (): Promise<void> => {
+  const propia = ++solicitud;
   const { data, error } = await useApi<EventoBitacora[]>(
     `/lotes/${encodeURIComponent(props.codigo)}/bitacora`,
   ).json<EventoBitacora[]>();
+  // Una respuesta vieja que llega tarde no pisa a la más reciente.
+  if (propia !== solicitud) return;
   cargando.value = false;
-  fallo.value = Boolean(error.value);
-  eventos.value = error.value ? [] : (data.value ?? []);
+  // Si la recarga en segundo plano falla, se conserva lo que ya se muestra.
+  if (error.value) {
+    fallo.value = !cargadaUnaVez;
+    return;
+  }
+  cargadaUnaVez = true;
+  fallo.value = false;
+  eventos.value = data.value ?? [];
 };
 
 watch(

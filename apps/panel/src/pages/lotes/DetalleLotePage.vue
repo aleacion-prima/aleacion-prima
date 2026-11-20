@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useIntervalFn } from '@vueuse/core';
 import type { Lote, Imprevisto } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { conPlural, formatearMoneda } from '@/composables/formato';
@@ -22,6 +23,9 @@ import { useSesionStore } from '@/stores/sesion';
 
 type Pestana = 'resumen' | 'historial' | 'costo';
 
+// Quien no escucha ningún canal en vivo (Ventas) se mantiene al día consultando cada tanto.
+const INTERVALO_SIN_TIEMPO_REAL = 20_000;
+
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
@@ -36,6 +40,7 @@ const version = ref(0);
 const sesion = useSesionStore();
 
 const esAdmin = computed(() => sesion.usuario?.rol === 'administrador');
+// Bitácora y costo solo los reciben Ventas y Administrador (el encargado recibe 403).
 const veCostos = computed(() => esAdmin.value || sesion.usuario?.rol === 'ventas');
 const puedeConfirmar = computed(() => esAdmin.value && lote.value?.estado === 'por_confirmar');
 const puedeCancelar = computed(
@@ -115,12 +120,14 @@ const cargarImprevistos = async (): Promise<void> => {
   imprevistos.value = error.value ? [] : (data.value ?? []);
 };
 
-const cargar = async (): Promise<void> => {
+const cargar = async (silencioso = false): Promise<void> => {
   const codigo = String(route.params.codigo ?? '');
   const { data, error, statusCode } = await useApi<Lote>(
     `/lotes/${encodeURIComponent(codigo)}`,
   ).json<Lote>();
   cargando.value = false;
+  // Una recarga en segundo plano que falla no tumba la pantalla: se queda lo que ya se ve.
+  if (silencioso && error.value && lote.value) return;
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
   if (lote.value) {
@@ -129,9 +136,34 @@ const cargar = async (): Promise<void> => {
   }
 };
 
-useLotesEnVivo(useCanalesDeLotes(), (evento) => {
-  if (evento.codigo === lote.value?.codigo) void cargar();
+/** Un cambio hecho aquí (captura, cierre o cancelación): pantalla y pestañas se actualizan al momento. */
+const alGuardar = (actualizado: Lote): void => {
+  lote.value = actualizado;
+  version.value += 1;
+  void cargarImprevistos();
+};
+
+const alCambiarImprevistos = async (): Promise<void> => {
+  await cargarImprevistos();
+  version.value += 1;
+};
+
+const canales = useCanalesDeLotes();
+
+useLotesEnVivo(canales, (evento) => {
+  if (evento.codigo === lote.value?.codigo) void cargar(true);
 });
+
+const loteAbierto = computed(
+  () =>
+    lote.value !== null && ['creado', 'en_proceso', 'por_confirmar'].includes(lote.value.estado),
+);
+
+useIntervalFn(() => {
+  if (canales.value.length === 0 && loteAbierto.value && document.visibilityState === 'visible') {
+    void cargar(true);
+  }
+}, INTERVALO_SIN_TIEMPO_REAL);
 
 watch(
   () => route.params.codigo,
@@ -309,7 +341,7 @@ watch(
             :lote="lote"
             :imprevistos="imprevistos"
             class="q-mb-md"
-            @cambio="cargarImprevistos"
+            @cambio="alCambiarImprevistos"
           />
 
           <q-card v-if="lote.insumos?.length" flat bordered>
@@ -354,13 +386,8 @@ watch(
       </q-tab-panels>
     </div>
 
-    <DialogoConfirmarCierre
-      v-if="lote"
-      v-model="confirmando"
-      :lote="lote"
-      @guardado="lote = $event"
-    />
-    <DialogoCancelarLote v-if="lote" v-model="cancelando" :lote="lote" @guardado="lote = $event" />
+    <DialogoConfirmarCierre v-if="lote" v-model="confirmando" :lote="lote" @guardado="alGuardar" />
+    <DialogoCancelarLote v-if="lote" v-model="cancelando" :lote="lote" @guardado="alGuardar" />
 
     <DialogoCaptura
       v-if="lote && captura"
@@ -368,7 +395,7 @@ watch(
       :lote="lote"
       :parada="captura.parada"
       :tipo="captura.tipo"
-      @guardado="lote = $event"
+      @guardado="alGuardar"
     />
 
     <DialogoImprevisto
@@ -377,7 +404,7 @@ watch(
       :lote="lote"
       :paradas="paradasParaImprevisto"
       :parada-inicial="paradaActual?.id"
-      @guardado="cargarImprevistos"
+      @guardado="alCambiarImprevistos"
     />
   </q-page>
 </template>

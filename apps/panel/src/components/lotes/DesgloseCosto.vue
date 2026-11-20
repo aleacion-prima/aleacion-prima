@@ -11,13 +11,23 @@ const costo = ref<CostoLote | null>(null);
 const cargando = ref(true);
 const fallo = ref(false);
 
+let solicitud = 0;
+
 const cargar = async (): Promise<void> => {
+  const propia = ++solicitud;
   const { data, error } = await useApi<CostoLote>(
     `/lotes/${encodeURIComponent(props.codigo)}/costo`,
   ).json<CostoLote>();
+  // Una respuesta vieja que llega tarde no pisa a la más reciente.
+  if (propia !== solicitud) return;
   cargando.value = false;
-  fallo.value = Boolean(error.value);
-  costo.value = error.value ? null : data.value;
+  // Si la recarga en segundo plano falla, se conserva lo que ya se muestra.
+  if (error.value) {
+    fallo.value = costo.value === null;
+    return;
+  }
+  fallo.value = false;
+  costo.value = data.value;
 };
 
 watch(

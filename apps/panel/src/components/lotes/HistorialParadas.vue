@@ -45,13 +45,23 @@ const diferencia = (parada: HistorialParada): string =>
     ? ''
     : `Diferencia ${parada.discrepancia > 0 ? '+' : ''}${pzas(parada.discrepancia)}`;
 
+let solicitud = 0;
+
 const cargar = async (): Promise<void> => {
+  const propia = ++solicitud;
   const { data, error } = await useApi<HistorialLote>(
     `/lotes/${encodeURIComponent(props.codigo)}/historial`,
   ).json<HistorialLote>();
+  // Una respuesta vieja que llega tarde no pisa a la más reciente.
+  if (propia !== solicitud) return;
   cargando.value = false;
-  fallo.value = Boolean(error.value);
-  historial.value = error.value ? null : data.value;
+  // Si la recarga en segundo plano falla, se conserva lo que ya se muestra.
+  if (error.value) {
+    fallo.value = historial.value === null;
+    return;
+  }
+  fallo.value = false;
+  historial.value = data.value;
 };
 
 watch(
