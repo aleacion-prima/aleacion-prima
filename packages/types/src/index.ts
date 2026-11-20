@@ -219,6 +219,15 @@ export interface SesionMovil {
   usuario: Usuario;
 }
 
+export interface Notificacion {
+  id: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
+}
+
 export interface AreaAsignada {
   id: number;
   codigo: string;
