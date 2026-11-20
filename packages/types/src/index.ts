@@ -87,6 +87,13 @@ export const TIPOS_EVENTO_BITACORA = [
 ] as const;
 export type TipoEventoBitacora = (typeof TIPOS_EVENTO_BITACORA)[number];
 
+export interface ProductoPublico {
+  id: number;
+  nombre: string;
+  especificaciones: Record<string, string | number> | null;
+  disponible: number;
+}
+
 // Tiempo real (web publica)
 export interface DisponibilidadActualizada {
   id: number;

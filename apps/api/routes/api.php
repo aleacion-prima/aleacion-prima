@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\CatalogoPublicoController;
 use App\Http\Controllers\CierreLoteController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\ImprevistoLoteController;
@@ -24,6 +25,11 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 Route::post('/movil/login', [SesionMovilController::class, 'iniciar'])->middleware('throttle:login');
+
+Route::prefix('publico')->middleware('throttle:60,1')->group(function () {
+    Route::get('/productos', [CatalogoPublicoController::class, 'index']);
+    Route::get('/productos/{producto}', [CatalogoPublicoController::class, 'show'])->whereNumber('producto');
+});
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new SesionResource($request->user()?->load('areas')));
