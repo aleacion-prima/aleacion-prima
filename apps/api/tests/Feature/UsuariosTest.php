@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
+use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
@@ -174,6 +176,28 @@ it('no permite dar de baja dos veces al mismo usuario', function () {
 
     // La segunda baja no debe pisar el correo real archivado con el placeholder.
     expect($usuario->fresh()->email_baja)->toBe('doble@aleacionprima.test');
+});
+
+it('no deja entrar a un usuario dado de baja con su correo original', function () {
+    Sanctum::actingAs(administrador(), ['*']);
+    $usuario = User::factory()->create(['email' => 'baja@aleacionprima.test']);
+    $usuario->assignRole(Rol::Encargado);
+
+    deleteJson("/api/usuarios/{$usuario->id}")->assertNoContent();
+    app('auth')->forgetGuards();
+    app('auth')->shouldUse('web');
+
+    $credenciales = ['email' => 'baja@aleacionprima.test', 'password' => 'password'];
+
+    postJson('/login', $credenciales)
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.credenciales.0', 'Correo o contraseña incorrectos.');
+    postJson('/api/movil/login', $credenciales)
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.credenciales.0', 'Correo o contraseña incorrectos.');
+
+    assertGuest();
+    assertDatabaseCount('personal_access_tokens', 0);
 });
 
 it('no permite editar a un usuario dado de baja', function () {

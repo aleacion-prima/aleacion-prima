@@ -129,7 +129,7 @@ const darDeBajaConfirmado = async (usuario: Usuario): Promise<void> => {
 const darDeBaja = (usuario: Usuario): void => {
   $q.dialog({
     title: 'Dar de baja',
-    message: `¿Dar de baja a ${usuario.name}? Dejará de aparecer en la lista y se cerrarán sus sesiones. Su cuenta y su historial se conservan, y su correo quedará libre para otra cuenta.`,
+    message: `¿Dar de baja a ${usuario.name}?`,
     cancel: true,
     persistent: true,
   }).onOk(() => {
@@ -173,11 +173,7 @@ onMounted(cargar);
       <q-separator />
 
       <div v-if="!visibles.length" class="q-pa-xl text-center text-secundario">
-        {{
-          vista === 'en_uso'
-            ? 'No hay usuarios en uso. Crea uno con «Nuevo usuario».'
-            : 'No hay usuarios dados de baja.'
-        }}
+        {{ vista === 'en_uso' ? 'No hay usuarios en uso' : 'No hay usuarios dados de baja' }}
       </div>
 
       <div v-else class="row q-col-gutter-md q-pa-md">
