@@ -7,7 +7,6 @@ use App\Events\StockMinimoAlcanzado;
 use App\Listeners\DifundirModulos;
 use App\Listeners\NotificarLotePorConfirmar;
 use App\Listeners\NotificarStockMinimo;
-use App\Lotes\RecalcularCostoAlActualizar;
 use App\Models\User;
 use App\Support\Modulos;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -29,9 +28,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::withoutWrapping();
-
-        // Cada vez que un lote cambia, se recalcula su costo.
-        Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
 
         // Notificaciones en tiempo real a los administradores. El imprevisto
         // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.

@@ -1,11 +1,17 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { QBtn, Quasar } from 'quasar';
+import { QBtn, QItem, Quasar } from 'quasar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LoteEscaneado } from '@/services/escaneados';
 import InicioMovilPage from './InicioMovilPage.vue';
 
 const push = vi.fn();
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
+
+const guardados = vi.hoisted((): { lista: LoteEscaneado[] } => ({ lista: [] }));
+vi.mock('@/services/escaneados', () => ({
+  leerEscaneados: () => Promise.resolve(guardados.lista),
+}));
 
 const montar = () =>
   mount(InicioMovilPage, {
@@ -23,6 +29,7 @@ const buscar = async (wrapper: ReturnType<typeof montar>, codigo: string): Promi
 
 beforeEach(() => {
   push.mockReset();
+  guardados.lista = [];
 });
 
 describe('InicioMovilPage', () => {
@@ -49,5 +56,38 @@ describe('InicioMovilPage', () => {
 
     expect(push).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain('Usa el formato LOT-AAAAMMDD-NN');
+  });
+
+  it('muestra los últimos lotes consultados y abre el que se toca', async () => {
+    guardados.lista = [
+      {
+        codigo: 'LOT-20260928-01',
+        producto: 'Caja de transmisión',
+        estado: 'en_proceso',
+        consultado_en: '2026-09-29T15:40:00Z',
+      },
+      {
+        codigo: 'LOT-20260924-01',
+        producto: 'Disco de freno',
+        estado: 'terminado',
+        consultado_en: '2026-09-25T19:20:00Z',
+      },
+    ];
+    const wrapper = montar();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Últimos escaneados');
+    const items = wrapper.findAllComponents(QItem);
+    expect(items).toHaveLength(2);
+    expect(items[0]?.text()).toContain('Caja de transmisión');
+    expect(items[0]?.props('to')).toBe('/lotes/LOT-20260928-01');
+    expect(items[1]?.text()).toContain('Terminado');
+  });
+
+  it('sin lotes consultados no muestra la sección', async () => {
+    const wrapper = montar();
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain('Últimos escaneados');
   });
 });

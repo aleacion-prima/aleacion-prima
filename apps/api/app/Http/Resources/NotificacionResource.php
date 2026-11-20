@@ -20,8 +20,8 @@ class NotificacionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'tipo' => $this->data['tipo'] ?? null,
-            'mensaje' => $this->data['mensaje'] ?? null,
+            'tipo' => $this->data['tipo'],
+            'mensaje' => $this->data['mensaje'],
             'codigo' => $this->data['codigo'] ?? null,
             'leida' => $this->read_at !== null,
             // La fecha viaja en data (para que el broadcast la lleve); para

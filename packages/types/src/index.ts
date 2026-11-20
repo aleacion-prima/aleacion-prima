@@ -281,5 +281,5 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
-  encargados?: Usuario[];
+  encargados?: Pick<Usuario, 'id' | 'name'>[];
 }
