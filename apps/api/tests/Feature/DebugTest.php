@@ -144,6 +144,22 @@ describe('con las rutas cargadas', function () {
             ->assertJsonPath('paradas.1.discrepancia', -1);
     });
 
+    it('avanza hasta el paso donde aplica la merma o el faltante', function () {
+        seed(DatabaseSeeder::class);
+        Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
+        $codigo = postJson('/api/debug/lotes')->json('codigo');
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar", ['merma' => 1])
+            ->assertOk()
+            ->assertJsonPath('paradas.0.piezas_entregadas', 9)
+            ->assertJsonPath('paradas.0.merma_piezas', 1);
+
+        postJson("/api/debug/lotes/{$codigo}/avanzar", ['merma' => 1])
+            ->assertOk()
+            ->assertJsonPath('paradas.1.piezas_recibidas', 9)
+            ->assertJsonPath('paradas.1.merma_piezas', 1);
+    });
+
     it('respeta los permisos de captura', function () {
         seed(DatabaseSeeder::class);
         Sanctum::actingAs(usuarioDebug(Rol::Administrador), ['*']);
