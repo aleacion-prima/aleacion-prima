@@ -61,7 +61,7 @@ const rutasPanel: RouteRecordRaw[] = [
       {
         path: 'productos',
         component: () => import('@/pages/productos/ProductosPage.vue'),
-        meta: { roles: ['administrador'] },
+        meta: { roles: ['administrador', 'ventas'] },
       },
       {
         path: 'insumos',

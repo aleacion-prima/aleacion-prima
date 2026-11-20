@@ -19,7 +19,7 @@ Opciones:
 La opción 3.
 
 - La salida de la última parada pasa el lote a **`por_confirmar`**. En ese estado el lote no cuenta en inventario, no emite `disponibilidad.actualizada` y su costo se muestra como "a la fecha".
-- El **administrador confirma** desde el panel. Al confirmar, en una sola transacción: el lote pasa a `terminado`, se fijan `piezas_terminadas` (las entregadas por la última parada), se crea el `movimientos_producto` de tipo `produccion`, se recalcula y congela el costo (`costo_por_pieza` incluido) y se emite el evento público con `{ id, disponible }`.
+- El **administrador confirma** desde el panel. Al confirmar, en una sola transacción: el lote pasa a `terminado`, se fijan `piezas_terminadas` (las entregadas por la última parada), se crea el `movimientos_producto` de tipo `produccion`, se recalcula y congela el costo (`costo_por_pieza` incluido) y se emite el evento público con `{ id, disponible, cantidad }`.
 - El administrador puede, antes de confirmar, **corregir capturas** de las paradas directamente (el lote aún no está terminado, así que no requiere ajuste formal) o **cancelar** el lote.
 - Los lotes en `por_confirmar` generan una notificación al administrador y aparecen destacados en el tablero.
 

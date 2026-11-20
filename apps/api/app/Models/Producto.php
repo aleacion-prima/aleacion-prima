@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'precio_menudeo',
     'existencia',
     'publicado',
+    'mostrar_cantidad',
     'activo',
 ])]
 class Producto extends Model
@@ -31,6 +32,7 @@ class Producto extends Model
             'especificaciones' => 'array',
             'existencia' => 'integer',
             'publicado' => 'boolean',
+            'mostrar_cantidad' => 'boolean',
             'activo' => 'boolean',
         ];
     }
@@ -48,7 +50,8 @@ class Producto extends Model
     {
         return $this->belongsToMany(Insumo::class, 'producto_insumo')
             ->using(ProductoInsumo::class)
-            ->withPivot('cantidad_por_pieza');
+            ->withPivot('cantidad_por_pieza')
+            ->orderByPivot('id');
     }
 
     /** @return HasMany<MovimientoProducto, $this> */

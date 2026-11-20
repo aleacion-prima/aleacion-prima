@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { QBtn, Quasar } from 'quasar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Lote, LoteParada } from '@aleacion-prima/types';
+import type { Imprevisto, Lote, LoteParada } from '@aleacion-prima/types';
 import LoteMovilPage from './LoteMovilPage.vue';
 
 const respuesta = vi.hoisted(
@@ -11,11 +11,12 @@ const respuesta = vi.hoisted(
     statusCode: null,
   }),
 );
+const imprevistosRespuesta = vi.hoisted(() => ({ data: [] as Imprevisto[] }));
 const useApi = vi.fn((url: string) => ({
   json: () =>
     Promise.resolve({
       url,
-      data: { value: respuesta.data },
+      data: { value: url.endsWith('/imprevistos') ? imprevistosRespuesta.data : respuesta.data },
       error: { value: respuesta.error },
       statusCode: { value: respuesta.statusCode },
     }),
@@ -25,6 +26,15 @@ vi.mock('@/services/api', () => ({ useApi: (url: string) => useApi(url) }));
 const recordarEscaneado = vi.fn();
 vi.mock('@/services/escaneados', () => ({
   recordarEscaneado: (lote: unknown) => recordarEscaneado(lote),
+}));
+const enVivo = vi.hoisted(() => ({
+  alCambiar: undefined as ((evento: { codigo: string }) => void) | undefined,
+}));
+vi.mock('@/composables/lotesEnVivo', () => ({
+  useCanalesDeLotes: () => ['tablero'],
+  useLotesEnVivo: (_canales: unknown, alCambiar: (evento: { codigo: string }) => void) => {
+    enVivo.alCambiar = alCambiar;
+  },
 }));
 vi.mock('vue-router', () => ({ useRoute: () => ({ params: { codigo: 'LOT-20261102-01' } }) }));
 
@@ -90,6 +100,7 @@ beforeEach(() => {
   respuesta.data = null;
   respuesta.error = null;
   respuesta.statusCode = null;
+  imprevistosRespuesta.data = [];
 });
 
 describe('LoteMovilPage', () => {
@@ -123,6 +134,51 @@ describe('LoteMovilPage', () => {
 
     expect(wrapper.findAll('button')).toHaveLength(0);
     expect(wrapper.find('form').exists()).toBe(false);
+  });
+
+  it('vuelve a pedir el lote cuando cambia en vivo, sin mostrar el spinner', async () => {
+    respuesta.data = lote;
+    respuesta.statusCode = 200;
+    const wrapper = await montar();
+    useApi.mockClear();
+
+    enVivo.alCambiar?.({ codigo: 'LOT-20261102-99' });
+    await flushPromises();
+    expect(useApi).not.toHaveBeenCalled();
+
+    enVivo.alCambiar?.({ codigo: 'LOT-20261102-01' });
+    expect(wrapper.find('.q-spinner').exists()).toBe(false);
+    await flushPromises();
+    expect(useApi).toHaveBeenCalledWith('/lotes/LOT-20261102-01');
+  });
+
+  it('muestra los imprevistos del lote sin ofrecer resolverlos', async () => {
+    respuesta.data = lote;
+    respuesta.statusCode = 200;
+    imprevistosRespuesta.data = [
+      {
+        id: 'abc',
+        lote_id: 1,
+        tipo: 'falla_maquina',
+        descripcion: 'Se trabó el horno',
+        maquina: null,
+        piezas_afectadas: null,
+        duracion_minutos: null,
+        resuelto: false,
+        registrado_por: null,
+        ocurrido_en: '2026-11-20T16:50:00Z',
+        created_at: '2026-11-20T16:50:00Z',
+        area: { id: 2, codigo: 'FUS', nombre: 'Fusión' },
+      },
+    ];
+
+    const wrapper = await montar();
+
+    expect(useApi).toHaveBeenCalledWith('/lotes/LOT-20261102-01/imprevistos');
+    expect(wrapper.text()).toContain('Falla de máquina');
+    expect(wrapper.text()).toContain('Se trabó el horno');
+    expect(wrapper.text()).toContain('Abierto');
+    expect(wrapper.findAll('button')).toHaveLength(0);
   });
 
   it('si el lote no existe, ofrece escanear otro', async () => {

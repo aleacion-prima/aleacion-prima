@@ -81,7 +81,9 @@ class DebugController extends Controller
         abort_if($pasos === [], Response::HTTP_UNPROCESSABLE_ENTITY, 'El lote ya terminó su recorrido.');
 
         if (($datos['hasta'] ?? 'siguiente') === 'siguiente') {
-            $pasos = [$pasos[0]];
+            $tipo = ($datos['merma'] ?? 0) > 0 ? 'salida' : (($datos['faltante'] ?? 0) > 0 ? 'entrada' : null);
+            $indice = $tipo === null ? 0 : collect($pasos)->search(fn (array $paso) => $paso[0] === $tipo);
+            $pasos = array_slice($pasos, 0, ($indice === false ? 0 : $indice) + 1);
         }
 
         $this->capturar($lote, $pasos, $usuario, $captura, $datos['merma'] ?? 0, $datos['faltante'] ?? 0);

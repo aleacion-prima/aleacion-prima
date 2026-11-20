@@ -99,7 +99,7 @@ it('confirma el cierre y mete las piezas al inventario', function () {
 
     Event::assertDispatched(
         DisponibilidadActualizada::class,
-        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => 23],
+        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => true, 'cantidad' => 23],
     );
 });
 

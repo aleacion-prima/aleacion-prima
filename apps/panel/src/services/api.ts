@@ -1,6 +1,6 @@
 import { createFetch } from '@vueuse/core';
 
-const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
+export const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
 export const API_URL = import.meta.env.PUBLIC_API_URL;
 export const SIN_CONEXION = 'No hay conexión con el servidor';
 
@@ -29,6 +29,16 @@ export const prepararCsrf = async (): Promise<void> => {
   await conConexion(fetch(`${API_URL}/sanctum/csrf-cookie`, { credentials: 'include' }));
 };
 
+export const cabecerasConToken = async (base?: HeadersInit): Promise<Headers> => {
+  const headers = cabecerasApi(base);
+  if (ES_MOVIL) {
+    const { leerToken } = await import('./tokenMovil');
+    const token = await leerToken();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+  }
+  return headers;
+};
+
 export const useApi = createFetch({
   baseUrl: `${API_URL}/api`,
   fetchOptions: {
@@ -37,13 +47,7 @@ export const useApi = createFetch({
   options: {
     updateDataOnError: true,
     async beforeFetch({ options }) {
-      const headers = cabecerasApi(options.headers);
-      if (ES_MOVIL) {
-        const { leerToken } = await import('./tokenMovil');
-        const token = await leerToken();
-        if (token) headers.set('Authorization', `Bearer ${token}`);
-      }
-      options.headers = headers;
+      options.headers = await cabecerasConToken(options.headers);
       return { options };
     },
   },
