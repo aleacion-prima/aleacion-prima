@@ -17,7 +17,7 @@ use App\Http\Controllers\SegundoFactorController;
 use App\Http\Controllers\SesionMovilController;
 use App\Http\Controllers\TableroController;
 use App\Http\Controllers\UsuarioController;
-use App\Http\Resources\UsuarioResource;
+use App\Http\Resources\SesionResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
@@ -25,7 +25,7 @@ use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 Route::post('/movil/login', [SesionMovilController::class, 'iniciar'])->middleware('throttle:login');
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
-    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()?->load('areas')));
+    Route::get('/user', fn (Request $request) => new SesionResource($request->user()?->load('areas')));
     Route::post('/logout', [SesionMovilController::class, 'cerrar']);
 
     Route::middleware(['role:administrador|ventas|encargado', 'ability:lotes:read'])->group(function () {

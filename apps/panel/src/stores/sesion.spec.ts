@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Usuario } from '@aleacion-prima/types';
+import type { Sesion, Usuario } from '@aleacion-prima/types';
 
 const preferencias = vi.hoisted(() => new Map<string, string>());
 
@@ -34,7 +34,7 @@ vi.mock('@/services/echo', () => ({
   desconectarEcho: echo.desconectar,
 }));
 
-const encargado: Usuario = {
+const encargado: Sesion = {
   id: 7,
   name: 'Juan Pérez',
   email: 'juan@aleacionprima.test',

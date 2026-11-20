@@ -17,19 +17,19 @@ Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles 
 
 Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en [autenticacion.md](autenticacion.md).
 
-| Método | Ruta                           | Rol                                           | RF                              |
-| ------ | ------------------------------ | --------------------------------------------- | ------------------------------- |
-| `GET`  | `/sanctum/csrf-cookie`         | Todos (sin sesión)                            | RF-01                           |
-| `POST` | `/login`                       | Todos (sin sesión)                            | RF-01                           |
-| `POST` | `/api/movil/login`             | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                    |
-| `POST` | `/logout`                      | Todos                                         | RF-05                           |
-| `GET`  | `/api/user`                    | Todos                                         | RF-03 (devuelve rol y `activo`) |
-| `POST` | `/forgot-password`             | Todos (sin sesión)                            | T-22                            |
-| `POST` | `/reset-password`              | Todos (sin sesión)                            | T-22                            |
-| `POST` | `/forgot-password/pregunta`    | Todos (sin sesión)                            | T-23                            |
-| `POST` | `/reset-password/pregunta`     | Todos (sin sesión)                            | T-23                            |
-| `GET`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                            |
-| `PUT`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                            |
+| Método | Ruta                           | Rol                                           | RF                                                   |
+| ------ | ------------------------------ | --------------------------------------------- | ---------------------------------------------------- |
+| `GET`  | `/sanctum/csrf-cookie`         | Todos (sin sesión)                            | RF-01                                                |
+| `POST` | `/login`                       | Todos (sin sesión)                            | RF-01                                                |
+| `POST` | `/api/movil/login`             | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                                         |
+| `POST` | `/logout`                      | Todos                                         | RF-05                                                |
+| `GET`  | `/api/user`                    | Todos                                         | RF-03 (responde `Sesion`: rol, `activo` y `modulos`) |
+| `POST` | `/forgot-password`             | Todos (sin sesión)                            | T-22                                                 |
+| `POST` | `/reset-password`              | Todos (sin sesión)                            | T-22                                                 |
+| `POST` | `/forgot-password/pregunta`    | Todos (sin sesión)                            | T-23                                                 |
+| `POST` | `/reset-password/pregunta`     | Todos (sin sesión)                            | T-23                                                 |
+| `GET`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                                                 |
+| `PUT`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                                                 |
 
 ## Catálogos
 
@@ -167,6 +167,9 @@ Contrato de los campos (RNF-04):
 | ---------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
 | `catalogo` | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
 | `tablero`  | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
+| `modulos`  | Privado, cualquier usuario activo | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`      | —             |
+
+El `/broadcasting/auth` autoriza cada canal privado por su clase (`routes/channels.php`): `tablero` solo admite administradores (`CanalTablero`), mientras que `modulos` admite a cualquier usuario activo (`CanalModulos`). En ambos casos un invitado se rechaza antes con 401 por `auth:sanctum`.
 
 ## Ventas (recortable)
 

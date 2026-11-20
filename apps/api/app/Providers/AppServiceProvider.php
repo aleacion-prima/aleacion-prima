@@ -24,6 +24,7 @@ use Illuminate\Validation\Rules\Password;
 use Laravel\Pennant\Events\FeatureUpdated;
 use Laravel\Pennant\Events\FeatureUpdatedForAllScopes;
 use Laravel\Pennant\Feature;
+use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -125,6 +126,12 @@ class AppServiceProvider extends ServiceProvider
         // --- Módulos (feature flags con Pennant) ---
         // Scope global: una bandera vale igual para todos, no por usuario.
         Feature::resolveScopeUsing(fn () => null);
+
+        // Una ruta de un módulo apagado no debe revelar que existe: responde 404
+        // (no existe) en vez del 400 por defecto de EnsureFeaturesAreActive.
+        EnsureFeaturesAreActive::whenInactive(function (Request $request, array $features) {
+            abort(404);
+        });
 
         // Cada módulo arranca apagado.
         foreach (Modulos::nombres() as $modulo) {
