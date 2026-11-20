@@ -15,7 +15,12 @@ import DialogoConfirmarCierre from '@/components/lotes/DialogoConfirmarCierre.vu
 import DialogoCancelarLote from '@/components/lotes/DialogoCancelarLote.vue';
 import DialogoImprevisto from '@/components/lotes/DialogoImprevisto.vue';
 import ImprevistosLote from '@/components/lotes/ImprevistosLote.vue';
+import HistorialParadas from '@/components/lotes/HistorialParadas.vue';
+import BitacoraLote from '@/components/lotes/BitacoraLote.vue';
+import DesgloseCosto from '@/components/lotes/DesgloseCosto.vue';
 import { useSesionStore } from '@/stores/sesion';
+
+type Pestana = 'resumen' | 'historial' | 'costo';
 
 const route = useRoute();
 
@@ -25,9 +30,13 @@ const capturando = ref(false);
 const confirmando = ref(false);
 const cancelando = ref(false);
 const registrandoImprevisto = ref(false);
+const pestana = ref<Pestana>('resumen');
+// Sube con cada recarga del lote para que las pestañas vuelvan a pedir sus datos.
+const version = ref(0);
 const sesion = useSesionStore();
 
 const esAdmin = computed(() => sesion.usuario?.rol === 'administrador');
+const veCostos = computed(() => esAdmin.value || sesion.usuario?.rol === 'ventas');
 const puedeConfirmar = computed(() => esAdmin.value && lote.value?.estado === 'por_confirmar');
 const puedeCancelar = computed(
   () => esAdmin.value && (lote.value?.estado === 'creado' || lote.value?.estado === 'en_proceso'),
@@ -114,7 +123,10 @@ const cargar = async (): Promise<void> => {
   cargando.value = false;
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
-  if (lote.value) await cargarImprevistos();
+  if (lote.value) {
+    version.value += 1;
+    await cargarImprevistos();
+  }
 };
 
 useLotesEnVivo(useCanalesDeLotes(), (evento) => {
@@ -126,6 +138,7 @@ watch(
   () => {
     cargando.value = true;
     lote.value = null;
+    pestana.value = 'resumen';
     void cargar();
   },
   { immediate: true },
@@ -221,98 +234,124 @@ watch(
         Cancelado el {{ fecha.format(new Date(lote.cancelado_en)) }} · {{ lote.motivo_cancelacion }}
       </q-banner>
 
-      <div class="row q-col-gutter-md q-mb-md entrada-escalonada">
-        <div class="col-12 col-sm-6 col-md-4">
-          <q-card flat bordered class="full-height">
-            <q-card-section>
-              <div class="text-overline text-secundario">Área actual</div>
-              <div class="text-h6">
-                {{ ubicacion }}
-              </div>
-              <div class="text-caption text-secundario">
-                Parada {{ ordenActual }} de {{ lote.paradas.length }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-12 col-sm-6 col-md-4">
-          <q-card flat bordered class="full-height">
-            <q-card-section>
-              <div class="text-overline text-secundario">Piezas</div>
-              <div class="text-h6">
-                <NumeroAnimado :valor="piezasActuales.numero" formato="entero" />
-                {{ piezasActuales.texto }}
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div v-if="lote.costo_total !== undefined" class="col-12 col-sm-6 col-md-4">
-          <q-card flat bordered class="full-height">
-            <q-card-section>
-              <div class="text-overline text-secundario">Costo a la fecha</div>
-              <div class="text-h6 codigo">
-                <NumeroAnimado :valor="lote.costo_total" formato="moneda" />
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-      </div>
+      <q-tabs
+        v-model="pestana"
+        align="left"
+        active-color="primary"
+        indicator-color="primary"
+        no-caps
+        class="text-secundario q-mb-md"
+      >
+        <q-tab name="resumen" label="Resumen" />
+        <q-tab name="historial" label="Historial y bitácora" />
+        <q-tab v-if="veCostos" name="costo" label="Costo" />
+      </q-tabs>
 
-      <q-card flat bordered class="q-mb-md">
-        <q-card-section>
-          <div class="row items-center justify-between q-mb-sm">
-            <h2 class="text-h6 q-my-none">Recorrido</h2>
-            <q-btn
-              v-if="paradasParaImprevisto.length > 0"
-              flat
-              no-caps
-              color="primary"
-              icon="warning"
-              label="Registrar imprevisto"
-              @click="registrandoImprevisto = true"
-            />
+      <q-tab-panels v-model="pestana" class="bg-transparent">
+        <q-tab-panel name="resumen" class="q-pa-none">
+          <div class="row q-col-gutter-md q-mb-md entrada-escalonada">
+            <div class="col-12 col-sm-6 col-md-4">
+              <q-card flat bordered class="full-height">
+                <q-card-section>
+                  <div class="text-overline text-secundario">Área actual</div>
+                  <div class="text-h6">
+                    {{ ubicacion }}
+                  </div>
+                  <div class="text-caption text-secundario">
+                    Parada {{ ordenActual }} de {{ lote.paradas.length }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4">
+              <q-card flat bordered class="full-height">
+                <q-card-section>
+                  <div class="text-overline text-secundario">Piezas</div>
+                  <div class="text-h6">
+                    <NumeroAnimado :valor="piezasActuales.numero" formato="entero" />
+                    {{ piezasActuales.texto }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <div v-if="lote.costo_total !== undefined" class="col-12 col-sm-6 col-md-4">
+              <q-card flat bordered class="full-height">
+                <q-card-section>
+                  <div class="text-overline text-secundario">Costo a la fecha</div>
+                  <div class="text-h6 codigo">
+                    <NumeroAnimado :valor="lote.costo_total" formato="moneda" />
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
           </div>
-          <RecorridoLote :paradas="paradasDeLote(lote)" />
-        </q-card-section>
-      </q-card>
 
-      <ImprevistosLote
-        v-if="imprevistos.length > 0"
-        :lote="lote"
-        :imprevistos="imprevistos"
-        class="q-mb-md"
-        @cambio="cargarImprevistos"
-      />
+          <q-card flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="row items-center justify-between q-mb-sm">
+                <h2 class="text-h6 q-my-none">Recorrido</h2>
+                <q-btn
+                  v-if="paradasParaImprevisto.length > 0"
+                  flat
+                  no-caps
+                  color="primary"
+                  icon="warning"
+                  label="Registrar imprevisto"
+                  @click="registrandoImprevisto = true"
+                />
+              </div>
+              <RecorridoLote :paradas="paradasDeLote(lote)" />
+            </q-card-section>
+          </q-card>
 
-      <q-card v-if="lote.insumos?.length" flat bordered>
-        <q-card-section>
-          <h2 class="text-h6 q-mt-none q-mb-md">Insumos asignados</h2>
-          <q-markup-table flat separator="horizontal">
-            <thead>
-              <tr>
-                <th class="text-left">Código</th>
-                <th class="text-left">Insumo</th>
-                <th class="text-right">Cantidad</th>
-                <th v-if="lote.insumos[0]?.costo_unitario !== undefined" class="text-right">
-                  Costo unitario
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="asignado in lote.insumos" :key="asignado.id">
-                <td class="codigo">{{ asignado.insumo.codigo }}</td>
-                <td>{{ asignado.insumo.nombre }}</td>
-                <td class="text-right codigo">
-                  <NumeroAnimado :valor="asignado.cantidad" /> {{ asignado.insumo.unidad }}
-                </td>
-                <td v-if="asignado.costo_unitario !== undefined" class="text-right codigo">
-                  {{ formatearMoneda(asignado.costo_unitario) }}
-                </td>
-              </tr>
-            </tbody>
-          </q-markup-table>
-        </q-card-section>
-      </q-card>
+          <ImprevistosLote
+            v-if="imprevistos.length > 0"
+            :lote="lote"
+            :imprevistos="imprevistos"
+            class="q-mb-md"
+            @cambio="cargarImprevistos"
+          />
+
+          <q-card v-if="lote.insumos?.length" flat bordered>
+            <q-card-section>
+              <h2 class="text-h6 q-mt-none q-mb-md">Insumos asignados</h2>
+              <q-markup-table flat separator="horizontal">
+                <thead>
+                  <tr>
+                    <th class="text-left">Código</th>
+                    <th class="text-left">Insumo</th>
+                    <th class="text-right">Cantidad</th>
+                    <th v-if="lote.insumos[0]?.costo_unitario !== undefined" class="text-right">
+                      Costo unitario
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="asignado in lote.insumos" :key="asignado.id">
+                    <td class="codigo">{{ asignado.insumo.codigo }}</td>
+                    <td>{{ asignado.insumo.nombre }}</td>
+                    <td class="text-right codigo">
+                      <NumeroAnimado :valor="asignado.cantidad" /> {{ asignado.insumo.unidad }}
+                    </td>
+                    <td v-if="asignado.costo_unitario !== undefined" class="text-right codigo">
+                      {{ formatearMoneda(asignado.costo_unitario) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </q-markup-table>
+            </q-card-section>
+          </q-card>
+        </q-tab-panel>
+
+        <q-tab-panel name="historial" class="q-pa-none">
+          <HistorialParadas :codigo="lote.codigo" :version="version" class="q-mb-md" />
+          <BitacoraLote v-if="veCostos" :codigo="lote.codigo" :version="version" />
+        </q-tab-panel>
+
+        <q-tab-panel v-if="veCostos" name="costo" class="q-pa-none">
+          <DesgloseCosto :codigo="lote.codigo" :version="version" />
+        </q-tab-panel>
+      </q-tab-panels>
     </div>
 
     <DialogoConfirmarCierre

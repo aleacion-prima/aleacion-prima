@@ -320,3 +320,39 @@ export interface Area {
   activo: boolean;
   encargados?: Pick<Usuario, 'id' | 'name'>[];
 }
+
+export interface HistorialParada extends LoteParada {
+  entrada_por: string | null;
+  salida_por: string | null;
+}
+
+export interface HistorialLote {
+  codigo: string;
+  estado: EstadoLote;
+  paradas: HistorialParada[];
+}
+
+export interface EventoBitacora {
+  id: string;
+  tipo: TipoEventoBitacora;
+  descripcion: string;
+  area: ReferenciaCatalogo | null;
+  usuario: string | null;
+  datos: Record<string, unknown>;
+  ocurrido_en: string;
+  registrado_en: string;
+  captura_tardia: boolean;
+}
+
+export interface CostoLote {
+  codigo: string;
+  estado: EstadoLote;
+  // Abierto: costo a la fecha. Terminado o cancelado: congelado.
+  congelado: boolean;
+  piezas_terminadas: number | null;
+  material: string;
+  mano_obra: string;
+  maquina: string;
+  total: string;
+  por_pieza: string | null;
+}
