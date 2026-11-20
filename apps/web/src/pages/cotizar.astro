@@ -1,0 +1,39 @@
+---
+import ContactoVentas from '../components/ContactoVentas.vue';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <article class="contenido">
+    <p class="eyebrow">Atención comercial</p>
+    <h1>Solicita una cotización</h1>
+    <p>
+      Nuestro personal de ventas puede ayudarte con disponibilidad, especificaciones y tiempos de
+      entrega.
+    </p>
+    <ContactoVentas client:load />
+  </article>
+</Layout>
+
+<style>
+  .contenido {
+    max-width: 680px;
+    padding: 4rem 0;
+  }
+
+  .eyebrow {
+    color: #176b87;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    margin: 0.5rem 0 1rem;
+  }
+
+  p {
+    color: #5d6873;
+    line-height: 1.6;
+  }
+</style>
