@@ -6,6 +6,8 @@ use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
 use App\Events\LoteActualizado;
 use App\Events\StockMinimoAlcanzado;
+use App\Imprevistos\AlmacenImprevistos;
+use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
 use App\Listeners\NotificarLotePorConfirmar;
 use App\Listeners\NotificarStockMinimo;
@@ -133,4 +135,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(FeatureUpdated::class, DifundirModulos::class);
         Event::listen(FeatureUpdatedForAllScopes::class, DifundirModulos::class);
     }
+
+    public array $bindings = [
+        AlmacenImprevistos::class => AlmacenImprevistosMongo::class,
+    ];
 }

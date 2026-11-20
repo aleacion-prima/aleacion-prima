@@ -106,12 +106,13 @@ La entrada de la parada N exige la salida de la N−1, y la salida exige su entr
 
 Middleware: `auth:sanctum` y `role:encargado|administrador`. El encargado solo captura en las áreas que tiene asignadas (RF-48); el administrador captura en cualquiera.
 
-| Método | Ruta                                               | Rol                              | RF                                                     |
-| ------ | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
-| `GET`  | `/api/lotes/{codigo}/imprevistos`                  | Encargado de área, Administrador | RF-31                                                  |
+| Método  | Ruta                                               | Rol                              | RF                                                     |
+| ------- | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
+| `GET`   | `/api/lotes/{codigo}/imprevistos`                  | Encargado, Ventas, Administrador | RF-31                                                  |
+| `PATCH` | `/api/lotes/{codigo}/imprevistos/{imprevisto}`     | Encargado de área, Administrador | RF-31                                                  |
 
 El retorno de metal (RF-27) viaja como `retorno_kg` en la salida de la parada de Desmolde.
 
