@@ -6,10 +6,12 @@ import type { Rol } from '@aleacion-prima/types';
 import BarraSuperior from '@/components/navegacion/BarraSuperior.vue';
 import MenuLateral from '@/components/navegacion/MenuLateral.vue';
 import { useSesionStore } from '@/stores/sesion';
+import { useNotificaciones } from '@/composables/notificaciones';
 
 const $q = useQuasar();
 const router = useRouter();
 const sesion = useSesionStore();
+const { pendientes, iniciar, desconectar } = useNotificaciones();
 
 const MenuDebug = import.meta.env.DEV
   ? defineAsyncComponent(() => import('@/components/debug/MenuDebug.vue'))
@@ -45,6 +47,15 @@ watch(
   },
 );
 
+watch(
+  () => sesion.usuario,
+  (usuario) => {
+    if (usuario) void iniciar(usuario.id, usuario.rol);
+    else desconectar();
+  },
+  { immediate: true },
+);
+
 // Si el módulo de la pantalla actual se apaga en vivo, sacar al tablero. El
 // guard del router ya bloquea navegar hacia una ruta de módulo apagado; esto
 // cubre a quien ya está en la pantalla cuando el módulo se apaga.
@@ -65,6 +76,7 @@ watch(
     <BarraSuperior
       :nombre="sesion.usuario?.name ?? ''"
       :rol="rol"
+      :pendientes="pendientes"
       @alternar-menu="alternarMenu"
       @salir="salir"
     />

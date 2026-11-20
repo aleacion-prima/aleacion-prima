@@ -87,6 +87,8 @@ it('lista las notificaciones del administrador, paginadas y filtrando no leídas
 
     getJson('/api/notificaciones')->assertOk()->assertJsonCount(2, 'data');
     getJson('/api/notificaciones?no_leidas=1')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=stock_minimo')->assertOk()->assertJsonCount(2, 'data');
+    getJson('/api/notificaciones?leidas=1')->assertOk()->assertJsonCount(1, 'data');
 });
 
 it('marca una notificación como leída', function () {

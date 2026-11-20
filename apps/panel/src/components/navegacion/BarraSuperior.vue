@@ -44,7 +44,17 @@ const rolEtiqueta = computed(() => ETIQUETAS_ROL[props.rol]);
             <div class="text-subtitle1 text-weight-medium q-px-md q-pt-md">Notificaciones</div>
             <div class="column items-center q-pa-lg text-secundario">
               <q-icon name="notifications_none" size="32px" />
-              <div class="q-mt-sm">Sin notificaciones</div>
+              <div class="q-mt-sm">Revisa el centro de notificaciones</div>
+              <q-btn
+                v-if="pendientes"
+                v-close-popup
+                flat
+                no-caps
+                color="primary"
+                label="Ver todas"
+                to="/notificaciones"
+                class="q-mt-sm"
+              />
             </div>
           </div>
         </q-menu>
