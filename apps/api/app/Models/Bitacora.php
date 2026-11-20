@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
 use MongoDB\Laravel\Eloquent\Model;
 
 /**
@@ -10,6 +11,18 @@ use MongoDB\Laravel\Eloquent\Model;
  * Es un registro append-only: nunca se edita ni se borra. El único punto de
  * escritura es App\Bitacora\Bitacora::registrar(); por eso este modelo no
  * expone nada más que la lectura y la inserción.
+ *
+ * @property int|null $lote_id
+ * @property int|null $area_id
+ * @property string $tipo
+ * @property string $descripcion
+ * @property array<string, mixed>|null $datos
+ * @property int|null $user_id
+ * @property Carbon $ocurrido_en
+ * @property Carbon $registrado_en
+ * @property bool $captura_tardia
+ * @property Area|null $area
+ * @property User|null $registrador
  */
 class Bitacora extends Model
 {

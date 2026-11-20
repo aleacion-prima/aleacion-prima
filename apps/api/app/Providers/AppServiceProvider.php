@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
+use App\Bitacora\LectorBitacora;
+use App\Bitacora\LectorBitacoraMongo;
 use App\Events\LoteActualizado;
 use App\Events\StockMinimoAlcanzado;
 use App\Imprevistos\AlmacenImprevistos;
@@ -145,5 +147,6 @@ class AppServiceProvider extends ServiceProvider
 
     public array $bindings = [
         AlmacenImprevistos::class => AlmacenImprevistosMongo::class,
+        LectorBitacora::class => LectorBitacoraMongo::class,
     ];
 }
