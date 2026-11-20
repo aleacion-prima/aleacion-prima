@@ -26,6 +26,15 @@ const recordarEscaneado = vi.fn();
 vi.mock('@/services/escaneados', () => ({
   recordarEscaneado: (lote: unknown) => recordarEscaneado(lote),
 }));
+const enVivo = vi.hoisted(() => ({
+  alCambiar: undefined as ((evento: { codigo: string }) => void) | undefined,
+}));
+vi.mock('@/composables/lotesEnVivo', () => ({
+  useCanalesDeLotes: () => ['tablero'],
+  useLotesEnVivo: (_canales: unknown, alCambiar: (evento: { codigo: string }) => void) => {
+    enVivo.alCambiar = alCambiar;
+  },
+}));
 vi.mock('vue-router', () => ({ useRoute: () => ({ params: { codigo: 'LOT-20261102-01' } }) }));
 
 const parada = (orden: number, nombre: string, cambios: Partial<LoteParada>): LoteParada => ({
@@ -123,6 +132,22 @@ describe('LoteMovilPage', () => {
 
     expect(wrapper.findAll('button')).toHaveLength(0);
     expect(wrapper.find('form').exists()).toBe(false);
+  });
+
+  it('vuelve a pedir el lote cuando cambia en vivo, sin mostrar el spinner', async () => {
+    respuesta.data = lote;
+    respuesta.statusCode = 200;
+    const wrapper = await montar();
+    useApi.mockClear();
+
+    enVivo.alCambiar?.({ codigo: 'LOT-20261102-99' });
+    await flushPromises();
+    expect(useApi).not.toHaveBeenCalled();
+
+    enVivo.alCambiar?.({ codigo: 'LOT-20261102-01' });
+    expect(wrapper.find('.q-spinner').exists()).toBe(false);
+    await flushPromises();
+    expect(useApi).toHaveBeenCalledWith('/lotes/LOT-20261102-01');
   });
 
   it('si el lote no existe, ofrece escanear otro', async () => {

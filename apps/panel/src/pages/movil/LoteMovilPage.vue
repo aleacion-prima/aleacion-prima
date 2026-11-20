@@ -5,6 +5,7 @@ import type { Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { recordarEscaneado } from '@/services/escaneados';
 import { estadoDeParada, paradasDeLote } from '@/composables/recorridoLote';
+import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -29,8 +30,8 @@ const ubicacion = computed(() => {
   return `En ${enCurso.area.nombre} desde el ${fecha.format(new Date(enCurso.entrada_ocurrido_en))}`;
 });
 
-const cargar = async (): Promise<void> => {
-  cargando.value = true;
+const cargar = async (conSpinner = true): Promise<void> => {
+  cargando.value = conSpinner;
   const codigo = String(route.params.codigo ?? '');
   const { data, error, statusCode } = await useApi<Lote>(
     `/lotes/${encodeURIComponent(codigo)}`,
@@ -48,7 +49,15 @@ const cargar = async (): Promise<void> => {
   }
 };
 
-watch(() => route.params.codigo, cargar, { immediate: true });
+watch(
+  () => route.params.codigo,
+  () => cargar(),
+  { immediate: true },
+);
+
+useLotesEnVivo(useCanalesDeLotes(), (evento) => {
+  if (evento.codigo === lote.value?.codigo) void cargar(false);
+});
 </script>
 
 <template>
