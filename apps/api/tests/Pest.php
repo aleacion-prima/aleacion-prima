@@ -1,6 +1,8 @@
 <?php
 
 use App\Bitacora\Bitacora;
+use App\Bitacora\LectorBitacora;
+use App\Bitacora\LectorBitacoraFake;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosFake;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +25,7 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
         Bitacora::fake();
+        app()->instance(LectorBitacora::class, new LectorBitacoraFake);
         app()->instance(AlmacenImprevistos::class, new AlmacenImprevistosFake);
     })
     ->in('Feature');

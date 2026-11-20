@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\BitacoraLoteController;
 use App\Http\Controllers\CierreLoteController;
+use App\Http\Controllers\CostoLoteController;
 use App\Http\Controllers\EntradaInsumoController;
+use App\Http\Controllers\HistorialLoteController;
 use App\Http\Controllers\ImprevistoLoteController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
@@ -33,6 +36,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('/lotes', [LoteController::class, 'index']);
         Route::get('/lotes/{lote}', [LoteController::class, 'show']);
         Route::get('/lotes/{lote}/imprevistos', [ImprevistoLoteController::class, 'index']);
+        Route::get('/lotes/{lote}/historial', HistorialLoteController::class);
     });
 
     Route::middleware('ability:panel')->group(function () {
@@ -75,6 +79,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::middleware('role:administrador|ventas')->group(function () {
             Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
             Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+            Route::get('/lotes/{lote}/bitacora', BitacoraLoteController::class);
+            Route::get('/lotes/{lote}/costo', CostoLoteController::class);
         });
 
         Route::middleware('role:administrador')->group(function () {
