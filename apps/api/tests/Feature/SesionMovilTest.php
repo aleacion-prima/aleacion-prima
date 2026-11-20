@@ -114,6 +114,8 @@ it('con el token móvil no se reciben costos ni tarifas, aunque sea administrado
 });
 
 it('la sesión del panel de un administrador sí recibe los costos', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
     $lote = Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
     LoteArea::factory()->for($lote)->create();
     LoteInsumo::factory()->for($lote)->create();
