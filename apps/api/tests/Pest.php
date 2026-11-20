@@ -1,5 +1,6 @@
 <?php
 
+use App\Bitacora\Bitacora;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,8 +15,11 @@ use Tests\TestCase;
 |
 */
 
+// Ningún test toca Mongo: por defecto la bitácora usa un escritor en memoria.
+// Los casos que lo necesitan rebindean su propio fake con Bitacora::fake().
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(fn () => Bitacora::fake())
     ->in('Feature');
 
 /*
