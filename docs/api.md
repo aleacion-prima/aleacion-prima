@@ -1,6 +1,6 @@
 # API
 
-Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes`, `GET /api/lotes/{codigo}`, `confirmar` y `cancelar`, y en Captura por área la entrada y la salida de cada parada; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
+Contrato de la API: qué rutas existen, qué rol las usa y qué requerimientos cubren. Es el acuerdo entre el backend y los tres frontends (panel, app móvil y sitio público). Las secciones de Autenticación, Catálogos e Inventario reflejan lo implementado en el Sprint 1, en Lotes ya están implementados `GET /api/lotes`, `POST /api/lotes`, `GET /api/lotes/{codigo}`, `confirmar` y `cancelar`, en Tablero `GET /api/tablero`, y en Captura por área la entrada y la salida de cada parada; el resto sigue siendo el contrato planeado. La documentación OpenAPI generada por Scramble está en `/docs/api` (solo en local).
 
 Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles y el middleware de [autenticacion.md](autenticacion.md) y las operaciones sobre un lote de [flujo-lote.md](flujo-lote.md).
 
@@ -11,25 +11,25 @@ Los RF y sus actores salen de [requerimientos.md](requerimientos.md), los roles 
 - `{codigo}` es el código del lote (`LOT-AAAAMMDD-NN`). `{parada}` es el identificador de la parada dentro del recorrido del lote, no el del área, porque un recorrido puede repetir un área.
 - Las rutas del panel usan cookie de sesión y `auth:sanctum`. Las de la app móvil usan token Bearer con `auth:sanctum` y `ability:lotes:read`. Las del sitio público no llevan autenticación.
 - Los RF con actor Sistema no tienen ruta propia: son reglas que ejecutan los servicios. Se anotan en la columna **RF** de la ruta que las dispara.
-- Ninguna ruta de lectura de lote entrega costos al encargado de área ni a la app móvil (propuesta, ver Pendiente).
+- Ninguna ruta de lectura de lote entrega costos al encargado de área ni a la app móvil. Los costos y tarifas solo llegan a Administrador y Ventas **desde el panel** (`User::veCostos()`): el token móvil de un administrador tampoco los recibe.
 
 ## Autenticación
 
 Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en [autenticacion.md](autenticacion.md).
 
-| Método | Ruta                           | Rol                                           | RF                              |
-| ------ | ------------------------------ | --------------------------------------------- | ------------------------------- |
-| `GET`  | `/sanctum/csrf-cookie`         | Todos (sin sesión)                            | RF-01                           |
-| `POST` | `/login`                       | Todos (sin sesión)                            | RF-01                           |
-| `POST` | `/api/movil/login`             | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                    |
-| `POST` | `/logout`                      | Todos                                         | RF-05                           |
-| `GET`  | `/api/user`                    | Todos                                         | RF-03 (devuelve rol y `activo`) |
-| `POST` | `/forgot-password`             | Todos (sin sesión)                            | T-22                            |
-| `POST` | `/reset-password`              | Todos (sin sesión)                            | T-22                            |
-| `POST` | `/forgot-password/pregunta`    | Todos (sin sesión)                            | T-23                            |
-| `POST` | `/reset-password/pregunta`     | Todos (sin sesión)                            | T-23                            |
-| `GET`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                            |
-| `PUT`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                            |
+| Método | Ruta                           | Rol                                           | RF                                                   |
+| ------ | ------------------------------ | --------------------------------------------- | ---------------------------------------------------- |
+| `GET`  | `/sanctum/csrf-cookie`         | Todos (sin sesión)                            | RF-01                                                |
+| `POST` | `/login`                       | Todos (sin sesión)                            | RF-01                                                |
+| `POST` | `/api/movil/login`             | Encargado de área, Administrador (sin sesión) | RF-04, RF-43                                         |
+| `POST` | `/logout`                      | Todos                                         | RF-05                                                |
+| `GET`  | `/api/user`                    | Todos                                         | RF-03 (responde `Sesion`: rol, `activo` y `modulos`) |
+| `POST` | `/forgot-password`             | Todos (sin sesión)                            | T-22                                                 |
+| `POST` | `/reset-password`              | Todos (sin sesión)                            | T-22                                                 |
+| `POST` | `/forgot-password/pregunta`    | Todos (sin sesión)                            | T-23                                                 |
+| `POST` | `/reset-password/pregunta`     | Todos (sin sesión)                            | T-23                                                 |
+| `GET`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                                                 |
+| `PUT`  | `/api/perfil/pregunta-secreta` | Todos                                         | T-23                                                 |
 
 ## Catálogos
 
@@ -84,7 +84,9 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 
 Middleware: `auth:sanctum`. Rol según la fila. La lectura de un lote (`GET /api/lotes/{codigo}` y su historial) la comparten el panel y la app móvil.
 
-Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy. Confirmar (solo desde `por_confirmar`) toma como piezas terminadas las entregadas en la última parada, las suma a la existencia del producto con un movimiento `produccion` y emite `disponibilidad.actualizada` (`{ id, disponible }`) por el canal público `catalogo`. Cancelar (desde `creado` o `en_proceso`) exige `motivo`, cierra la parada abierta con 0 piezas entregadas y acepta `devoluciones` (`[{ insumo_id, cantidad }]`) solo mientras el lote no haya salido de su primera parada; `admite_devolucion` en la respuesta dice si todavía se puede.
+Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas con sesión del panel. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy. Confirmar (solo desde `por_confirmar`) toma como piezas terminadas las entregadas en la última parada, las suma a la existencia del producto con un movimiento `produccion` y emite `disponibilidad.actualizada` (`{ id, disponible }`) por el canal público `catalogo`. Cancelar (desde `creado` o `en_proceso`) exige `motivo`, cierra la parada abierta con 0 piezas entregadas y acepta `devoluciones` (`[{ insumo_id, cantidad }]`) solo mientras el lote no haya salido de su primera parada; `admite_devolucion` en la respuesta dice si todavía se puede.
+
+El costo del lote se recalcula en la misma transacción de cada operación que lo cambia: crear, salida de parada (con su retorno), confirmar y cancelar. Si el cálculo falla, la operación completa se revierte (RNF-05). **Confirmar congela el costo:** `costo_total` pasa a ser el costo real y se fija `costo_por_pieza` (`costo_total ÷ piezas_terminadas`); un lote terminado o cancelado no se vuelve a calcular (ADR-0010). Mientras el lote está abierto, `costo_total` es el costo a la fecha y `costo_por_pieza` es `null`. Solo Administrador y Ventas reciben ambos campos. `php artisan lotes:recalcular` repara solo lotes abiertos y muestra los que cambian; `--cerrados` incluye los terminados y cancelados.
 
 | Método | Ruta                            | Rol                                      | RF                                |
 | ------ | ------------------------------- | ---------------------------------------- | --------------------------------- |
@@ -102,16 +104,17 @@ La etiqueta con el código QR (RF-20) la genera el panel con `qrcode.vue` a part
 
 ## Captura por área
 
-La entrada de la parada N exige la salida de la N−1, y la salida exige su entrada. La merma en piezas la calcula la API (`recibidas − entregadas`). El retorno en kg solo se acepta en el área de `planta.area_retorno` (Desmolde) y hasta el metal asignado al lote; genera un movimiento `retorno` sobre `planta.insumo_retorno`. La primera entrada pasa el lote a `en_proceso` y la salida de la última parada a `por_confirmar`. Cada cambio emite `lote.actualizado` por el canal privado `tablero` (solo Administrador), con `codigo`, `estado` y `area_actual_id`. Las respuestas de `GET /api/lotes/{codigo}` marcan por parada la captura tardía, la discrepancia contra la parada anterior y si el usuario puede capturar en ella.
+La entrada de la parada N exige la salida de la N−1, y la salida exige su entrada. La entrada no acepta más piezas de las que entregó la parada anterior, ni más que la `cantidad_objetivo` en la primera parada. La merma en piezas la calcula la API (`recibidas − entregadas`). El retorno en kg solo se acepta en el área de `planta.area_retorno` (Desmolde) y hasta el metal asignado al lote; genera un movimiento `retorno` sobre `planta.insumo_retorno`. La primera entrada pasa el lote a `en_proceso` y la salida de la última parada a `por_confirmar`. Cada cambio emite `lote.actualizado` por el canal privado `tablero` (solo Administrador), con `codigo`, `estado` y `area_actual_id`. Las respuestas de `GET /api/lotes/{codigo}` marcan por parada la captura tardía, la discrepancia contra la parada anterior y si el usuario puede capturar en ella.
 
 Middleware: `auth:sanctum` y `role:encargado|administrador`. El encargado solo captura en las áreas que tiene asignadas (RF-48); el administrador captura en cualquiera.
 
-| Método | Ruta                                               | Rol                              | RF                                                     |
-| ------ | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
-| `GET`  | `/api/lotes/{codigo}/imprevistos`                  | Encargado de área, Administrador | RF-31                                                  |
+| Método  | Ruta                                               | Rol                              | RF                                                     |
+| ------- | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
+| `GET`   | `/api/lotes/{codigo}/imprevistos`                  | Encargado, Ventas, Administrador | RF-31                                                  |
+| `PATCH` | `/api/lotes/{codigo}/imprevistos/{imprevisto}`     | Encargado de área, Administrador | RF-31                                                  |
 
 El retorno de metal (RF-27) viaja como `retorno_kg` en la salida de la parada de Desmolde.
 
@@ -127,7 +130,9 @@ Middleware: `auth:sanctum` y `role:administrador`.
 | `POST`  | `/api/notificaciones/leidas`     | Administrador | RF-38        |
 | `POST`  | `/broadcasting/auth`             | Administrador | RF-34, RF-37 |
 
-`GET /api/tablero` carga el estado inicial; después el tablero se mantiene al día por WebSocket.
+`GET /api/tablero` carga el estado inicial (lotes creados, en proceso y por confirmar, con su recorrido y costo a la fecha); después el tablero se mantiene al día con `lote.actualizado` del canal `tablero`.
+
+Las notificaciones son de Laravel (canales `database` + `broadcast`). Se guardan en `notifications` y se emiten por el canal privado de cada administrador, `App.Models.User.{id}` (autorizado en `routes/channels.php`). La respuesta de `GET /api/notificaciones` va paginada (15 por página; `?no_leidas=1` filtra las no leídas) y cada elemento lleva solo la carga mínima: `id`, `tipo` (`stock_minimo`, `lote_por_confirmar`, `imprevisto`), `mensaje`, `codigo` (del lote o del insumo), `leida` y `fecha`. **Sin costos ni el modelo completo.** Los avisos se disparan desde listeners (`NotificarStockMinimo` sobre `StockMinimoAlcanzado`, `NotificarLotePorConfirmar` sobre `LoteActualizado` solo al pasar a `por_confirmar`); el de imprevisto (`ImprevistoRegistrado`) queda listo y lo engancha T-43.
 
 ## Aplicación móvil
 
@@ -160,10 +165,13 @@ Contrato de los campos (RNF-04):
 
 ## Tiempo real
 
-| Canal                 | Acceso                            | Eventos                                                           | RF            |
-| --------------------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
-| `catalogo`            | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
-| `tablero` (propuesta) | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
+| Canal      | Acceso                            | Eventos                                                           | RF            |
+| ---------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
+| `catalogo` | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
+| `tablero`  | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
+| `modulos`  | Privado, cualquier usuario activo | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`      | —             |
+
+El `/broadcasting/auth` autoriza cada canal privado por su clase (`routes/channels.php`): `tablero` solo admite administradores (`CanalTablero`), mientras que `modulos` admite a cualquier usuario activo (`CanalModulos`). En ambos casos un invitado se rechaza antes con 401 por `auth:sanctum`.
 
 ## Ventas (recortable)
 
@@ -197,5 +205,4 @@ Se recorta en este orden si el tiempo no alcanza: chat de cotizaciones, clientes
 - **Quién crea lotes.** RF-16 dice Administrador; [flujo-lote.md](flujo-lote.md) y el diagrama de estados dicen Ventas o Administrador. Aquí se sigue el RF. Si ventas también crea, `POST /api/lotes` pasa a `role:ventas|administrador` y se actualizan RF-16 y autenticacion.md.
 - **Costos para el encargado.** Se propone que `historial` y `GET /api/lotes/{codigo}` no devuelvan costos al encargado de área ni a la app móvil; solo `costo` y `bitacora` los exponen, y solo a Ventas y Administrador. Confirmar con el equipo.
 - **Ability en el panel.** `ability:lotes:read` aplica a tokens de la app; confirmar con una prueba que las peticiones con cookie del panel pasan por las mismas rutas de lectura.
-- **Nombre del canal privado.** `tablero` es una propuesta; se fija al implementar los canales de `routes/channels.php`.
 - **Rol ventas en autenticacion.md.** Su fila no menciona RF-13 ni RF-35 (ya anotado en requerimientos.md).

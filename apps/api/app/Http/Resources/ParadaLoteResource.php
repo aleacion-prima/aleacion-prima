@@ -29,7 +29,7 @@ class ParadaLoteResource extends JsonResource
     public function toArray(Request $request): array
     {
         $usuario = $request->user();
-        $veCostos = $usuario instanceof User && $usuario->hasAnyRole([Rol::Administrador, Rol::Ventas]);
+        $veCostos = $usuario instanceof User && $usuario->veCostos();
 
         return [
             'id' => $this->id,

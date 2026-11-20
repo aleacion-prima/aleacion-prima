@@ -1,6 +1,7 @@
 <?php
 
 use App\Broadcasting\CanalArea;
+use App\Broadcasting\CanalModulos;
 use App\Broadcasting\CanalTablero;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -11,5 +12,5 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('tablero', CanalTablero::class);
 Broadcast::channel('area.{area}', CanalArea::class);
 
-// Canal de módulos: cualquier usuario con sesión; rechaza a quien no la tiene.
-Broadcast::channel('modulos', fn ($user) => $user !== null);
+// Canal de módulos: cualquier usuario activo con sesión; rechaza a los inactivos.
+Broadcast::channel('modulos', CanalModulos::class);

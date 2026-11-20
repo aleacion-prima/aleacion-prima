@@ -14,7 +14,7 @@ const rutasPanel: RouteRecordRaw[] = [
       },
       {
         path: 'mi-area',
-        component: () => import('@/pages/area/MiAreaPage.vue'),
+        component: () => import('@/pages/areas/MiAreaPage.vue'),
         meta: { roles: ['encargado'] },
       },
       {
@@ -77,6 +77,11 @@ const rutasPanel: RouteRecordRaw[] = [
     path: '/login',
     component: () => import('@/layouts/AccesoLayout.vue'),
     children: [{ path: '', component: () => import('@/pages/acceso/LoginPage.vue') }],
+  },
+  {
+    path: '/verificar',
+    component: () => import('@/layouts/AccesoLayout.vue'),
+    children: [{ path: '', component: () => import('@/pages/acceso/CodigoAccesoPage.vue') }],
   },
   {
     path: '/olvide-contrasena',

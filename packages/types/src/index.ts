@@ -189,6 +189,21 @@ export interface CrearLote {
   recorrido?: number[];
 }
 
+export interface Imprevisto {
+  id: string;
+  lote_id: number;
+  area: ReferenciaCatalogo | null;
+  tipo: TipoImprevisto;
+  descripcion: string;
+  maquina: string | null;
+  piezas_afectadas: number | null;
+  duracion_minutos: number | null;
+  resuelto: boolean;
+  registrado_por: string | null;
+  ocurrido_en: string;
+  created_at: string;
+}
+
 export interface Usuario {
   id: number;
   name: string;
@@ -196,13 +211,44 @@ export interface Usuario {
   rol: Rol | null;
   activo: boolean;
   dado_de_baja_en: string | null;
-  modulos: Record<string, boolean>;
   areas?: AreaAsignada[];
+}
+
+// Módulos de config('modulos'): unión de los nombres de bandera (Pennant).
+export type Modulo = 'ventas';
+
+// GET /api/user: el usuario de la sesión más el estado de los módulos.
+export interface Sesion extends Usuario {
+  modulos: Record<Modulo, boolean>;
+}
+
+// Carga del evento `.modulos.actualizados` por el canal privado `modulos`.
+export interface ModulosActualizados {
+  modulos: Record<Modulo, boolean>;
 }
 
 export interface SesionMovil {
   token: string;
   usuario: Usuario;
+}
+
+export interface SesionActiva {
+  // Id compuesto `tipo:id` (`panel:<id>` o `app:<id>`); se manda tal cual al cerrar.
+  id: string;
+  tipo: 'panel' | 'app';
+  dispositivo: string;
+  ip: string | null;
+  ultima_actividad: string | null;
+  actual: boolean;
+}
+
+export interface Notificacion {
+  id: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
 }
 
 export interface AreaAsignada {
@@ -273,5 +319,5 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
-  encargados?: Usuario[];
+  encargados?: Pick<Usuario, 'id' | 'name'>[];
 }

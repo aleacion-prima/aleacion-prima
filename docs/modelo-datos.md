@@ -246,6 +246,7 @@ Las aplica la API (Form Requests + servicios); las que la BD puede garantizar so
 | El recorrido (producto o lote) incluye todas las áreas obligatorias activas, en el orden relativo de `orden_catalogo`; las opcionales van donde se pongan | API           |
 | `cantidad_objetivo × Σ receta[categoria = metal] ≤ planta.capacidad_colada_kg`                                                                            | API           |
 | `piezas_entregadas ≤ piezas_recibidas`                                                                                                                    | API + `CHECK` |
+| `piezas_recibidas` de la parada N+1 ≤ `piezas_entregadas` de la N (en la primera parada, ≤ `cantidad_objetivo`)                                           | API           |
 | `salida_ocurrido_en ≥ entrada_ocurrido_en`                                                                                                                | API + `CHECK` |
 | `entrada_ocurrido_en` de la parada N+1 ≥ `salida_ocurrido_en` de la parada N (dec. 16)                                                                    | API           |
 | `ocurrido_en ≤ now()` en toda captura                                                                                                                     | API           |

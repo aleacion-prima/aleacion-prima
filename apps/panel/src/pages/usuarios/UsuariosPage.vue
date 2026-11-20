@@ -6,6 +6,7 @@ import { ROLES } from '@aleacion-prima/types';
 import { etiquetaRol } from '@/catalogos/roles';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
+import SesionesActivas from '@/components/cuenta/SesionesActivas.vue';
 
 interface FormularioUsuario {
   name: string;
@@ -27,6 +28,8 @@ const editando = ref<Usuario | null>(null);
 const cargando = ref(true);
 const vista = ref<VistaUsuarios>('en_uso');
 const fechaBaja = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+const dialogoSesiones = ref(false);
+const usuarioSesiones = ref<Usuario | null>(null);
 const formulario = reactive<FormularioUsuario>({
   name: '',
   email: '',
@@ -67,6 +70,11 @@ const cargar = async (): Promise<void> => {
 
   usuarios.value = usuariosRes.data.value ?? [];
   areas.value = areasRes.data.value ?? [];
+};
+
+const abrirSesiones = (usuario: Usuario): void => {
+  usuarioSesiones.value = usuario;
+  dialogoSesiones.value = true;
 };
 
 const abrir = (usuario?: Usuario): void => {
@@ -223,6 +231,14 @@ onMounted(cargar);
               class="q-pa-md q-pt-none q-mt-auto"
             >
               <q-btn
+                flat
+                no-caps
+                color="secondary"
+                label="Sesiones"
+                icon="devices"
+                @click="abrirSesiones(usuario)"
+              />
+              <q-btn
                 outline
                 no-caps
                 color="secondary"
@@ -295,6 +311,22 @@ onMounted(cargar);
           <q-btn v-close-popup flat label="Cancelar" />
           <q-btn color="primary" unelevated label="Guardar" @click="guardar" />
         </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dialogoSesiones">
+      <q-card style="width: 560px; max-width: 90vw">
+        <q-card-section class="row items-center justify-between">
+          <div class="text-h6">Sesiones de {{ usuarioSesiones?.name }}</div>
+          <q-btn v-close-popup flat round dense icon="close" />
+        </q-card-section>
+        <q-card-section>
+          <SesionesActivas
+            v-if="usuarioSesiones"
+            :key="usuarioSesiones.id"
+            :usuario-id="usuarioSesiones.id"
+          />
+        </q-card-section>
       </q-card>
     </q-dialog>
   </q-page>

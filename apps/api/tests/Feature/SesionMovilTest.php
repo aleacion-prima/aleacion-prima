@@ -2,11 +2,15 @@
 
 use App\Enums\Rol;
 use App\Models\Lote;
+use App\Models\LoteArea;
+use App\Models\LoteInsumo;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
@@ -90,6 +94,44 @@ it('con el token móvil se leen los lotes', function () {
     withToken($token)->getJson('/api/user')->assertOk();
 });
 
+it('con el token móvil no se reciben costos ni tarifas, aunque sea administrador', function () {
+    $lote = Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
+    LoteArea::factory()->for($lote)->create();
+    LoteInsumo::factory()->for($lote)->create();
+    $token = tokenMovil(usuarioMovil(Rol::Administrador));
+
+    withToken($token)->getJson('/api/lotes/LOT-20261111-01')
+        ->assertOk()
+        ->assertJsonMissingPath('costo_total')
+        ->assertJsonMissingPath('costo_por_pieza')
+        ->assertJsonMissingPath('paradas.0.tarifa_mano_obra_hora')
+        ->assertJsonMissingPath('paradas.0.costo_maquina_hora')
+        ->assertJsonMissingPath('insumos.0.costo_unitario');
+
+    withToken($token)->getJson('/api/lotes')
+        ->assertOk()
+        ->assertJsonPath('0.codigo', 'LOT-20261111-01')
+        ->assertJsonMissingPath('0.costo_total')
+        ->assertJsonMissingPath('0.paradas.0.tarifa_mano_obra_hora');
+});
+
+it('la sesión del panel de un administrador sí recibe los costos', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
+    $lote = Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
+    LoteArea::factory()->for($lote)->create();
+    LoteInsumo::factory()->for($lote)->create();
+    $admin = usuarioMovil(Rol::Administrador);
+
+    postJson('/login', ['email' => $admin->email, 'password' => 'password'])->assertNoContent();
+
+    getJson('/api/lotes/LOT-20261111-01')
+        ->assertOk()
+        ->assertJsonPath('paradas.0.tarifa_mano_obra_hora', fn ($valor) => $valor !== null)
+        ->assertJsonPath('insumos.0.costo_unitario', fn ($valor) => $valor !== null)
+        ->assertJsonStructure(['costo_total', 'costo_por_pieza']);
+});
+
 it('con el token móvil se rechaza todo lo que no sea lectura de lotes', function (string $metodo, string $ruta) {
     Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
     $token = tokenMovil(usuarioMovil(Rol::Administrador));
@@ -102,6 +144,8 @@ it('con el token móvil se rechaza todo lo que no sea lectura de lotes', functio
     'listar áreas' => ['GET', '/api/areas'],
     'crear usuario' => ['POST', '/api/usuarios'],
     'pregunta secreta' => ['PUT', '/api/perfil/pregunta-secreta'],
+    'ver sesiones' => ['GET', '/api/sesiones'],
+    'cerrar sesiones' => ['DELETE', '/api/sesiones'],
 ]);
 
 it('al cerrar sesión borra el token y deja de servir', function () {
@@ -126,6 +170,8 @@ it('cerrar sesión solo borra el token del dispositivo que la cierra', function 
 });
 
 it('la sesión del panel sigue pudiendo leer y escribir', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
     $admin = usuarioMovil(Rol::Administrador);
 
     postJson('/login', ['email' => $admin->email, 'password' => 'password'])->assertNoContent();
@@ -133,4 +179,22 @@ it('la sesión del panel sigue pudiendo leer y escribir', function () {
     getJson('/api/lotes')->assertOk();
     getJson('/api/areas')->assertOk();
     putJson('/api/perfil/pregunta-secreta', [])->assertUnprocessable();
+});
+
+it('un administrador puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $admin = usuarioMovil(Rol::Administrador);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertNoContent();
+});
+
+it('un usuario de ventas no puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $ventas = usuarioMovil(Rol::Ventas);
+
+    Sanctum::actingAs($ventas, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertForbidden();
 });
