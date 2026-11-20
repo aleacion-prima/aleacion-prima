@@ -2,6 +2,8 @@
 
 namespace App\Inventario;
 
+use App\Bitacora\Bitacora;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoInsumo;
 use App\Models\Ajuste;
 use App\Models\Insumo;
@@ -52,6 +54,19 @@ class AjustarExistencia
             ]);
 
             $insumo->update(['existencia' => $nuevo]);
+
+            Bitacora::registrar(
+                TipoEventoBitacora::Ajuste,
+                "Ajuste de existencia de {$insumo->nombre} ({$insumo->codigo}): {$anterior} → {$nuevo}.",
+                datos: [
+                    'insumo_id' => $insumo->id,
+                    'campo' => 'existencia',
+                    'anterior' => $anterior,
+                    'nuevo' => $nuevo,
+                    'motivo' => $datos['motivo'],
+                ],
+                userId: $usuarioId,
+            );
 
             (new DetectorStockMinimo)->revisar(
                 $insumo->id,

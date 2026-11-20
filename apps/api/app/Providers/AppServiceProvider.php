@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Bitacora\EscritorBitacora;
+use App\Bitacora\EscritorBitacoraMongo;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
@@ -21,7 +23,12 @@ use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        // Escritor de bitácora por defecto: inserta en Mongo después del commit
+        // de Postgres. Los tests lo reemplazan con un fake vía Bitacora::fake().
+        $this->app->singleton(EscritorBitacora::class, EscritorBitacoraMongo::class);
+    }
 
     public function boot(): void
     {
@@ -72,6 +79,33 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)
                 ->by($correo.'|'.$request->ip())
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
+        // Verificación del segundo factor: por la sesión pendiente (o IP), para
+        // frenar el adivinado del código además del tope de intentos por código.
+        RateLimiter::for('verificar', function (Request $request) {
+            $pendiente = $request->session()->get('acceso.pendiente');
+
+            return Limit::perMinute(10)
+                ->by('2fa|'.(is_int($pendiente) ? $pendiente : (string) $request->ip()))
+                ->response(fn (Request $request, array $headers) => response()->json(
+                    ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
+                    429,
+                    $headers,
+                ));
+        });
+
+        // Reenvío del código: límite de frecuencia por la sesión pendiente (o IP).
+        RateLimiter::for('reenviar', function (Request $request) {
+            $pendiente = $request->session()->get('acceso.pendiente');
+
+            return Limit::perMinute(1)
+                ->by('2fa|'.(is_int($pendiente) ? $pendiente : (string) $request->ip()))
                 ->response(fn (Request $request, array $headers) => response()->json(
                     ['message' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])],
                     429,

@@ -2,8 +2,10 @@
 
 namespace App\Lotes;
 
+use App\Bitacora\Bitacora;
 use App\Enums\CategoriaInsumo;
 use App\Enums\EstadoLote;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoInsumo;
 use App\Events\LoteActualizado;
 use App\Inventario\DetectorStockMinimo;
@@ -50,6 +52,18 @@ class CreadorLote
                 'estado' => EstadoLote::Creado,
                 'creado_por' => $usuario->id,
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::Creacion,
+                "Creación del lote {$lote->codigo} ({$cantidad} piezas de {$producto->codigo}).",
+                loteId: $lote->id,
+                datos: [
+                    'codigo' => $lote->codigo,
+                    'producto_id' => $producto->id,
+                    'cantidad_objetivo' => $cantidad,
+                ],
+                userId: $usuario->id,
+            );
 
             $this->crearParadas($lote, $idsRecorrido);
             $this->asignarInsumos($lote, $insumos, $necesidades, $usuario);
@@ -189,6 +203,20 @@ class CreadorLote
             ]);
 
             $insumo->update(['existencia' => (string) $nueva]);
+
+            Bitacora::registrar(
+                TipoEventoBitacora::AsignacionInsumo,
+                "Asignación de {$necesario} {$insumo->unidad} de {$insumo->nombre} ({$insumo->codigo}).",
+                loteId: $lote->id,
+                // Sin costos: el historial (T-44) lo leen el encargado y la app,
+                // que no deben ver costos.
+                datos: [
+                    'insumo_id' => $insumo->id,
+                    'codigo' => $insumo->codigo,
+                    'cantidad' => (string) $necesario,
+                ],
+                userId: $usuario->id,
+            );
 
             $this->detector->revisar(
                 $insumo->id,

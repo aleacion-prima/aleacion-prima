@@ -30,6 +30,21 @@ El anteproyecto define dos bases de datos: PostgreSQL para los datos críticos (
 - Mongo 7 en local y probablemente 8 en Atlas (Mongo 8 no arranca con kernels recientes). Diferencia conocida y aceptable mientras no se usen funciones nuevas de la 8.
 - Las consultas de reportes que crucen ambas fuentes (p. ej. "imprevistos por área en el mes") se resuelven en la aplicación: se consulta Mongo por `lote_id` y se une con Postgres en PHP, no al revés.
 
+## Implementación de la bitácora (T-41)
+
+Al escribir el primer modelo de Mongo (la colección `bitacora`) se fijó lo que esta ADR dejaba abierto:
+
+- **Un solo punto de entrada:** `App\Bitacora\Bitacora::registrar(...)`. Arma el documento (quién, cuándo, la marca `captura_tardia` con `planta.umbral_captura_tardia`) y encola su escritura con `DB::afterCommit()`, envuelta en `try/catch`. Ahí viven el diferido y la tolerancia a fallos: la escritura solo corre si la operación hace commit (un rollback no deja documento huérfano, RNF-05) y, si falla cuando corre, se registra en el log sin reventar la operación —que para entonces ya confirmó—. Los servicios de `app/Lotes/` e `app/Inventario/` lo llaman dentro de su `DB::transaction`. T-43 (imprevistos) y T-45 (ajustes de lote terminado) reúsan este mismo punto.
+- **Escribir detrás de una interfaz.** El contrato `App\Bitacora\EscritorBitacora` separa _qué_ se registra de _cómo_ se escribe (el _cuándo_ ya lo resolvió `registrar()`):
+  - `EscritorBitacoraMongo` (producción, singleton por defecto en `AppServiceProvider`): solo inserta el documento en Mongo.
+  - `EscritorBitacoraFake` (pruebas): guarda en memoria lo que se le pide escribir y tiene un modo `fallar()` para el criterio de tolerancia. Como el `afterCommit` vive en `registrar()`, bajo `RefreshDatabase` el callback corre al hacer commit de la transacción de la operación y se descarta en el rollback: así el fake captura los eventos de operaciones que confirman y **no** los de operaciones revertidas, lo que permite probar ambos casos.
+- **Cómo se prueba:** `Bitacora::fake()` al inicio del caso devuelve el fake y lo deja en el contenedor; luego se asserta con `tipos()`, `assertRegistrado()` y `assertNingunRegistro()`. Así **ningún test toca Mongo**: el fake nunca instancia el escritor de Mongo y la migración de índices no corre bajo `RefreshDatabase`.
+- **Índices fuera del `migrate` por defecto.** La migración de la colección vive en `apps/api/database/migrations/mongodb/`; el migrador no entra a subcarpetas, así que ni el `migrate` normal ni `RefreshDatabase` la ejecutan. Se corre a mano en dev y en cada deploy (`deploy.yml`):
+
+  ```bash
+  php artisan migrate --path=database/migrations/mongodb
+  ```
+
 ## Alternativas descartadas
 
 - **Solo PostgreSQL con columnas JSONB para bitácora e imprevistos.** Técnicamente bastaría y evitaría RI-10 por completo. Se descartó porque el anteproyecto compromete MongoDB y el equipo quiere la experiencia con ella. A cambio, el alcance de Mongo se mantiene pequeño (dos colecciones, siempre referenciadas por id) para que migrar a JSONB sea barato si Mongo estorba.

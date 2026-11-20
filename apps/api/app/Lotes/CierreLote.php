@@ -2,7 +2,9 @@
 
 namespace App\Lotes;
 
+use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoInsumo;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
@@ -52,6 +54,13 @@ class CierreLote
                 'confirmado_en' => $ahora,
             ])->save();
 
+            Bitacora::registrar(
+                TipoEventoBitacora::Confirmacion,
+                "Confirmación del lote {$lote->codigo}: {$piezas} piezas terminadas.",
+                loteId: $lote->id,
+                datos: ['piezas_terminadas' => $piezas],
+                userId: $usuario->id,
+            );
             $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
@@ -104,6 +113,22 @@ class CierreLote
                 'motivo_cancelacion' => $motivo,
             ])->save();
 
+            // Si la cancelación cerró en cero una parada abierta, deja constancia
+            // del área y la merma resultante (docs/modelo-datos.md).
+            $datos = ['motivo' => $motivo];
+
+            if ($abierta !== null) {
+                $datos['area_id'] = $abierta->area_id;
+                $datos['merma_piezas'] = $abierta->merma_piezas;
+            }
+
+            Bitacora::registrar(
+                TipoEventoBitacora::Cancelacion,
+                "Cancelación del lote {$lote->codigo}: {$motivo}",
+                loteId: $lote->id,
+                datos: $datos,
+                userId: $usuario->id,
+            );
             $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
@@ -158,6 +183,18 @@ class CierreLote
             $asignado->forceFill([
                 'cantidad_devuelta' => (string) BigDecimal::of((string) $asignado->cantidad_devuelta)->plus($cantidad),
             ])->save();
+
+            Bitacora::registrar(
+                TipoEventoBitacora::DevolucionInsumo,
+                "Devolución de {$cantidad} {$insumo->unidad} de {$insumo->nombre} ({$insumo->codigo}).",
+                loteId: $lote->id,
+                datos: [
+                    'insumo_id' => $insumo->id,
+                    'codigo' => $insumo->codigo,
+                    'cantidad' => (string) $cantidad,
+                ],
+                userId: $usuario->id,
+            );
         }
     }
 
