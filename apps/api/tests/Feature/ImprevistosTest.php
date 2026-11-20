@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Rol;
+use App\Events\ImprevistoActualizado;
 use App\Events\ImprevistoRegistrado;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosFake;
@@ -260,6 +261,25 @@ it('avisa al tablero y a las áreas del lote con ImprevistoRegistrado', function
                 'private-tablero',
                 ...$lote->paradas()->pluck('area_id')->unique()->map(fn ($area) => "private-area.{$area}")->values()->all(),
             ],
+    );
+});
+
+it('avisa en vivo al marcar un imprevisto como resuelto', function () {
+    entrarParaImprevistos(Rol::Administrador);
+    $lote = loteParaImprevistos();
+    $id = postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'FUS')), cuerpoDeImprevisto())
+        ->json('id');
+    Event::fake([ImprevistoActualizado::class]);
+
+    patchJson("/api/lotes/{$lote->codigo}/imprevistos/{$id}", ['resuelto' => true])->assertOk();
+
+    Event::assertDispatched(
+        ImprevistoActualizado::class,
+        fn (ImprevistoActualizado $evento) => $evento->lote->is($lote)
+            && $evento->imprevistoId === $id
+            && $evento->resuelto
+            && $evento->broadcastWith() === ['codigo' => $lote->codigo, 'imprevisto_id' => $id, 'resuelto' => true]
+            && in_array('private-tablero', collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all(), true),
     );
 });
 

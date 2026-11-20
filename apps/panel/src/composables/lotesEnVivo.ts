@@ -80,7 +80,8 @@ export const useLotesEnVivo = (
         echo
           .private(canal)
           .listen('.lote.actualizado', recibir)
-          .listen('.imprevisto.registrado', recibir);
+          .listen('.imprevisto.registrado', recibir)
+          .listen('.imprevisto.actualizado', recibir);
         escuchados.add(canal);
       }
     }
