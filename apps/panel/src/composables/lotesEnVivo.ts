@@ -29,9 +29,18 @@ export const useCanalesDeLotes = () => {
   });
 };
 
+export interface ImprevistoRegistradoEvento {
+  codigo: string;
+  area_id: number;
+  tipo: string;
+  resuelto: boolean;
+}
+
+type EventoDeLote = LoteActualizadoEvento | ImprevistoRegistradoEvento;
+
 export const useLotesEnVivo = (
   canales: MaybeRefOrGetter<string[]>,
-  alCambiar: (evento: LoteActualizadoEvento) => void | Promise<void>,
+  alCambiar: (evento: EventoDeLote) => void | Promise<void>,
 ) => {
   const escuchados = new Set<string>();
   const recientes = ref<string[]>([]);
@@ -43,7 +52,7 @@ export const useLotesEnVivo = (
     }, 1600);
   };
 
-  const pendientes = new Map<string, LoteActualizadoEvento>();
+  const pendientes = new Map<string, EventoDeLote>();
   const despachar = useDebounceFn(() => {
     const eventos = [...pendientes.values()];
     pendientes.clear();
@@ -53,7 +62,7 @@ export const useLotesEnVivo = (
     });
   }, 250);
 
-  const recibir = (evento: LoteActualizadoEvento): void => {
+  const recibir = (evento: EventoDeLote): void => {
     pendientes.set(evento.codigo, evento);
     void despachar();
   };
@@ -68,7 +77,11 @@ export const useLotesEnVivo = (
     }
     for (const canal of nuevos) {
       if (!escuchados.has(canal)) {
-        echo.private(canal).listen('.lote.actualizado', recibir);
+        echo
+          .private(canal)
+          .listen('.lote.actualizado', recibir)
+          .listen('.imprevisto.registrado', recibir)
+          .listen('.imprevisto.actualizado', recibir);
         escuchados.add(canal);
       }
     }

@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { Lote } from '@aleacion-prima/types';
+import type { Imprevisto, Lote } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { recordarEscaneado } from '@/services/escaneados';
 import { estadoDeParada, paradasDeLote } from '@/composables/recorridoLote';
+import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
+import ImprevistosMovil from '@/components/lotes/ImprevistosMovil.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
+const imprevistos = ref<Imprevisto[]>([]);
 const cargando = ref(true);
 const noEncontrado = ref(false);
 
@@ -29,14 +32,22 @@ const ubicacion = computed(() => {
   return `En ${enCurso.area.nombre} desde el ${fecha.format(new Date(enCurso.entrada_ocurrido_en))}`;
 });
 
-const cargar = async (): Promise<void> => {
-  cargando.value = true;
+const cargarImprevistos = async (codigo: string): Promise<void> => {
+  const { data, error } = await useApi<Imprevisto[]>(
+    `/lotes/${encodeURIComponent(codigo)}/imprevistos`,
+  ).json<Imprevisto[]>();
+  imprevistos.value = error.value ? [] : (data.value ?? []);
+};
+
+const cargar = async (conSpinner = true): Promise<void> => {
+  cargando.value = conSpinner;
   const codigo = String(route.params.codigo ?? '');
   const { data, error, statusCode } = await useApi<Lote>(
     `/lotes/${encodeURIComponent(codigo)}`,
   ).json<Lote>();
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
+  if (lote.value) await cargarImprevistos(lote.value.codigo);
   cargando.value = false;
   if (lote.value) {
     void recordarEscaneado({
@@ -48,7 +59,15 @@ const cargar = async (): Promise<void> => {
   }
 };
 
-watch(() => route.params.codigo, cargar, { immediate: true });
+watch(
+  () => route.params.codigo,
+  () => cargar(),
+  { immediate: true },
+);
+
+useLotesEnVivo(useCanalesDeLotes(), (evento) => {
+  if (evento.codigo === lote.value?.codigo) void cargar(false);
+});
 </script>
 
 <template>
@@ -89,6 +108,11 @@ watch(() => route.params.codigo, cargar, { immediate: true });
           <span>{{ ubicacion }}</span>
         </div>
       </q-card>
+
+      <template v-if="imprevistos.length">
+        <div class="lote-movil__titulo">Imprevistos</div>
+        <ImprevistosMovil :imprevistos="imprevistos" />
+      </template>
 
       <div class="lote-movil__titulo">Recorrido</div>
       <RecorridoLote :paradas="paradasDeLote(lote)" vertical />

@@ -446,11 +446,18 @@ Si la app no conecta a la API por `http://`, Android está bloqueando el tráfic
 
 #### 6.3 Generar e instalar el APK
 
-1. Compilar contra la API de producción y abrir Android Studio:
+1. Compilar contra la API y el Reverb de producción y abrir Android Studio:
 
    ```bash
-   PUBLIC_API_URL=https://api.20-80-56-138.sslip.io pnpm --filter panel exec quasar build -m capacitor -T android --ide
+   PUBLIC_API_URL=https://api.20-80-56-138.sslip.io \
+   PUBLIC_REVERB_HOST=api.20-80-56-138.sslip.io \
+   PUBLIC_REVERB_PORT=443 \
+   PUBLIC_REVERB_SCHEME=https \
+   PUBLIC_REVERB_KEY=<variable REVERB_APP_KEY del repo> \
+   pnpm --filter panel exec quasar build -m capacitor -T android --ide
    ```
+
+   Sin las variables `PUBLIC_REVERB_*` la app abre los lotes pero no se actualiza en vivo, porque busca Reverb en `localhost:8080`. Además, la app se sirve desde `https://localhost`, así que el `REVERB_ALLOWED_ORIGINS` de producción (secret `API_ENV`) debe incluir `localhost`; si no, Reverb rechaza la conexión con `Origin not allowed`.
 
    Si Quasar no encuentra Android Studio, ábrelo tú y abre la carpeta `apps/panel/src-capacitor/android`. La compilación de la web ya quedó copiada.
 
