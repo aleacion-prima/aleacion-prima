@@ -189,6 +189,21 @@ export interface CrearLote {
   recorrido?: number[];
 }
 
+export interface Imprevisto {
+  id: string;
+  lote_id: number;
+  area: ReferenciaCatalogo | null;
+  tipo: TipoImprevisto;
+  descripcion: string;
+  maquina: string | null;
+  piezas_afectadas: number | null;
+  duracion_minutos: number | null;
+  resuelto: boolean;
+  registrado_por: string | null;
+  ocurrido_en: string;
+  created_at: string;
+}
+
 export interface Usuario {
   id: number;
   name: string;
@@ -214,6 +229,15 @@ export interface ModulosActualizados {
 export interface SesionMovil {
   token: string;
   usuario: Usuario;
+}
+
+export interface Notificacion {
+  id: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
 }
 
 export interface AreaAsignada {

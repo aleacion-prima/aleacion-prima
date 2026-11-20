@@ -106,12 +106,13 @@ La entrada de la parada N exige la salida de la N−1, y la salida exige su entr
 
 Middleware: `auth:sanctum` y `role:encargado|administrador`. El encargado solo captura en las áreas que tiene asignadas (RF-48); el administrador captura en cualquiera.
 
-| Método | Ruta                                               | Rol                              | RF                                                     |
-| ------ | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
-| `POST` | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
-| `GET`  | `/api/lotes/{codigo}/imprevistos`                  | Encargado de área, Administrador | RF-31                                                  |
+| Método  | Ruta                                               | Rol                              | RF                                                     |
+| ------- | -------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/entrada`     | Encargado de área, Administrador | RF-25, RF-29, RF-30, RF-48, RF-50, RF-51               |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/salida`      | Encargado de área, Administrador | RF-26, RF-27, RF-28, RF-29, RF-30, RF-48, RF-49, RF-50 |
+| `POST`  | `/api/lotes/{codigo}/paradas/{parada}/imprevistos` | Encargado de área, Administrador | RF-31, RF-37                                           |
+| `GET`   | `/api/lotes/{codigo}/imprevistos`                  | Encargado, Ventas, Administrador | RF-31                                                  |
+| `PATCH` | `/api/lotes/{codigo}/imprevistos/{imprevisto}`     | Encargado de área, Administrador | RF-31                                                  |
 
 El retorno de metal (RF-27) viaja como `retorno_kg` en la salida de la parada de Desmolde.
 
@@ -128,6 +129,8 @@ Middleware: `auth:sanctum` y `role:administrador`.
 | `POST`  | `/broadcasting/auth`             | Administrador | RF-34, RF-37 |
 
 `GET /api/tablero` carga el estado inicial (lotes creados, en proceso y por confirmar, con su recorrido y costo a la fecha); después el tablero se mantiene al día con `lote.actualizado` del canal `tablero`.
+
+Las notificaciones son de Laravel (canales `database` + `broadcast`). Se guardan en `notifications` y se emiten por el canal privado de cada administrador, `App.Models.User.{id}` (autorizado en `routes/channels.php`). La respuesta de `GET /api/notificaciones` va paginada (15 por página; `?no_leidas=1` filtra las no leídas) y cada elemento lleva solo la carga mínima: `id`, `tipo` (`stock_minimo`, `lote_por_confirmar`, `imprevisto`), `mensaje`, `codigo` (del lote o del insumo), `leida` y `fecha`. **Sin costos ni el modelo completo.** Los avisos se disparan desde listeners (`NotificarStockMinimo` sobre `StockMinimoAlcanzado`, `NotificarLotePorConfirmar` sobre `LoteActualizado` solo al pasar a `por_confirmar`); el de imprevisto (`ImprevistoRegistrado`) queda listo y lo engancha T-43.
 
 ## Aplicación móvil
 

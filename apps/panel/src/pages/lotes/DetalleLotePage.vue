@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { Lote } from '@aleacion-prima/types';
+import type { Lote, Imprevisto } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
 import { conPlural, formatearMoneda } from '@/composables/formato';
 import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
@@ -13,14 +13,18 @@ import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
 import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
 import DialogoConfirmarCierre from '@/components/lotes/DialogoConfirmarCierre.vue';
 import DialogoCancelarLote from '@/components/lotes/DialogoCancelarLote.vue';
+import DialogoImprevisto from '@/components/lotes/DialogoImprevisto.vue';
+import ImprevistosLote from '@/components/lotes/ImprevistosLote.vue';
 import { useSesionStore } from '@/stores/sesion';
 
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
+const imprevistos = ref<Imprevisto[]>([]);
 const capturando = ref(false);
 const confirmando = ref(false);
 const cancelando = ref(false);
+const registrandoImprevisto = ref(false);
 const sesion = useSesionStore();
 
 const esAdmin = computed(() => sesion.usuario?.rol === 'administrador');
@@ -49,6 +53,13 @@ const fecha = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle:
 
 const paradaActual = computed(() =>
   lote.value?.paradas.find((parada) => estadoDeParada(parada) === 'en_curso'),
+);
+
+const paradasParaImprevisto = computed(
+  () =>
+    lote.value?.paradas.filter(
+      (parada) => parada.puede_capturar && parada.entrada_ocurrido_en !== null,
+    ) ?? [],
 );
 
 const ubicacion = computed(() => {
@@ -87,6 +98,14 @@ const piezasActuales = computed(() => {
       };
 });
 
+const cargarImprevistos = async (): Promise<void> => {
+  const codigo = String(route.params.codigo ?? '');
+  const { data, error } = await useApi<Imprevisto[]>(
+    `/lotes/${encodeURIComponent(codigo)}/imprevistos`,
+  ).json<Imprevisto[]>();
+  imprevistos.value = error.value ? [] : (data.value ?? []);
+};
+
 const cargar = async (): Promise<void> => {
   const codigo = String(route.params.codigo ?? '');
   const { data, error, statusCode } = await useApi<Lote>(
@@ -95,6 +114,7 @@ const cargar = async (): Promise<void> => {
   cargando.value = false;
   noEncontrado.value = Boolean(error.value) && statusCode.value === 404;
   lote.value = error.value ? null : data.value;
+  if (lote.value) await cargarImprevistos();
 };
 
 useLotesEnVivo(useCanalesDeLotes(), (evento) => {
@@ -240,10 +260,29 @@ watch(
 
       <q-card flat bordered class="q-mb-md">
         <q-card-section>
-          <h2 class="text-h6 q-mt-none q-mb-sm">Recorrido</h2>
+          <div class="row items-center justify-between q-mb-sm">
+            <h2 class="text-h6 q-my-none">Recorrido</h2>
+            <q-btn
+              v-if="paradasParaImprevisto.length > 0"
+              flat
+              no-caps
+              color="primary"
+              icon="warning"
+              label="Registrar imprevisto"
+              @click="registrandoImprevisto = true"
+            />
+          </div>
           <RecorridoLote :paradas="paradasDeLote(lote)" />
         </q-card-section>
       </q-card>
+
+      <ImprevistosLote
+        v-if="imprevistos.length > 0"
+        :lote="lote"
+        :imprevistos="imprevistos"
+        class="q-mb-md"
+        @cambio="cargarImprevistos"
+      />
 
       <q-card v-if="lote.insumos?.length" flat bordered>
         <q-card-section>
@@ -291,6 +330,15 @@ watch(
       :parada="captura.parada"
       :tipo="captura.tipo"
       @guardado="lote = $event"
+    />
+
+    <DialogoImprevisto
+      v-if="lote"
+      v-model="registrandoImprevisto"
+      :lote="lote"
+      :paradas="paradasParaImprevisto"
+      :parada-inicial="paradaActual?.id"
+      @guardado="cargarImprevistos"
     />
   </q-page>
 </template>
