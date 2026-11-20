@@ -12,6 +12,16 @@ defineProps<{ producto: ProductoPublico }>();
     </div>
     <h3 class="tarjeta__nombre">{{ producto.nombre }}</h3>
     <p class="tarjeta__material">{{ material(producto) }}</p>
+    <p
+      class="tarjeta__existencia"
+      :class="{ 'tarjeta__existencia--disponible': producto.disponible > 0 }"
+    >
+      {{
+        producto.disponible > 0
+          ? `${producto.disponible} ${producto.disponible === 1 ? 'disponible' : 'disponibles'}`
+          : 'Sobre pedido'
+      }}
+    </p>
     <a class="boton boton--contorno" :href="`/producto?id=${producto.id}`">Ver más</a>
   </article>
 </template>
@@ -51,9 +61,21 @@ defineProps<{ producto: ProductoPublico }>();
 }
 
 .tarjeta__material {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 12px;
   line-height: 16px;
   color: var(--ap-texto-secundario);
+}
+.tarjeta__existencia {
+  margin: 0 0 8px;
+  font-family: var(--fuente-codigo);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--ap-texto-secundario);
+}
+
+.tarjeta__existencia--disponible {
+  color: var(--q-positive);
 }
 </style>
