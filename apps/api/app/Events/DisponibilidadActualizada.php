@@ -30,13 +30,14 @@ class DisponibilidadActualizada implements ShouldBroadcast, ShouldDispatchAfterC
     }
 
     /**
-     * @return array{id: int, disponible: int}
+     * @return array{id: int, disponible: bool, cantidad: int|null}
      */
     public function broadcastWith(): array
     {
         return [
             'id' => $this->producto->id,
-            'disponible' => (int) $this->producto->existencia,
+            'disponible' => $this->producto->existencia > 0,
+            'cantidad' => $this->producto->mostrar_cantidad ? (int) $this->producto->existencia : null,
         ];
     }
 }

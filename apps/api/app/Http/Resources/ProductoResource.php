@@ -25,6 +25,7 @@ class ProductoResource extends JsonResource
             'precio_menudeo' => $this->precio_menudeo,
             'existencia' => $this->existencia,
             'publicado' => $this->publicado,
+            'mostrar_cantidad' => $this->mostrar_cantidad,
             'activo' => $this->activo,
             'recorrido' => $this->areas->map(fn ($area) => [
                 'id' => $area->id,

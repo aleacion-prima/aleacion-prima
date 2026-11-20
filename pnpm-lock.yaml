@@ -346,6 +346,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@aleacion-prima/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@astrojs/vue':
         specifier: ^7.0.3
         version: 7.0.3(@types/node@22.20.4)(astro@7.3.4(@capacitor/preferences@8.0.1(@capacitor/core@8.5.2))(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(@types/node@22.20.4)(jiti@2.7.0)(sass-embedded@1.105.0)(sass@1.105.0)(terser@5.51.2)(yaml@2.9.1))(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.105.0)(sass@1.105.0)(supports-color@8.1.1)(terser@5.51.2)(vue@3.5.43(typescript@6.0.3))(yaml@2.9.1)
