@@ -1,11 +1,19 @@
 <?php
 
+use App\Enums\Rol;
+use App\Events\CatalogoActualizado;
 use App\Events\DisponibilidadActualizada;
 use App\Models\Producto;
+use App\Models\User;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Routing\Route as Ruta;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
+use function Pest\Laravel\seed;
 
 function claves(mixed $datos): array
 {
@@ -64,4 +72,22 @@ it('ninguna ruta pública ni el evento del catálogo incluyen precios, costos ni
     });
 
     sinDatosPrivados((new DisponibilidadActualizada($producto))->broadcastWith(), $producto);
+    sinDatosPrivados((new CatalogoActualizado($producto->id))->broadcastWith(), $producto);
+});
+
+it('avisa al sitio en vivo cuando se publica un producto', function () {
+    seed(RolesSeeder::class);
+    $ventas = User::factory()->create();
+    $ventas->assignRole(Rol::Ventas);
+    Sanctum::actingAs($ventas, ['*']);
+    $producto = Producto::factory()->create(['publicado' => false]);
+    Event::fake([CatalogoActualizado::class]);
+
+    patchJson("/api/productos/{$producto->id}/publicacion", ['publicado' => true])->assertOk();
+
+    Event::assertDispatched(
+        CatalogoActualizado::class,
+        fn (CatalogoActualizado $evento) => $evento->broadcastWith() === ['id' => $producto->id]
+            && $evento->broadcastOn()[0]->name === 'catalogo',
+    );
 });

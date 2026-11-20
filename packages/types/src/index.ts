@@ -95,6 +95,10 @@ export interface ProductoPublico {
 }
 
 // Tiempo real (web publica)
+export interface CatalogoActualizado {
+  id: number;
+}
+
 export interface DisponibilidadActualizada {
   id: number;
   disponible: number;

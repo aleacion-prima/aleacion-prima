@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CatalogoActualizado;
 use App\Http\Requests\ProductoRequest;
 use App\Http\Requests\PublicarProductoRequest;
 use App\Http\Resources\ProductoResource;
@@ -68,6 +69,7 @@ class ProductoController extends Controller
             $producto->update([...$this->atributos($datos), 'activo' => $datos['activo']]);
             $this->guardarRecorridoYReceta($producto, $datos);
         });
+        CatalogoActualizado::dispatch($producto->id);
 
         return new ProductoResource($producto->refresh()->load(['areas', 'insumos']));
     }
@@ -75,6 +77,7 @@ class ProductoController extends Controller
     public function publicar(PublicarProductoRequest $request, Producto $producto): ProductoResource
     {
         $producto->update(['publicado' => $request->boolean('publicado')]);
+        CatalogoActualizado::dispatch($producto->id);
 
         return new ProductoResource($producto->load(['areas', 'insumos']));
     }
@@ -82,6 +85,7 @@ class ProductoController extends Controller
     public function destroy(Producto $producto): Response
     {
         $producto->update(['activo' => false]);
+        CatalogoActualizado::dispatch($producto->id);
 
         return response()->noContent();
     }

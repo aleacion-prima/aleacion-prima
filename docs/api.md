@@ -163,11 +163,11 @@ Contrato de los campos (RNF-04):
 
 ## Tiempo real
 
-| Canal      | Acceso                            | Eventos                                                           | RF            |
-| ---------- | --------------------------------- | ----------------------------------------------------------------- | ------------- |
-| `catalogo` | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }`        | RF-46, RNF-04 |
-| `tablero`  | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado` | RF-34, RF-37  |
-| `modulos`  | Privado, cualquier usuario activo | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`      | —             |
+| Canal      | Acceso                            | Eventos                                                                                                                                              | RF            |
+| ---------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `catalogo` | Público, sin `/broadcasting/auth` | `disponibilidad.actualizada` con solo `{ id, disponible }` y `catalogo.actualizado` con solo `{ id }` (al publicar, editar o desactivar un producto) | RF-46, RNF-04 |
+| `tablero`  | Privado, administrador            | `LoteActualizado`, `ImprevistoRegistrado`, `StockMinimoAlcanzado`                                                                                    | RF-34, RF-37  |
+| `modulos`  | Privado, cualquier usuario activo | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`                                                                                         | —             |
 
 El `/broadcasting/auth` autoriza cada canal privado por su clase (`routes/channels.php`): `tablero` solo admite administradores (`CanalTablero`), mientras que `modulos` admite a cualquier usuario activo (`CanalModulos`). En ambos casos un invitado se rechaza antes con 401 por `auth:sanctum`.
 

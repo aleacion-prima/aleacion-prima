@@ -2,16 +2,20 @@
 import { onMounted, ref } from 'vue';
 import type { ProductoPublico } from '@aleacion-prima/types';
 import { listarProductos } from '../../services/api';
+import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
 import TarjetaProducto from './TarjetaProducto.vue';
 
 const productos = ref<ProductoPublico[]>([]);
 const estado = ref<'cargando' | 'listo' | 'error'>('cargando');
 
-onMounted(async () => {
+const cargar = async (): Promise<void> => {
   const respuesta = await listarProductos();
   estado.value = respuesta ? 'listo' : 'error';
   productos.value = respuesta ?? [];
-});
+};
+
+onMounted(cargar);
+useCatalogoEnVivo({ catalogo: () => void cargar() });
 </script>
 
 <template>

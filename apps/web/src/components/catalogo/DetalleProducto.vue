@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { ProductoPublico } from '@aleacion-prima/types';
 import { listarProductos, obtenerProducto } from '../../services/api';
 import { datosTecnicos } from '../../composables/especificaciones';
-import { useDisponibilidadEnVivo } from '../../composables/disponibilidadEnVivo';
+import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
 import TarjetaProducto from './TarjetaProducto.vue';
 
 const producto = ref<ProductoPublico | null>(null);
@@ -13,7 +13,7 @@ const cambio = ref(false);
 
 const datos = computed(() => (producto.value ? datosTecnicos(producto.value) : []));
 
-onMounted(async () => {
+const cargar = async (): Promise<void> => {
   const id = Number(new URLSearchParams(window.location.search).get('id'));
   const [encontrado, lista] = await Promise.all([
     Number.isInteger(id) && id > 0 ? obtenerProducto(id) : Promise.resolve(null),
@@ -23,13 +23,18 @@ onMounted(async () => {
   otros.value = (lista ?? []).filter((otro) => otro.id !== id).slice(0, 3);
   estado.value = encontrado ? 'listo' : 'no-encontrado';
   if (encontrado) document.title = `${encontrado.nombre} · Aleación Prima`;
-});
+};
 
-useDisponibilidadEnVivo((evento) => {
-  if (!producto.value || evento.id !== producto.value.id) return;
-  producto.value = { ...producto.value, disponible: evento.disponible };
-  cambio.value = true;
-  setTimeout(() => (cambio.value = false), 1600);
+onMounted(cargar);
+
+useCatalogoEnVivo({
+  disponibilidad: (evento) => {
+    if (!producto.value || evento.id !== producto.value.id) return;
+    producto.value = { ...producto.value, disponible: evento.disponible };
+    cambio.value = true;
+    setTimeout(() => (cambio.value = false), 1600);
+  },
+  catalogo: () => void cargar(),
 });
 </script>
 
