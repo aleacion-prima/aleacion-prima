@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Usuario } from '@aleacion-prima/types';
+import type { Sesion, Usuario } from '@aleacion-prima/types';
 
 const preferencias = vi.hoisted(() => new Map<string, string>());
 
@@ -34,7 +34,7 @@ vi.mock('@/services/echo', () => ({
   desconectarEcho: echo.desconectar,
 }));
 
-const encargado: Usuario = {
+const encargado: Sesion = {
   id: 7,
   name: 'Juan Pérez',
   email: 'juan@aleacionprima.test',
@@ -109,6 +109,16 @@ describe('sesión en la app móvil', () => {
     expect(sesion.usuario).toBeNull();
   });
 
+  it('avisa que no hay conexión si la petición no llega al servidor', async () => {
+    fetchFalso.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const sesion = await crearSesion('capacitor');
+
+    await expect(sesion.iniciar('juan@aleacionprima.test', 'password')).rejects.toThrow(
+      'No hay conexión con el servidor',
+    );
+    expect(preferencias.has('token')).toBe(false);
+  });
+
   it('manda el token guardado como Bearer en las peticiones', async () => {
     preferencias.set('token', '1|abc');
     fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
@@ -143,6 +153,7 @@ describe('sesión en la app móvil', () => {
 
   it('al cerrar sesión revoca el token en la API y lo borra del dispositivo', async () => {
     preferencias.set('token', '1|abc');
+    preferencias.set('ultimos-escaneados', '[]');
     fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
     fetchFalso.mockResolvedValueOnce(respuesta(204));
     const sesion = await crearSesion('capacitor');
@@ -153,6 +164,7 @@ describe('sesión en la app móvil', () => {
     expect(llamada('/api/logout')?.method).toBe('POST');
     expect(cabecera('/api/logout', 'Authorization')).toBe('Bearer 1|abc');
     expect(preferencias.has('token')).toBe(false);
+    expect(preferencias.has('ultimos-escaneados')).toBe(false);
     expect(sesion.usuario).toBeNull();
   });
 });
@@ -167,6 +179,16 @@ describe('sesión en el panel', () => {
 
     expect(llamada('/api/user')?.credentials).toBe('include');
     expect(cabecera('/api/user', 'Authorization')).toBeNull();
+  });
+
+  it('avisa que no hay conexión si la petición no llega al servidor', async () => {
+    fetchFalso.mockRejectedValue(new TypeError('Failed to fetch'));
+    const sesion = await crearSesion('spa');
+
+    await expect(sesion.iniciar('juan@aleacionprima.test', 'password')).rejects.toThrow(
+      'No hay conexión con el servidor',
+    );
+    expect(sesion.usuario).toBeNull();
   });
 });
 

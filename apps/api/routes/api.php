@@ -4,18 +4,21 @@ use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\CierreLoteController;
 use App\Http\Controllers\EntradaInsumoController;
+use App\Http\Controllers\ImprevistoLoteController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ParadaLoteController;
 use App\Http\Controllers\PreguntaSecretaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\SegundoFactorController;
 use App\Http\Controllers\SesionActivaController;
 use App\Http\Controllers\SesionMovilController;
+use App\Http\Controllers\TableroController;
 use App\Http\Controllers\UsuarioController;
-use App\Http\Resources\UsuarioResource;
+use App\Http\Resources\SesionResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
@@ -23,12 +26,13 @@ use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 Route::post('/movil/login', [SesionMovilController::class, 'iniciar'])->middleware('throttle:login');
 
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
-    Route::get('/user', fn (Request $request) => new UsuarioResource($request->user()?->load('areas')));
+    Route::get('/user', fn (Request $request) => new SesionResource($request->user()?->load('areas')));
     Route::post('/logout', [SesionMovilController::class, 'cerrar']);
 
     Route::middleware(['role:administrador|ventas|encargado', 'ability:lotes:read'])->group(function () {
         Route::get('/lotes', [LoteController::class, 'index']);
         Route::get('/lotes/{lote}', [LoteController::class, 'show']);
+        Route::get('/lotes/{lote}/imprevistos', [ImprevistoLoteController::class, 'index']);
     });
 
     Route::middleware('ability:panel')->group(function () {
@@ -74,6 +78,13 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         });
 
         Route::middleware('role:administrador')->group(function () {
+            Route::get('/notificaciones', [NotificacionController::class, 'index']);
+            Route::patch('/notificaciones/{id}/leida', [NotificacionController::class, 'leida'])
+                ->whereUuid('id');
+            Route::post('/notificaciones/leidas', [NotificacionController::class, 'leidas']);
+        });
+
+        Route::middleware('role:administrador')->group(function () {
             Route::get('productos/opciones', [ProductoController::class, 'opciones']);
             Route::apiResource('productos', ProductoController::class);
         });
@@ -82,11 +93,15 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
             Route::post('/lotes', [LoteController::class, 'store']);
             Route::post('/lotes/{lote}/confirmar', [CierreLoteController::class, 'confirmar']);
             Route::post('/lotes/{lote}/cancelar', [CierreLoteController::class, 'cancelar']);
+            Route::get('/tablero', TableroController::class);
         });
 
         Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
             Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);
             Route::post('/lotes/{lote}/paradas/{parada}/salida', [ParadaLoteController::class, 'salida']);
+
+            Route::post('/lotes/{lote}/paradas/{parada}/imprevistos', [ImprevistoLoteController::class, 'store']);
+            Route::patch('/lotes/{lote}/imprevistos/{imprevisto}', [ImprevistoLoteController::class, 'update']);
         });
 
         // Módulo de ventas (apagado por defecto con Pennant). Las rutas de ventas

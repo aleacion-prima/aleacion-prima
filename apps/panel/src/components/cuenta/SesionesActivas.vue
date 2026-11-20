@@ -17,9 +17,9 @@ const ruta = computed(() =>
 
 // En modo admin (con `usuarioId`) se cierran todas; en modo propio, todas menos
 // la del propio navegador, que no se puede cerrar desde aquí.
-const etiquetaCerrarOtras = computed(() =>
-  props.usuarioId !== undefined ? 'Cerrar todas' : 'Cerrar las demás',
-);
+const modoAdmin = computed(() => props.usuarioId !== undefined);
+const etiquetaCerrarOtras = computed(() => (modoAdmin.value ? 'Cerrar todas' : 'Cerrar las demás'));
+const minimoParaCerrar = computed(() => (modoAdmin.value ? 1 : 2));
 
 const fecha = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
 const formatearFecha = (iso: string | null): string => (iso ? fecha.format(new Date(iso)) : '—');
@@ -54,10 +54,18 @@ const cerrarOtras = async (): Promise<void> => {
   const { error } = await useApi(ruta.value).delete().text();
   cerrando.value = false;
   if (error.value) {
-    $q.notify({ type: 'negative', message: 'No se pudieron cerrar las demás sesiones' });
+    $q.notify({
+      type: 'negative',
+      message: modoAdmin.value
+        ? 'No se pudieron cerrar las sesiones'
+        : 'No se pudieron cerrar las demás sesiones',
+    });
     return;
   }
-  $q.notify({ type: 'positive', message: 'Cerramos las demás sesiones' });
+  $q.notify({
+    type: 'positive',
+    message: modoAdmin.value ? 'Sesiones cerradas' : 'Cerramos las demás sesiones',
+  });
   await cargar();
 };
 
@@ -72,7 +80,7 @@ onMounted(cargar);
         no-caps
         color="primary"
         :label="etiquetaCerrarOtras"
-        :disable="cargando || cerrando || sesiones.length < 2"
+        :disable="cargando || cerrando || sesiones.length < minimoParaCerrar"
         @click="cerrarOtras"
       />
     </div>

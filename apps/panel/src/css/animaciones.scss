@@ -226,6 +226,20 @@
   opacity: 0;
 }
 
+.q-notification {
+  transition:
+    transform $duracion-media $curva-salida,
+    opacity $duracion-media $curva-salida;
+}
+
+.q-notification[class*='-leave-active'] {
+  transition: opacity $duracion-rapida ease-out;
+}
+
+.q-notification[class*='-leave-to'] {
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

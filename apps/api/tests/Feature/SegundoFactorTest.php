@@ -189,15 +189,49 @@ it('el administrador sin segundo_factor igual debe verificar por código', funct
     getJson('/api/user')->assertUnauthorized();
 });
 
-it('verificar con otra sesión ya activa responde 422, no redirige', function () {
+it('al entrar un usuario con 2FA, cierra la sesión del navegador hasta verificar', function () {
+    config(['segundo-factor.obligatorio_administrador' => true]);
     seed(RolesSeeder::class);
-    $otro = User::factory()->create();
-    $otro->assignRole(Rol::Ventas);
-    Sanctum::actingAs($otro, ['*']);
 
-    // Sin el middleware guest, la ruta responde 422 (código inválido) en vez de
-    // un 302 que provocaba el NetworkError del #93.
-    postJson('/login/verificar', ['codigo' => '000000'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('codigo');
+    // Ya hay una sesión activa en el navegador (un usuario sin 2FA).
+    $otro = User::factory()->create();
+    postJson('/login', ['email' => $otro->email, 'password' => 'password'])->assertNoContent();
+    getJson('/api/user')->assertOk();
+
+    // En producción cada petición es un proceso nuevo con el guard `web` por
+    // defecto. En las pruebas todo corre en un proceso: la petición con
+    // `auth:sanctum` de arriba dejó `sanctum` como guard por defecto y cacheó al
+    // usuario. Se restablece `web` y se olvidan los guards para imitar una
+    // petición nueva (como en "cierra la sesión de un usuario desactivado").
+    $restablecerPeticion = function (): void {
+        app('auth')->shouldUse('web');
+        app('auth')->forgetGuards();
+    };
+
+    // Entra el administrador (requiere 2FA): la sesión anterior deja de responder.
+    $admin = User::factory()->create();
+    $admin->assignRole(Rol::Administrador);
+    $restablecerPeticion();
+    $codigo = iniciarConCodigo($admin);
+
+    $restablecerPeticion();
+    getJson('/api/user')->assertUnauthorized();
+
+    $restablecerPeticion();
+    postJson('/login/verificar', ['codigo' => $codigo])->assertNoContent();
+    $restablecerPeticion();
+    assertAuthenticatedAs($admin);
+});
+
+it('el administrador con la columna en false igual reporta activo: true', function () {
+    config(['segundo-factor.obligatorio_administrador' => true]);
+    seed(RolesSeeder::class);
+    $admin = User::factory()->create(); // segundo_factor = false
+    $admin->assignRole(Rol::Administrador);
+    Sanctum::actingAs($admin, ['*']);
+
+    getJson('/api/perfil/segundo-factor')
+        ->assertOk()
+        ->assertJsonPath('activo', true)
+        ->assertJsonPath('obligatorio', true);
 });

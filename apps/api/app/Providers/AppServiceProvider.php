@@ -2,9 +2,15 @@
 
 namespace App\Providers;
 
+use App\Bitacora\EscritorBitacora;
+use App\Bitacora\EscritorBitacoraMongo;
 use App\Events\LoteActualizado;
+use App\Events\StockMinimoAlcanzado;
+use App\Imprevistos\AlmacenImprevistos;
+use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
-use App\Lotes\RecalcularCostoAlActualizar;
+use App\Listeners\NotificarLotePorConfirmar;
+use App\Listeners\NotificarStockMinimo;
 use App\Models\User;
 use App\Support\Modulos;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -18,17 +24,25 @@ use Illuminate\Validation\Rules\Password;
 use Laravel\Pennant\Events\FeatureUpdated;
 use Laravel\Pennant\Events\FeatureUpdatedForAllScopes;
 use Laravel\Pennant\Feature;
+use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        // Escritor de bitácora por defecto: inserta en Mongo después del commit
+        // de Postgres. Los tests lo reemplazan con un fake vía Bitacora::fake().
+        $this->app->singleton(EscritorBitacora::class, EscritorBitacoraMongo::class);
+    }
 
     public function boot(): void
     {
         JsonResource::withoutWrapping();
 
-        // Cada vez que un lote cambia, se recalcula su costo.
-        Event::listen(LoteActualizado::class, RecalcularCostoAlActualizar::class);
+        // Notificaciones en tiempo real a los administradores. El imprevisto
+        // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.
+        Event::listen(StockMinimoAlcanzado::class, NotificarStockMinimo::class);
+        Event::listen(LoteActualizado::class, NotificarLotePorConfirmar::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición
@@ -113,6 +127,12 @@ class AppServiceProvider extends ServiceProvider
         // Scope global: una bandera vale igual para todos, no por usuario.
         Feature::resolveScopeUsing(fn () => null);
 
+        // Una ruta de un módulo apagado no debe revelar que existe: responde 404
+        // (no existe) en vez del 400 por defecto de EnsureFeaturesAreActive.
+        EnsureFeaturesAreActive::whenInactive(function (Request $request, array $features) {
+            abort(404);
+        });
+
         // Cada módulo arranca apagado.
         foreach (Modulos::nombres() as $modulo) {
             Feature::define($modulo, fn () => false);
@@ -122,4 +142,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(FeatureUpdated::class, DifundirModulos::class);
         Event::listen(FeatureUpdatedForAllScopes::class, DifundirModulos::class);
     }
+
+    public array $bindings = [
+        AlmacenImprevistos::class => AlmacenImprevistosMongo::class,
+    ];
 }

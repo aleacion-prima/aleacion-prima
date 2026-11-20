@@ -19,6 +19,9 @@ class SesionController extends Controller
         // de verificar y se envía el código; ninguna ruta protegida responde
         // hasta mandar el código a /login/verificar.
         if ($segundoFactor->activoPara($usuario)) {
+            // Si ya había una sesión abierta en el navegador, se cierra: deja de
+            // responder en rutas protegidas mientras el código está pendiente.
+            Auth::guard('web')->logout();
             $request->session()->put('acceso.pendiente', $usuario->id);
             $request->session()->put('acceso.recordar', $request->boolean('recordar'));
             $segundoFactor->enviar($usuario);

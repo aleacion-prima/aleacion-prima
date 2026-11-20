@@ -2,12 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
 // Se emite cuando la existencia de un insumo llega a su stock mínimo o queda
 // por debajo. Por ahora solo es el evento; la notificación al administrador se
 // conecta en el Sprint 3 (T-32).
-class StockMinimoAlcanzado
+//
+// ShouldDispatchAfterCommit: se despacha dentro de las transacciones de ajuste,
+// entrada y creación de lote, así que debe esperar al commit para no notificar
+// con el insumo aún bloqueado ni sobre datos que podrían revertirse.
+class StockMinimoAlcanzado implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
 

@@ -1,5 +1,8 @@
 <?php
 
+use App\Bitacora\Bitacora;
+use App\Imprevistos\AlmacenImprevistos;
+use App\Imprevistos\AlmacenImprevistosFake;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,8 +17,14 @@ use Tests\TestCase;
 |
 */
 
+// Ningún test toca Mongo: la bitácora y los imprevistos usan fakes en memoria.
+// Los casos que lo necesitan rebindean su propio fake con Bitacora::fake().
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        Bitacora::fake();
+        app()->instance(AlmacenImprevistos::class, new AlmacenImprevistosFake);
+    })
     ->in('Feature');
 
 /*

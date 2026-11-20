@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Usuario, SesionMovil } from '@aleacion-prima/types';
-import { peticionSesion, prepararCsrf, useApi } from '@/services/api';
+import type { Usuario, Sesion, ModulosActualizados, SesionMovil } from '@aleacion-prima/types';
+import { SIN_CONEXION, peticionSesion, prepararCsrf, useApi } from '@/services/api';
 import { desconectarEcho, obtenerEcho } from '@/services/echo';
 
 const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
@@ -31,7 +31,7 @@ export const useSesionStore = defineStore('sesion', () => {
     suscritoModulos = true;
     obtenerEcho()
       .private('modulos')
-      .listen('.modulos.actualizados', (e: { modulos: Record<string, boolean> }) => {
+      .listen('.modulos.actualizados', (e: ModulosActualizados) => {
         modulos.value = e.modulos;
       });
   };
@@ -45,9 +45,10 @@ export const useSesionStore = defineStore('sesion', () => {
         return;
       }
     }
-    const { data, error, statusCode } = await useApi<Usuario>('/user').json<Usuario>();
-    usuario.value = error.value ? null : data.value;
-    modulos.value = usuario.value?.modulos ?? {};
+    const { data, error, statusCode } = await useApi<Sesion>('/user').json<Sesion>();
+    const sesion = error.value ? null : data.value;
+    usuario.value = sesion;
+    modulos.value = sesion?.modulos ?? {};
     cargada.value = true;
     if (ES_MOVIL && statusCode.value === 401) {
       const { borrarToken } = await import('@/services/tokenMovil');
@@ -69,15 +70,15 @@ export const useSesionStore = defineStore('sesion', () => {
   const iniciar = async (email: string, password: string): Promise<boolean> => {
     if (ES_MOVIL) {
       const { guardarToken } = await import('@/services/tokenMovil');
-      const { data, error } = await useApi('/movil/login')
+      const { data, error, statusCode } = await useApi('/movil/login')
         .post({ email, password })
         .json<Partial<SesionMovil> & { message?: string }>();
+      if (error.value && statusCode.value === null) throw new Error(SIN_CONEXION);
       if (error.value || !data.value?.token || !data.value.usuario) {
         throw new Error(data.value?.message ?? 'No se pudo iniciar sesión');
       }
       await guardarToken(data.value.token);
       usuario.value = data.value.usuario;
-      modulos.value = usuario.value.modulos ?? {};
       cargada.value = true;
       return false;
     }
@@ -121,8 +122,9 @@ export const useSesionStore = defineStore('sesion', () => {
   const cerrar = async (): Promise<void> => {
     if (ES_MOVIL) {
       const { borrarToken } = await import('@/services/tokenMovil');
+      const { borrarEscaneados } = await import('@/services/escaneados');
       await useApi('/logout').post();
-      await borrarToken();
+      await Promise.all([borrarToken(), borrarEscaneados()]);
     } else {
       await peticionSesion('/logout');
       desconectarEcho();

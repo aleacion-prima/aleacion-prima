@@ -189,14 +189,41 @@ export interface CrearLote {
   recorrido?: number[];
 }
 
+export interface Imprevisto {
+  id: string;
+  lote_id: number;
+  area: ReferenciaCatalogo | null;
+  tipo: TipoImprevisto;
+  descripcion: string;
+  maquina: string | null;
+  piezas_afectadas: number | null;
+  duracion_minutos: number | null;
+  resuelto: boolean;
+  registrado_por: string | null;
+  ocurrido_en: string;
+  created_at: string;
+}
+
 export interface Usuario {
   id: number;
   name: string;
   email: string;
   rol: Rol | null;
   activo: boolean;
-  modulos: Record<string, boolean>;
   areas?: AreaAsignada[];
+}
+
+// Módulos de config('modulos'): unión de los nombres de bandera (Pennant).
+export type Modulo = 'ventas';
+
+// GET /api/user: el usuario de la sesión más el estado de los módulos.
+export interface Sesion extends Usuario {
+  modulos: Record<Modulo, boolean>;
+}
+
+// Carga del evento `.modulos.actualizados` por el canal privado `modulos`.
+export interface ModulosActualizados {
+  modulos: Record<Modulo, boolean>;
 }
 
 export interface SesionMovil {
@@ -212,6 +239,15 @@ export interface SesionActiva {
   ip: string | null;
   ultima_actividad: string | null;
   actual: boolean;
+}
+
+export interface Notificacion {
+  id: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
 }
 
 export interface AreaAsignada {
@@ -282,5 +318,5 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
-  encargados?: Usuario[];
+  encargados?: Pick<Usuario, 'id' | 'name'>[];
 }
