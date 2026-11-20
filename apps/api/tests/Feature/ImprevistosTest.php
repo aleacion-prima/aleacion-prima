@@ -242,7 +242,7 @@ it('no encuentra imprevistos que no existen o son de otro lote', function () {
         ->assertNotFound();
 });
 
-it('avisa al tablero con ImprevistoRegistrado', function () {
+it('avisa al tablero y a las áreas del lote con ImprevistoRegistrado', function () {
     Event::fake([ImprevistoRegistrado::class]);
     entrarParaImprevistos(Rol::Administrador);
     $lote = loteParaImprevistos();
@@ -256,7 +256,10 @@ it('avisa al tablero con ImprevistoRegistrado', function () {
         fn (ImprevistoRegistrado $evento) => $evento->codigoLote === $lote->codigo
             && $evento->areaId === $parada->area_id
             && $evento->tipo === 'falla_maquina'
-            && collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all() === ['private-tablero'],
+            && collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all() === [
+                'private-tablero',
+                ...$lote->paradas()->pluck('area_id')->unique()->map(fn ($area) => "private-area.{$area}")->values()->all(),
+            ],
     );
 });
 

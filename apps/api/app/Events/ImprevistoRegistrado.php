@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Models\Lote;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -28,7 +29,12 @@ class ImprevistoRegistrado implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('tablero')];
+        $areas = Lote::query()->where('codigo', $this->codigoLote)->first()?->paradas()->pluck('area_id')->unique()->values() ?? collect();
+
+        return [
+            new PrivateChannel('tablero'),
+            ...$areas->map(fn ($area) => new PrivateChannel("area.{$area}"))->all(),
+        ];
     }
 
     public function broadcastAs(): string
