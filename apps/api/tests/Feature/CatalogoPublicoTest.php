@@ -46,7 +46,8 @@ it('lista solo los productos publicados y activos, sin sesión', function () {
             'id' => $publicado->id,
             'nombre' => $publicado->nombre,
             'especificaciones' => $publicado->especificaciones,
-            'disponible' => 7,
+            'disponible' => true,
+            'cantidad' => 7,
         ]]);
 });
 
@@ -90,4 +91,31 @@ it('avisa al sitio en vivo cuando se publica un producto', function () {
         fn (CatalogoActualizado $evento) => $evento->broadcastWith() === ['id' => $producto->id]
             && $evento->broadcastOn()[0]->name === 'catalogo',
     );
+});
+
+it('oculta la cantidad cuando el producto no la muestra, en la API y en el evento', function () {
+    $producto = Producto::factory()->create(['publicado' => true, 'existencia' => 9, 'mostrar_cantidad' => false]);
+
+    getJson("/api/publico/productos/{$producto->id}")
+        ->assertOk()
+        ->assertJsonPath('disponible', true)
+        ->assertJsonPath('cantidad', null);
+
+    expect((new DisponibilidadActualizada($producto))->broadcastWith())
+        ->toBe(['id' => $producto->id, 'disponible' => true, 'cantidad' => null]);
+});
+
+it('ventas cambia si se muestra la cantidad sin tocar la publicación', function () {
+    seed(RolesSeeder::class);
+    $ventas = User::factory()->create();
+    $ventas->assignRole(Rol::Ventas);
+    Sanctum::actingAs($ventas, ['*']);
+    $producto = Producto::factory()->create(['publicado' => true]);
+
+    patchJson("/api/productos/{$producto->id}/publicacion", ['mostrar_cantidad' => false])
+        ->assertOk()
+        ->assertJsonPath('publicado', true)
+        ->assertJsonPath('mostrar_cantidad', false);
+
+    patchJson("/api/productos/{$producto->id}/publicacion", [])->assertUnprocessable();
 });

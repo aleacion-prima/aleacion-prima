@@ -106,6 +106,7 @@ Convenciones: ids `bigint` autoincrementales (default de Laravel); `created_at`/
 | `precio_menudeo`   | decimal(14,4) | Ídem                                                         |
 | `existencia`       | integer       | Cache de producto terminado (ver `movimientos_producto`)     |
 | `publicado`        | boolean       | Si aparece en el sitio público                               |
+| `mostrar_cantidad` | boolean       | Si el sitio muestra la existencia exacta o solo "Disponible" |
 | `activo`           | boolean       |                                                              |
 
 **`producto_area`** — recorrido por defecto del producto. Debe cumplir la validación de recorrido (abajo).

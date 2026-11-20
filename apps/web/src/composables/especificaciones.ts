@@ -36,3 +36,9 @@ export const datosTecnicos = (producto: ProductoPublico): DatoTecnico[] => {
   }
   return datos;
 };
+
+export const existencia = (producto: ProductoPublico): string => {
+  if (!producto.disponible) return 'Sobre pedido';
+  if (producto.cantidad === null) return 'Disponible';
+  return `${producto.cantidad} ${producto.cantidad === 1 ? 'disponible' : 'disponibles'}`;
+};

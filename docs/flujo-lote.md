@@ -103,7 +103,7 @@ Cada registro dispara un evento a Reverb para el tablero del administrador. Los 
 
 1. Al registrar la salida de la **última área**, el lote pasa a `por_confirmar`. Todavía no cuenta en inventario.
 2. El **administrador confirma** desde el panel (para el MVP, un botón). Ese paso evita que un error de captura publique disponibilidad falsa en el sitio (riesgo RE-04).
-3. Al confirmar: el lote pasa a `terminado`, las piezas entregadas entran al **inventario de producto terminado**, se emite el evento público `disponibilidad.actualizada` (solo `{ id, disponible }`) y se **congela el costo real**.
+3. Al confirmar: el lote pasa a `terminado`, las piezas entregadas entran al **inventario de producto terminado**, se emite el evento público `disponibilidad.actualizada` (solo `{ id, disponible, cantidad }`) y se **congela el costo real**.
 
 ### Cancelación
 

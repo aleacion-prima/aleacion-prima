@@ -17,7 +17,8 @@ class PublicarProductoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'publicado' => ['required', 'boolean'],
+            'publicado' => ['required_without:mostrar_cantidad', 'boolean'],
+            'mostrar_cantidad' => ['required_without:publicado', 'boolean'],
         ];
     }
 }

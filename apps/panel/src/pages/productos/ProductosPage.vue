@@ -270,10 +270,13 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Producto actualizado' : 'Producto creado' });
 };
 
-const publicar = async (producto: Producto, publicado: boolean): Promise<void> => {
+const publicar = async (
+  producto: Producto,
+  cambios: { publicado?: boolean; mostrar_cantidad?: boolean },
+): Promise<void> => {
   publicando.value = producto.id;
   const { data, error } = await useApi(`/productos/${producto.id}/publicacion`)
-    .patch({ publicado })
+    .patch(cambios)
     .json<Producto>();
   publicando.value = null;
   if (error.value || !data.value) {
@@ -362,7 +365,14 @@ onMounted(cargar);
               label="Publicado"
               color="positive"
               :disable="!producto.activo || publicando === producto.id"
-              @update:model-value="(valor) => publicar(producto, valor)"
+              @update:model-value="(valor) => publicar(producto, { publicado: valor })"
+            />
+            <q-toggle
+              :model-value="producto.mostrar_cantidad"
+              label="Mostrar cantidad"
+              color="positive"
+              :disable="!producto.publicado || publicando === producto.id"
+              @update:model-value="(valor) => publicar(producto, { mostrar_cantidad: valor })"
             />
             <q-space />
             <q-btn

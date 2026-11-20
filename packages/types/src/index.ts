@@ -91,7 +91,8 @@ export interface ProductoPublico {
   id: number;
   nombre: string;
   especificaciones: Record<string, string | number> | null;
-  disponible: number;
+  disponible: boolean;
+  cantidad: number | null;
 }
 
 // Tiempo real (web publica)
@@ -101,7 +102,8 @@ export interface CatalogoActualizado {
 
 export interface DisponibilidadActualizada {
   id: number;
-  disponible: number;
+  disponible: boolean;
+  cantidad: number | null;
 }
 
 // Lotes y roles
@@ -293,6 +295,7 @@ export interface Producto {
   precio_menudeo: string;
   existencia: number;
   publicado: boolean;
+  mostrar_cantidad: boolean;
   activo: boolean;
   recorrido: ProductoArea[];
   receta: ProductoInsumo[];

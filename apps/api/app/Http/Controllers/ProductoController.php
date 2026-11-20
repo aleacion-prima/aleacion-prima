@@ -76,7 +76,7 @@ class ProductoController extends Controller
 
     public function publicar(PublicarProductoRequest $request, Producto $producto): ProductoResource
     {
-        $producto->update(['publicado' => $request->boolean('publicado')]);
+        $producto->update($request->validated());
         CatalogoActualizado::dispatch($producto->id);
 
         return new ProductoResource($producto->load(['areas', 'insumos']));

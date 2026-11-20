@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import type { ProductoPublico } from '@aleacion-prima/types';
 import { listarProductos, obtenerProducto } from '../../services/api';
-import { datosTecnicos } from '../../composables/especificaciones';
+import { datosTecnicos, existencia } from '../../composables/especificaciones';
 import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
 import TarjetaProducto from './TarjetaProducto.vue';
 
@@ -30,7 +30,11 @@ onMounted(cargar);
 useCatalogoEnVivo({
   disponibilidad: (evento) => {
     if (!producto.value || evento.id !== producto.value.id) return;
-    producto.value = { ...producto.value, disponible: evento.disponible };
+    producto.value = {
+      ...producto.value,
+      disponible: evento.disponible,
+      cantidad: evento.cantidad,
+    };
     cambio.value = true;
     setTimeout(() => (cambio.value = false), 1600);
   },
@@ -67,15 +71,15 @@ useCatalogoEnVivo({
             </span>
           </div>
           <div class="ficha__fila">
-            <span class="ficha__etiqueta">Disponibles</span>
+            <span class="ficha__etiqueta">Disponibilidad</span>
             <span
               class="ficha__valor ficha__valor--mono"
               :class="{
-                'ficha__valor--positivo': producto.disponible > 0,
+                'ficha__valor--positivo': producto.disponible,
                 'ficha__valor--cambio': cambio,
               }"
             >
-              {{ producto.disponible }}
+              {{ existencia(producto) }}
             </span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ProductoPublico } from '@aleacion-prima/types';
-import { material } from '../../composables/especificaciones';
+import { existencia, material } from '../../composables/especificaciones';
 
 defineProps<{ producto: ProductoPublico }>();
 </script>
@@ -14,13 +14,9 @@ defineProps<{ producto: ProductoPublico }>();
     <p class="tarjeta__material">{{ material(producto) }}</p>
     <p
       class="tarjeta__existencia"
-      :class="{ 'tarjeta__existencia--disponible': producto.disponible > 0 }"
+      :class="{ 'tarjeta__existencia--disponible': producto.disponible }"
     >
-      {{
-        producto.disponible > 0
-          ? `${producto.disponible} ${producto.disponible === 1 ? 'disponible' : 'disponibles'}`
-          : 'Sobre pedido'
-      }}
+      {{ existencia(producto) }}
     </p>
     <a class="boton boton--contorno" :href="`/producto?id=${producto.id}`">Ver más</a>
   </article>

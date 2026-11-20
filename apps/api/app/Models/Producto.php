@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'precio_menudeo',
     'existencia',
     'publicado',
+    'mostrar_cantidad',
     'activo',
 ])]
 class Producto extends Model
@@ -31,6 +32,7 @@ class Producto extends Model
             'especificaciones' => 'array',
             'existencia' => 'integer',
             'publicado' => 'boolean',
+            'mostrar_cantidad' => 'boolean',
             'activo' => 'boolean',
         ];
     }

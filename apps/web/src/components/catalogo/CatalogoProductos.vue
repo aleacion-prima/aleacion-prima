@@ -10,12 +10,12 @@ const estado = ref<'cargando' | 'listo' | 'error'>('cargando');
 
 const disponibles = computed(() =>
   productos.value
-    .filter((producto) => producto.disponible > 0)
-    .sort((a, b) => b.disponible - a.disponible || a.nombre.localeCompare(b.nombre)),
+    .filter((producto) => producto.disponible)
+    .sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0) || a.nombre.localeCompare(b.nombre)),
 );
 const sobrePedido = computed(() =>
   productos.value
-    .filter((producto) => producto.disponible <= 0)
+    .filter((producto) => !producto.disponible)
     .sort((a, b) => a.nombre.localeCompare(b.nombre)),
 );
 
@@ -30,7 +30,9 @@ useCatalogoEnVivo({
   catalogo: () => void cargar(),
   disponibilidad: (evento) => {
     productos.value = productos.value.map((producto) =>
-      producto.id === evento.id ? { ...producto, disponible: evento.disponible } : producto,
+      producto.id === evento.id
+        ? { ...producto, disponible: evento.disponible, cantidad: evento.cantidad }
+        : producto,
     );
   },
 });

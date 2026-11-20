@@ -20,7 +20,8 @@ class ProductoPublicoResource extends JsonResource
             'id' => $this->id,
             'nombre' => $this->nombre,
             'especificaciones' => $this->especificaciones,
-            'disponible' => (int) $this->existencia,
+            'disponible' => $this->existencia > 0,
+            'cantidad' => $this->mostrar_cantidad ? (int) $this->existencia : null,
         ];
     }
 }
