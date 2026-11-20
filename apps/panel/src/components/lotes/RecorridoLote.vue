@@ -93,8 +93,9 @@ const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' | 'cancelado'
     .recorrido__enlace {
       flex: 0 0 28px;
       width: 3px;
+      min-width: 0;
       height: 28px;
-      margin-left: 28px;
+      margin: 6px 0 6px 28px;
       background: repeating-linear-gradient(180deg, $acero-claro 0 3px, transparent 3px 9px);
 
       &--terminado {
