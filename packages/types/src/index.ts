@@ -189,6 +189,21 @@ export interface CrearLote {
   recorrido?: number[];
 }
 
+export interface Imprevisto {
+  id: string;
+  lote_id: number;
+  area: ReferenciaCatalogo | null;
+  tipo: TipoImprevisto;
+  descripcion: string;
+  maquina: string | null;
+  piezas_afectadas: number | null;
+  duracion_minutos: number | null;
+  resuelto: boolean;
+  registrado_por: string | null;
+  ocurrido_en: string;
+  created_at: string;
+}
+
 export interface Usuario {
   id: number;
   name: string;

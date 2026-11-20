@@ -4,6 +4,7 @@ use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\CierreLoteController;
 use App\Http\Controllers\EntradaInsumoController;
+use App\Http\Controllers\ImprevistoLoteController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoteController;
@@ -29,6 +30,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::middleware(['role:administrador|ventas|encargado', 'ability:lotes:read'])->group(function () {
         Route::get('/lotes', [LoteController::class, 'index']);
         Route::get('/lotes/{lote}', [LoteController::class, 'show']);
+        Route::get('/lotes/{lote}/imprevistos', [ImprevistoLoteController::class, 'index']);
     });
 
     Route::middleware('ability:panel')->group(function () {
@@ -75,6 +77,9 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::middleware('role:administrador|encargado')->scopeBindings()->group(function () {
             Route::post('/lotes/{lote}/paradas/{parada}/entrada', [ParadaLoteController::class, 'entrada']);
             Route::post('/lotes/{lote}/paradas/{parada}/salida', [ParadaLoteController::class, 'salida']);
+
+            Route::post('/lotes/{lote}/paradas/{parada}/imprevistos', [ImprevistoLoteController::class, 'store']);
+            Route::patch('/lotes/{lote}/imprevistos/{imprevisto}', [ImprevistoLoteController::class, 'update']);
         });
 
         // Módulo de ventas (apagado por defecto con Pennant). Las rutas de ventas

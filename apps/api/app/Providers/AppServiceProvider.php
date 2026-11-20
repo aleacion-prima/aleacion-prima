@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
+use App\Imprevistos\AlmacenImprevistos;
+use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
 use App\Models\User;
 use App\Support\Modulos;
@@ -124,4 +126,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(FeatureUpdated::class, DifundirModulos::class);
         Event::listen(FeatureUpdatedForAllScopes::class, DifundirModulos::class);
     }
+
+    public array $bindings = [
+        AlmacenImprevistos::class => AlmacenImprevistosMongo::class,
+    ];
 }
