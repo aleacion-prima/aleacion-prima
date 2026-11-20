@@ -20,9 +20,10 @@ class UsuarioResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'email' => $this->email,
+            'email' => $this->email_baja ?? $this->email,
             'rol' => $this->getRoleNames()->first(),
             'activo' => $this->activo,
+            'dado_de_baja_en' => $this->dado_de_baja_en?->toIso8601String(),
             'areas' => $this->whenLoaded('areas', fn () => $this->areas->map(fn (Area $area) => [
                 'id' => $area->id,
                 'codigo' => $area->codigo,

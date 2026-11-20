@@ -326,16 +326,20 @@ Un ajuste sobre existencias crea además su `movimientos_insumo` / `movimientos_
 
 ### Usuarios, roles, notificaciones
 
-**`users`** — la de Laravel más `activo`. Los roles (`administrador`, `ventas`, `encargado` y, si entra el chat, `cliente`) van en las tablas de Spatie; las áreas que cubre un encargado, en `area_user`.
+**`users`** — la de Laravel más `activo`, `dado_de_baja_en` y `email_baja`. Los roles (`administrador`, `ventas`, `encargado` y, si entra el chat, `cliente`) van en las tablas de Spatie; las áreas que cubre un encargado, en `area_user`.
 
-| Columna             | Tipo            | Notas                             |
-| ------------------- | --------------- | --------------------------------- |
-| `name`              | string          |                                   |
-| `email`             | string, único   | Usuario de inicio de sesión       |
-| `password`          | string          | Hash bcrypt; nunca sale en la API |
-| `email_verified_at` | timestamp, null | Columna estándar de Laravel       |
-| `remember_token`    | string, null    | Columna estándar de Laravel       |
-| `activo`            | boolean         | Baja lógica                       |
+| Columna             | Tipo            | Notas                                                                |
+| ------------------- | --------------- | -------------------------------------------------------------------- |
+| `name`              | string          |                                                                      |
+| `email`             | string, único   | Usuario de inicio de sesión; al dar de baja pasa a un placeholder    |
+| `password`          | string          | Hash bcrypt; nunca sale en la API                                    |
+| `email_verified_at` | timestamp, null | Columna estándar de Laravel                                          |
+| `remember_token`    | string, null    | Columna estándar de Laravel                                          |
+| `activo`            | boolean         | Cuenta habilitada; `false` no la oculta de la lista                  |
+| `dado_de_baja_en`   | timestamp, null | Fecha de la baja lógica; si tiene valor, la cuenta está dada de baja |
+| `email_baja`        | string, null    | Correo original archivado al dar de baja; el índice único es `email` |
+
+Al dar de baja se conservan la cuenta y su historial, pero `email` se libera con un placeholder único (`baja.{id}@baja.aleacionprima.invalid`) para poder reutilizar el correo real en una cuenta nueva. La API devuelve `email_baja` cuando existe.
 
 **`notifications`** — la tabla estándar de Laravel. Es el **centro de notificaciones**: imprevistos, stock mínimo, lotes por confirmar. Cada notificación se emite además por Reverb al canal privado del usuario.
 

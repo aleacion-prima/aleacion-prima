@@ -35,6 +35,7 @@ it('devuelve el usuario con su rol y sin contraseña', function () {
             'email' => $user->email,
             'rol' => 'ventas',
             'activo' => true,
+            'dado_de_baja_en' => null,
             'modulos' => ['ventas' => false],
             'areas' => [],
         ]);
