@@ -95,7 +95,8 @@ const guardar = async (): Promise<void> => {
       maquina: formulario.maquina.trim() === '' ? null : formulario.maquina,
       piezas_afectadas: formulario.piezas_afectadas,
       duracion_minutos: formulario.duracion_minutos,
-      ocurrido_en: formulario.ocurrido_en === '' ? null : formulario.ocurrido_en,
+      ocurrido_en:
+        formulario.ocurrido_en === '' ? null : new Date(formulario.ocurrido_en).toISOString(),
       resuelto: formulario.resuelto,
     })
     .json<Imprevisto>();
