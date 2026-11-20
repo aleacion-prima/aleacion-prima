@@ -33,7 +33,7 @@ Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en
 
 ## Catálogos
 
-Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lecturas (ver Pendiente: lectura de catálogos para Ventas). La publicación de productos está planeada para Ventas y Administrador.
+Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lecturas (ver Pendiente: lectura de catálogos para Ventas). Excepción: Ventas también lee productos y sus opciones, y publica o despublica con `PATCH /api/productos/{producto}/publicacion` (`{ publicado }`); crear, editar y desactivar sigue siendo solo del Administrador.
 
 | Método   | Ruta                                    | Rol                   | RF           |
 | -------- | --------------------------------------- | --------------------- | ------------ |
@@ -42,9 +42,9 @@ Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lectur
 | `POST`   | `/api/areas`                            | Administrador         | RF-06        |
 | `PUT`    | `/api/areas/{area}`                     | Administrador         | RF-06        |
 | `DELETE` | `/api/areas/{area}`                     | Administrador         | RF-06        |
-| `GET`    | `/api/productos`                        | Administrador         | RF-07        |
-| `GET`    | `/api/productos/opciones`               | Administrador         | RF-07        |
-| `GET`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
+| `GET`    | `/api/productos`                        | Ventas, Administrador | RF-07, RF-52 |
+| `GET`    | `/api/productos/opciones`               | Ventas, Administrador | RF-07        |
+| `GET`    | `/api/productos/{producto}`             | Ventas, Administrador | RF-07        |
 | `POST`   | `/api/productos`                        | Administrador         | RF-07        |
 | `PUT`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
 | `DELETE` | `/api/productos/{producto}`             | Administrador         | RF-07        |

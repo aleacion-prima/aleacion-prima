@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductoRequest;
+use App\Http\Requests\PublicarProductoRequest;
 use App\Http\Resources\ProductoResource;
 use App\Models\Area;
 use App\Models\Insumo;
@@ -69,6 +70,13 @@ class ProductoController extends Controller
         });
 
         return new ProductoResource($producto->refresh()->load(['areas', 'insumos']));
+    }
+
+    public function publicar(PublicarProductoRequest $request, Producto $producto): ProductoResource
+    {
+        $producto->update(['publicado' => $request->boolean('publicado')]);
+
+        return new ProductoResource($producto->load(['areas', 'insumos']));
     }
 
     public function destroy(Producto $producto): Response

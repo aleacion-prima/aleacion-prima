@@ -5,6 +5,7 @@ import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import { formatearCantidad, formatearMoneda } from '@/composables/formato';
 import type { AreaOpcion, OpcionesProducto, Producto } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { useSesionStore } from '@/stores/sesion';
 
 interface OpcionMaterial {
   label: string;
@@ -47,6 +48,9 @@ const opcionesEstado = [
 ];
 
 const $q = useQuasar();
+const sesion = useSesionStore();
+const esAdministrador = computed(() => sesion.usuario?.rol === 'administrador');
+const publicando = ref<number | null>(null);
 const productos = ref<Producto[]>([]);
 const opciones = ref<OpcionesProducto>({ areas: [], insumos: [] });
 const dialogo = ref(false);
@@ -266,6 +270,22 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Producto actualizado' : 'Producto creado' });
 };
 
+const publicar = async (producto: Producto, publicado: boolean): Promise<void> => {
+  publicando.value = producto.id;
+  const { data, error } = await useApi(`/productos/${producto.id}/publicacion`)
+    .patch({ publicado })
+    .json<Producto>();
+  publicando.value = null;
+  if (error.value || !data.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo cambiar la publicación' });
+    return;
+  }
+  const actualizado = data.value;
+  productos.value = productos.value.map((actual) =>
+    actual.id === actualizado.id ? actualizado : actual,
+  );
+};
+
 onMounted(cargar);
 </script>
 
@@ -279,6 +299,7 @@ onMounted(cargar);
         </div>
       </div>
       <q-btn
+        v-if="esAdministrador"
         outline
         color="primary"
         icon="add"
@@ -336,7 +357,16 @@ onMounted(cargar);
 
           <q-space />
           <q-card-actions align="right">
+            <q-toggle
+              :model-value="producto.publicado"
+              label="Publicado"
+              color="positive"
+              :disable="!producto.activo || publicando === producto.id"
+              @update:model-value="(valor) => publicar(producto, valor)"
+            />
+            <q-space />
             <q-btn
+              v-if="esAdministrador"
               class="catalogo-boton"
               outline
               no-caps

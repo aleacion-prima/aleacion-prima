@@ -48,7 +48,8 @@ class Producto extends Model
     {
         return $this->belongsToMany(Insumo::class, 'producto_insumo')
             ->using(ProductoInsumo::class)
-            ->withPivot('cantidad_por_pieza');
+            ->withPivot('cantidad_por_pieza')
+            ->orderByPivot('id');
     }
 
     /** @return HasMany<MovimientoProducto, $this> */

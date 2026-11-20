@@ -90,9 +90,14 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
             Route::post('/notificaciones/leidas', [NotificacionController::class, 'leidas']);
         });
 
-        Route::middleware('role:administrador')->group(function () {
+        Route::middleware('role:administrador|ventas')->group(function () {
             Route::get('productos/opciones', [ProductoController::class, 'opciones']);
-            Route::apiResource('productos', ProductoController::class);
+            Route::apiResource('productos', ProductoController::class)->only(['index', 'show']);
+            Route::patch('productos/{producto}/publicacion', [ProductoController::class, 'publicar']);
+        });
+
+        Route::middleware('role:administrador')->group(function () {
+            Route::apiResource('productos', ProductoController::class)->except(['index', 'show']);
         });
 
         Route::middleware('role:administrador')->group(function () {
