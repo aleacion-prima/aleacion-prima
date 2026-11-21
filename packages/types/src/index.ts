@@ -87,10 +87,23 @@ export const TIPOS_EVENTO_BITACORA = [
 ] as const;
 export type TipoEventoBitacora = (typeof TIPOS_EVENTO_BITACORA)[number];
 
+export interface ProductoPublico {
+  id: number;
+  nombre: string;
+  especificaciones: Record<string, string | number> | null;
+  disponible: boolean;
+  cantidad: number | null;
+}
+
 // Tiempo real (web publica)
+export interface CatalogoActualizado {
+  id: number;
+}
+
 export interface DisponibilidadActualizada {
   id: number;
-  disponible: number;
+  disponible: boolean;
+  cantidad: number | null;
 }
 
 // Lotes y roles
@@ -215,6 +228,7 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
   activo: boolean;
+  dado_de_baja_en: string | null;
   areas?: AreaAsignada[];
 }
 
@@ -287,6 +301,7 @@ export interface Producto {
   precio_menudeo: string;
   existencia: number;
   publicado: boolean;
+  mostrar_cantidad: boolean;
   activo: boolean;
   recorrido: ProductoArea[];
   receta: ProductoInsumo[];

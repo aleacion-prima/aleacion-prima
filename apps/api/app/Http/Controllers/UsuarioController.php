@@ -14,10 +14,22 @@ use Illuminate\Support\Facades\DB;
 
 class UsuarioController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Los correos de baja viven en un dominio reservado para que nadie los reciba.
+     */
+    private const DOMINIO_BAJA = 'baja.aleacionprima.invalid';
+
+    public function index(Request $request): JsonResponse
     {
         return response()->json(UsuarioResource::collection(
-            User::query()->with('areas')->orderBy('name')->get(),
+            User::query()
+                ->with('areas')
+                ->when(
+                    ! $request->boolean('incluir_bajas'),
+                    fn ($consulta) => $consulta->whereNull('dado_de_baja_en'),
+                )
+                ->orderBy('name')
+                ->get(),
         ));
     }
 
@@ -38,6 +50,12 @@ class UsuarioController extends Controller
     public function update(GuardarUsuarioRequest $request, User $usuario): JsonResponse
     {
         $datos = $request->validated();
+
+        abort_if(
+            $usuario->dado_de_baja_en !== null,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'Un usuario dado de baja ya no se edita.'
+        );
 
         abort_if(
             array_key_exists('activo', $datos)
@@ -72,8 +90,21 @@ class UsuarioController extends Controller
             'No puedes darte de baja a ti mismo.'
         );
 
+        abort_if(
+            $usuario->dado_de_baja_en !== null,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'Ese usuario ya está dado de baja.'
+        );
+
         DB::transaction(function () use ($usuario): void {
-            $usuario->forceFill(['activo' => false])->save();
+            // La baja conserva la cuenta y su historial, pero libera el correo
+            // (es único) y lo archiva para poder consultarlo después.
+            $usuario->forceFill([
+                'activo' => false,
+                'dado_de_baja_en' => now(),
+                'email_baja' => $usuario->email,
+                'email' => "baja.{$usuario->id}@".self::DOMINIO_BAJA,
+            ])->save();
             $usuario->tokens()->delete();
             UsuarioActualizado::dispatch($usuario->id);
         });

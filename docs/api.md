@@ -33,7 +33,7 @@ Sin middleware de rol salvo que se indique. Detalle de cookies, CSRF y tokens en
 
 ## Catálogos
 
-Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lecturas (ver Pendiente: lectura de catálogos para Ventas). La publicación de productos está planeada para Ventas y Administrador.
+Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lecturas (ver Pendiente: lectura de catálogos para Ventas). Excepción: Ventas también lee productos y sus opciones, y publica o despublica con `PATCH /api/productos/{producto}/publicacion` (`{ publicado }`); crear, editar y desactivar sigue siendo solo del Administrador.
 
 | Método   | Ruta                                    | Rol                   | RF           |
 | -------- | --------------------------------------- | --------------------- | ------------ |
@@ -42,9 +42,9 @@ Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lectur
 | `POST`   | `/api/areas`                            | Administrador         | RF-06        |
 | `PUT`    | `/api/areas/{area}`                     | Administrador         | RF-06        |
 | `DELETE` | `/api/areas/{area}`                     | Administrador         | RF-06        |
-| `GET`    | `/api/productos`                        | Administrador         | RF-07        |
-| `GET`    | `/api/productos/opciones`               | Administrador         | RF-07        |
-| `GET`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
+| `GET`    | `/api/productos`                        | Ventas, Administrador | RF-07, RF-52 |
+| `GET`    | `/api/productos/opciones`               | Ventas, Administrador | RF-07        |
+| `GET`    | `/api/productos/{producto}`             | Ventas, Administrador | RF-07        |
 | `POST`   | `/api/productos`                        | Administrador         | RF-07        |
 | `PUT`    | `/api/productos/{producto}`             | Administrador         | RF-07        |
 | `DELETE` | `/api/productos/{producto}`             | Administrador         | RF-07        |
@@ -59,7 +59,9 @@ Middleware: `auth:sanctum` y `role:administrador` en todas, incluidas las lectur
 | `PUT`    | `/api/usuarios/{usuario}`               | Administrador         | RF-09, RF-48 |
 | `DELETE` | `/api/usuarios/{usuario}`               | Administrador         | RF-09        |
 
-- `DELETE` no borra en ningún catálogo: desactiva (`activo = false`). En usuarios, además, revoca sus tokens.
+- `DELETE` desactiva (`activo = false`) en áreas, productos e insumos: nunca borra.
+- En usuarios, `DELETE` **da de baja**: oculta al usuario de `GET /api/usuarios` (sigue visible con `?incluir_bajas=1`), guarda `dado_de_baja_en`, archiva su correo en `email_baja`, libera `email` con un placeholder único (`baja.{id}@baja.aleacionprima.invalid`) y revoca sus tokens. Un usuario dado de baja no se edita ni se da de baja dos veces. La respuesta de usuarios devuelve el correo archivado.
+- Desactivar un usuario con `PUT` (`activo = false`) **no** lo oculta: sigue en la lista como inactivo. Son dos estados distintos.
 - El recorrido por defecto y la receta de insumos de un producto viajan dentro de `/api/productos` (RF-07); no tienen ruta propia. `GET /api/productos/opciones` devuelve las áreas e insumos activos para armarlos.
 - Las áreas de un encargado viajan como `area_ids` dentro de `POST` y `PUT /api/usuarios` (RF-48); para elegirlas, el panel pide `GET /api/areas?activo=1`.
 
@@ -82,7 +84,7 @@ Middleware: `auth:sanctum` y `role:administrador` en escritura; `role:ventas|adm
 
 Middleware: `auth:sanctum`. Rol según la fila. La lectura de un lote (`GET /api/lotes/{codigo}` y su historial) la comparten el panel y la app móvil.
 
-Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas con sesión del panel. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy. Confirmar (solo desde `por_confirmar`) toma como piezas terminadas las entregadas en la última parada, las suma a la existencia del producto con un movimiento `produccion` y emite `disponibilidad.actualizada` (`{ id, disponible }`) por el canal público `catalogo`. Cancelar (desde `creado` o `en_proceso`) exige `motivo`, cierra la parada abierta con 0 piezas entregadas y acepta `devoluciones` (`[{ insumo_id, cantidad }]`) solo mientras el lote no haya salido de su primera parada; `admite_devolucion` en la respuesta dice si todavía se puede.
+Al crear un lote, el recorrido es opcional: si no se manda, se clona el del producto. Puede repetir paradas, pero siempre lleva las obligatorias en su orden. Los errores de existencia de insumos y de capacidad de colada se reportan en `cantidad_objetivo`. Las respuestas solo incluyen costos y tarifas para Administrador y Ventas con sesión del panel. `GET /api/lotes` le lista al Encargado solo los lotes cuyo recorrido pasa por sus áreas (los que están, pasaron o van a llegar); el detalle por código sí lo puede consultar de cualquier lote, como al escanear su QR en la app. `?activos=1` limita la lista a los lotes creados o en proceso y a los que tuvieron movimiento hoy. Confirmar (solo desde `por_confirmar`) toma como piezas terminadas las entregadas en la última parada, las suma a la existencia del producto con un movimiento `produccion` y emite `disponibilidad.actualizada` (`{ id, disponible, cantidad }`) por el canal público `catalogo`. Cancelar (desde `creado` o `en_proceso`) exige `motivo`, cierra la parada abierta con 0 piezas entregadas y acepta `devoluciones` (`[{ insumo_id, cantidad }]`) solo mientras el lote no haya salido de su primera parada; `admite_devolucion` en la respuesta dice si todavía se puede.
 
 El costo del lote se recalcula en la misma transacción de cada operación que lo cambia: crear, salida de parada (con su retorno), confirmar y cancelar. Si el cálculo falla, la operación completa se revierte (RNF-05). **Confirmar congela el costo:** `costo_total` pasa a ser el costo real y se fija `costo_por_pieza` (`costo_total ÷ piezas_terminadas`); un lote terminado o cancelado no se vuelve a calcular (ADR-0010). Mientras el lote está abierto, `costo_total` es el costo a la fecha y `costo_por_pieza` es `null`. Solo Administrador y Ventas reciben ambos campos. `php artisan lotes:recalcular` repara solo lotes abiertos y muestra los que cambian; `--cerrados` incluye los terminados y cancelados.
 
@@ -157,18 +159,18 @@ Sin autenticación. Solo rutas de lectura.
 
 Contrato de los campos (RNF-04):
 
-- Productos públicos: `id`, `nombre`, `especificaciones` y `disponible`. Solo se listan los productos publicados (RF-52).
+- Productos públicos: `id`, `nombre`, `especificaciones`, `disponible` (si hay existencia) y `cantidad` (la existencia, o `null` si el producto tiene `mostrar_cantidad` apagado). Solo se listan los productos publicados y activos (RF-52). Ventas o Administrador eligen si se publica y si se muestra la cantidad con `PATCH /api/productos/{producto}/publicacion` (`{ publicado?, mostrar_cantidad? }`).
 - Contacto: correo, teléfono y horario de atención del personal de ventas.
 - Ninguna respuesta pública incluye precios, costos, tarifas, lotes ni existencias de insumos. Una prueba automatizada lo verifica en cada cambio.
 
 ## Tiempo real
 
-| Canal       | Acceso                                      | Eventos                                                                                                           | RF            |
-| ----------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------- |
-| `catalogo`  | Público, sin `/broadcasting/auth`           | `disponibilidad.actualizada` con solo `{ id, disponible }`                                                        | RF-46, RNF-04 |
-| `tablero`   | Privado, administrador                      | `LoteActualizado`, `ImprevistoRegistrado`, `ImprevistoActualizado`, `StockMinimoAlcanzado`                        | RF-34, RF-37  |
-| `area.{id}` | Privado, administrador o encargado del área | `LoteActualizado`, `ImprevistoRegistrado`, `ImprevistoActualizado` (de los lotes cuyo recorrido pasa por el área) | RF-34, RF-45  |
-| `modulos`   | Privado, cualquier usuario activo           | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`                                                      | —             |
+| Canal       | Acceso                                      | Eventos                                                                                                                                                        | RF            |
+| ----------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `catalogo`  | Público, sin `/broadcasting/auth`           | `disponibilidad.actualizada` con solo `{ id, disponible, cantidad }` y `catalogo.actualizado` con solo `{ id }` (al publicar, editar o desactivar un producto) | RF-46, RNF-04 |
+| `tablero`   | Privado, administrador                      | `LoteActualizado`, `ImprevistoRegistrado`, `ImprevistoActualizado`, `StockMinimoAlcanzado`                                                                     | RF-34, RF-37  |
+| `area.{id}` | Privado, administrador o encargado del área | `LoteActualizado`, `ImprevistoRegistrado`, `ImprevistoActualizado` (de los lotes cuyo recorrido pasa por el área)                                              | RF-34, RF-45  |
+| `modulos`   | Privado, cualquier usuario activo           | `modulos.actualizados` con solo `{ modulos: { ventas, … } }`                                                                                                   | —             |
 
 El `/broadcasting/auth` autoriza cada canal privado por su clase (`routes/channels.php`): `tablero` solo admite administradores (`CanalTablero`), mientras que `modulos` admite a cualquier usuario activo (`CanalModulos`). En ambos casos un invitado se rechaza antes con 401 por `auth:sanctum`.
 
