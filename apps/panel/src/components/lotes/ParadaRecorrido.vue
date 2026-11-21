@@ -67,6 +67,7 @@ withDefaults(
       <q-icon name="warning" size="14px" class="q-mr-xs q-mt-xs" />
       <span>{{ aviso }}</span>
     </div>
+    <slot />
   </div>
 </template>
 
