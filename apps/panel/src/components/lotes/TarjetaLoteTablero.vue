@@ -22,7 +22,11 @@ const costo = computed(() => {
   <q-card flat bordered class="tarjeta-tablero">
     <router-link :to="`/lotes/${lote.codigo}`" class="tarjeta-tablero__encabezado">
       <span class="tarjeta-tablero__codigo">
-        <PuntoSemaforo :semaforo="lote.semaforo" :motivos="lote.motivos" />
+        <PuntoSemaforo
+          :semaforo="lote.semaforo"
+          :motivos="lote.motivos"
+          :incompleto="lote.semaforo_incompleto ?? false"
+        />
         <span class="text-h6 codigo">{{ lote.codigo }}</span>
       </span>
       <span>{{ lote.producto.nombre }}</span>

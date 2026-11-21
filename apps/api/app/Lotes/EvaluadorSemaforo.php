@@ -11,6 +11,7 @@ use App\Models\LoteArea;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Collection;
+use Throwable;
 
 /**
  * Valor calculado por lote, nunca capturado: el peor color de cuatro señales y la lista
@@ -36,9 +37,15 @@ class EvaluadorSemaforo
             return;
         }
 
-        $imprevistos = $this->almacen
-            ->abiertosDeLotes($abiertos->map(fn (Lote $lote): int => $lote->id)->values()->all())
-            ->groupBy('lote_id');
+        try {
+            $imprevistos = $this->almacen
+                ->abiertosDeLotes($abiertos->map(fn (Lote $lote): int => $lote->id)->values()->all())
+                ->groupBy('lote_id');
+        } catch (Throwable $e) {
+            report($e);
+
+            return;
+        }
 
         foreach ($abiertos as $lote) {
             $lote->setRelation(self::RELACION_IMPREVISTOS, ($imprevistos->get($lote->id) ?? collect())->values());
@@ -57,9 +64,11 @@ class EvaluadorSemaforo
         $paradas = $lote->paradas;
         $merma = (int) $paradas->sum(fn (LoteArea $parada): int => $parada->merma_piezas ?? 0);
 
+        $imprevistos = $this->imprevistosAbiertos($lote);
+
         $hallazgos = array_values(array_filter([
             $this->merma($lote, $merma),
-            $this->imprevistos($lote),
+            $this->imprevistos($imprevistos ?? collect()),
             $veCostos ? $this->costo($lote, $merma) : null,
             $this->capturasTardias($paradas),
         ]));
@@ -69,6 +78,7 @@ class EvaluadorSemaforo
         return new ResultadoSemaforo(
             $hallazgos[0]['nivel'] ?? Semaforo::Verde,
             array_map(fn (array $hallazgo): string => $hallazgo['motivo'], $hallazgos),
+            incompleto: $imprevistos === null,
         );
     }
 
@@ -108,13 +118,8 @@ class EvaluadorSemaforo
      *
      * @return array{nivel: Semaforo, motivo: string}|null
      */
-    private function imprevistos(Lote $lote): ?array
+    private function imprevistos(Collection $abiertos): ?array
     {
-        /** @var Collection<int, Imprevisto> $abiertos */
-        $abiertos = $lote->relationLoaded(self::RELACION_IMPREVISTOS)
-            ? $lote->getRelation(self::RELACION_IMPREVISTOS)
-            : $this->almacen->delLote($lote->id)->filter(fn (Imprevisto $imprevisto): bool => ! $imprevisto->resuelto);
-
         if ($abiertos->isEmpty()) {
             return null;
         }
@@ -199,6 +204,31 @@ class EvaluadorSemaforo
     private function hallazgo(Semaforo $nivel, string $motivo): array
     {
         return ['nivel' => $nivel, 'motivo' => $motivo];
+    }
+
+    /**
+     * Los imprevistos sin resolver del lote, o `null` si no se pudieron leer.
+     *
+     * @return Collection<int, Imprevisto>|null
+     */
+    private function imprevistosAbiertos(Lote $lote): ?Collection
+    {
+        if ($lote->relationLoaded(self::RELACION_IMPREVISTOS)) {
+            /** @var Collection<int, Imprevisto>|null $precargados */
+            $precargados = $lote->getRelation(self::RELACION_IMPREVISTOS);
+
+            return $precargados;
+        }
+
+        try {
+            return $this->almacen->delLote($lote->id)
+                ->filter(fn (Imprevisto $imprevisto): bool => ! $imprevisto->resuelto)
+                ->values();
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     private function esAbierto(Lote $lote): bool

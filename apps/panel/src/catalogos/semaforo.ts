@@ -9,6 +9,6 @@ export interface EstiloSemaforo {
 /** Colores semánticos de docs/diseno.md. El semáforo es aparte del chip de estado. */
 export const ESTILOS_SEMAFORO: Record<Semaforo, EstiloSemaforo> = {
   verde: { color: 'positive', etiqueta: 'Semáforo verde' },
-  ambar: { color: 'accent', etiqueta: 'Semáforo ámbar' },
+  ambar: { color: 'warning', etiqueta: 'Semáforo ámbar' },
   rojo: { color: 'negative', etiqueta: 'Semáforo rojo' },
 };

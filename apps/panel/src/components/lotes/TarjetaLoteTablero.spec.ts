@@ -113,6 +113,16 @@ describe('TarjetaLoteTablero', () => {
     expect(wrapper.find('.q-chip').text()).toContain('En proceso');
   });
 
+  it('marca el punto cuando el semáforo viene incompleto', () => {
+    const wrapper = montar({
+      lote: lote({ semaforo: 'verde', motivos: [], semaforo_incompleto: true }),
+    });
+
+    expect(wrapper.find('[data-semaforo="verde"]').classes()).toContain(
+      'punto-semaforo--incompleto',
+    );
+  });
+
   it('sin semáforo no pinta el punto', () => {
     const wrapper = montar({ lote: lote({ semaforo: null, motivos: [] }) });
 

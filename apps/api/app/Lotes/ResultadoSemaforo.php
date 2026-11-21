@@ -12,5 +12,6 @@ final readonly class ResultadoSemaforo
     public function __construct(
         public Semaforo $semaforo,
         public array $motivos,
+        public bool $incompleto = false,
     ) {}
 }

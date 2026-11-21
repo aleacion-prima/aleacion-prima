@@ -182,6 +182,7 @@ export interface Lote {
   costo_por_pieza?: string | null;
   semaforo: Semaforo | null;
   motivos: string[];
+  semaforo_incompleto?: boolean;
   paradas: LoteParada[];
   insumos?: LoteInsumoAsignado[];
   confirmado_en: string | null;

@@ -12,6 +12,7 @@ use App\Models\User;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Exceptions;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
@@ -93,6 +94,85 @@ function semaforoDe(Lote $lote): array
     $json = getJson("/api/lotes/{$lote->codigo}")->assertOk()->json();
 
     return ['semaforo' => $json['semaforo'], 'motivos' => $json['motivos']];
+}
+
+function incompletoDe(Lote $lote): bool
+{
+    return (bool) getJson("/api/lotes/{$lote->codigo}")->assertOk()->json('semaforo_incompleto');
+}
+
+/** Envuelve al almacén real y cuenta cuántas veces se lee: una consulta en lote o una por lote. */
+function almacenEspiaDeImprevistos(AlmacenImprevistos $real): object
+{
+    return new class($real) implements AlmacenImprevistos
+    {
+        public int $consultasPorLote = 0;
+
+        public int $consultasEnLote = 0;
+
+        public function __construct(private AlmacenImprevistos $real) {}
+
+        public function guardar(array $datos): Imprevisto
+        {
+            return $this->real->guardar($datos);
+        }
+
+        public function delLote(int $loteId): Collection
+        {
+            $this->consultasPorLote++;
+
+            return $this->real->delLote($loteId);
+        }
+
+        public function abiertosDeLotes(array $loteIds): Collection
+        {
+            $this->consultasEnLote++;
+
+            return $this->real->abiertosDeLotes($loteIds);
+        }
+
+        public function buscar(int $loteId, string $id): ?Imprevisto
+        {
+            return $this->real->buscar($loteId, $id);
+        }
+
+        public function marcarResuelto(Imprevisto $imprevisto, bool $resuelto): Imprevisto
+        {
+            return $this->real->marcarResuelto($imprevisto, $resuelto);
+        }
+    };
+}
+
+/** Almacén que simula a Mongo caído: toda lectura y escritura lanza. */
+function almacenDeImprevistosCaido(): AlmacenImprevistos
+{
+    return new class implements AlmacenImprevistos
+    {
+        public function guardar(array $datos): Imprevisto
+        {
+            throw new RuntimeException('Mongo no responde.');
+        }
+
+        public function delLote(int $loteId): Collection
+        {
+            throw new RuntimeException('Mongo no responde.');
+        }
+
+        public function abiertosDeLotes(array $loteIds): Collection
+        {
+            throw new RuntimeException('Mongo no responde.');
+        }
+
+        public function buscar(int $loteId, string $id): ?Imprevisto
+        {
+            throw new RuntimeException('Mongo no responde.');
+        }
+
+        public function marcarResuelto(Imprevisto $imprevisto, bool $resuelto): Imprevisto
+        {
+            throw new RuntimeException('Mongo no responde.');
+        }
+    };
 }
 
 it('la merma acumulada de las paradas pone el lote en verde, ámbar o rojo', function (int $primera, int $segunda, string $semaforo, array $motivos) {
@@ -206,13 +286,17 @@ it('el peor color gana y los motivos van del más grave al menos grave', functio
 });
 
 it('un lote sin señales de alerta está en verde y sin motivos', function () {
-    expect(semaforoDe(loteParaSemaforo()))->toBe(['semaforo' => 'verde', 'motivos' => []]);
+    $lote = loteParaSemaforo();
+
+    expect(semaforoDe($lote))->toBe(['semaforo' => 'verde', 'motivos' => []])
+        ->and(incompletoDe($lote))->toBeFalse();
 });
 
 it('los lotes terminados o cancelados no tienen semáforo', function (EstadoLote $estado) {
     $lote = Lote::factory()->create(['estado' => $estado]);
 
-    expect(semaforoDe($lote))->toBe(['semaforo' => null, 'motivos' => []]);
+    expect(semaforoDe($lote))->toBe(['semaforo' => null, 'motivos' => []])
+        ->and(incompletoDe($lote))->toBeFalse();
 })->with([EstadoLote::Terminado, EstadoLote::Cancelado]);
 
 it('la lista de lotes trae el semáforo de cada uno', function () {
@@ -231,49 +315,102 @@ it('la lista pide los imprevistos abiertos de todos los lotes en una sola consul
     loteParaSemaforo();
     abrirImprevistoParaSemaforo($conImprevisto, '11:30');
 
-    $espia = new class(app(AlmacenImprevistos::class)) implements AlmacenImprevistos
-    {
-        public int $consultasPorLote = 0;
-
-        public int $consultasEnLote = 0;
-
-        public function __construct(private AlmacenImprevistos $real) {}
-
-        public function guardar(array $datos): Imprevisto
-        {
-            return $this->real->guardar($datos);
-        }
-
-        public function delLote(int $loteId): Collection
-        {
-            $this->consultasPorLote++;
-
-            return $this->real->delLote($loteId);
-        }
-
-        public function abiertosDeLotes(array $loteIds): Collection
-        {
-            $this->consultasEnLote++;
-
-            return $this->real->abiertosDeLotes($loteIds);
-        }
-
-        public function buscar(int $loteId, string $id): ?Imprevisto
-        {
-            return $this->real->buscar($loteId, $id);
-        }
-
-        public function marcarResuelto(Imprevisto $imprevisto, bool $resuelto): Imprevisto
-        {
-            return $this->real->marcarResuelto($imprevisto, $resuelto);
-        }
-    };
+    $espia = almacenEspiaDeImprevistos(app(AlmacenImprevistos::class));
     app()->instance(AlmacenImprevistos::class, $espia);
 
     $respuesta = getJson('/api/lotes')->assertOk()->assertJsonCount(3);
+    $semaforos = collect($respuesta->json())->pluck('semaforo', 'codigo');
 
     expect($espia->consultasEnLote)->toBe(1)
         ->and($espia->consultasPorLote)->toBe(0)
-        ->and(collect($respuesta->json())->pluck('semaforo', 'codigo')->get($conImprevisto->codigo))->toBe('ambar')
-        ->and(collect($respuesta->json())->pluck('semaforo', 'codigo')->get($sinProblema->codigo))->toBe('verde');
+        ->and($semaforos->get($conImprevisto->codigo))->toBe('ambar')
+        ->and($semaforos->get($sinProblema->codigo))->toBe('verde');
+});
+
+it('el tablero pide los imprevistos abiertos de todos los lotes en una sola consulta', function () {
+    $sinProblema = loteParaSemaforo();
+    $conImprevisto = loteParaSemaforo();
+    loteParaSemaforo();
+    abrirImprevistoParaSemaforo($conImprevisto, '11:30');
+
+    $espia = almacenEspiaDeImprevistos(app(AlmacenImprevistos::class));
+    app()->instance(AlmacenImprevistos::class, $espia);
+
+    $respuesta = getJson('/api/tablero')->assertOk()->assertJsonCount(3);
+    $semaforos = collect($respuesta->json())->pluck('semaforo', 'codigo');
+
+    expect($espia->consultasEnLote)->toBe(1)
+        ->and($espia->consultasPorLote)->toBe(0)
+        ->and($semaforos->get($conImprevisto->codigo))->toBe('ambar')
+        ->and($semaforos->get($sinProblema->codigo))->toBe('verde');
+});
+
+it('si Mongo falla, el detalle, la lista y el tablero evalúan sin la señal de imprevistos y lo marcan incompleto', function () {
+    $lote = loteParaSemaforo([['area' => 'MOL', 'merma' => 5]]);
+    abrirImprevistoParaSemaforo($lote, '09:45');
+    expect(semaforoDe($lote)['semaforo'])->toBe('rojo')
+        ->and(incompletoDe($lote))->toBeFalse();
+
+    app()->instance(AlmacenImprevistos::class, almacenDeImprevistosCaido());
+
+    expect(semaforoDe($lote))->toBe([
+        'semaforo' => 'ambar',
+        'motivos' => ['Merma acumulada de 5 de 100 piezas (5.0 %).'],
+    ])->and(incompletoDe($lote))->toBeTrue();
+
+    getJson('/api/lotes')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.semaforo', 'ambar')
+        ->assertJsonPath('0.semaforo_incompleto', true);
+
+    getJson('/api/tablero')
+        ->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.semaforo', 'ambar')
+        ->assertJsonPath('0.semaforo_incompleto', true);
+});
+
+it('si Mongo falla, la captura de una salida responde igual', function () {
+    $lote = Lote::factory()->enProceso()->create([
+        'producto_id' => Producto::factory()->create()->id,
+        'cantidad_objetivo' => 100,
+    ]);
+    $parada = LoteArea::factory()->create([
+        'lote_id' => $lote->id,
+        'area_id' => Area::query()->where('codigo', 'MOL')->value('id'),
+        'orden' => 1,
+        'tarifa_mano_obra_hora' => 1,
+        'costo_maquina_hora' => 1,
+        'piezas_recibidas' => 100,
+        'piezas_entregadas' => null,
+        'merma_piezas' => null,
+        'entrada_ocurrido_en' => '2026-11-02 06:00',
+        'entrada_registrado_en' => '2026-11-02 06:05',
+        'salida_ocurrido_en' => null,
+        'salida_registrado_en' => null,
+    ]);
+
+    app()->instance(AlmacenImprevistos::class, almacenDeImprevistosCaido());
+
+    postJson("/api/lotes/{$lote->codigo}/paradas/{$parada->id}/salida", [
+        'piezas_entregadas' => 100,
+        'ocurrido_en' => '2026-11-02 11:00',
+    ])
+        ->assertOk()
+        ->assertJsonPath('estado', 'por_confirmar')
+        ->assertJsonPath('semaforo', 'verde')
+        ->assertJsonPath('semaforo_incompleto', true);
+
+    expect($parada->fresh()->salida_ocurrido_en)->not->toBeNull();
+});
+
+it('si Mongo falla, el error se reporta aunque la respuesta salga bien', function () {
+    $lote = loteParaSemaforo();
+    app()->instance(AlmacenImprevistos::class, almacenDeImprevistosCaido());
+    Exceptions::fake();
+
+    getJson("/api/lotes/{$lote->codigo}")->assertOk();
+
+    Exceptions::assertReported(RuntimeException::class);
 });

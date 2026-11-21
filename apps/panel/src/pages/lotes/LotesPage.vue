@@ -132,7 +132,11 @@ onMounted(() => void cargar());
             :class="`bg-${ESTILOS_ESTADO_LOTE[row.estado as EstadoLote].color}`"
           />
           <span class="tabla-lotes__codigo">
-            <PuntoSemaforo :semaforo="(row as Lote).semaforo" :motivos="(row as Lote).motivos" />
+            <PuntoSemaforo
+              :semaforo="(row as Lote).semaforo"
+              :motivos="(row as Lote).motivos"
+              :incompleto="(row as Lote).semaforo_incompleto ?? false"
+            />
             {{ row.codigo }}
           </span>
         </q-td>

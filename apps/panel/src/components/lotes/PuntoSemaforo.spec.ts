@@ -4,13 +4,20 @@ import { describe, expect, it } from 'vitest';
 import { SEMAFOROS, type Semaforo } from '@aleacion-prima/types';
 import PuntoSemaforo from './PuntoSemaforo.vue';
 
-const montar = (semaforo: Semaforo | null, motivos: string[] = []) =>
-  mount(PuntoSemaforo, { props: { semaforo, motivos }, global: { plugins: [Quasar] } });
+const montar = (semaforo: Semaforo | null, motivos: string[] = [], incompleto?: boolean) =>
+  mount(PuntoSemaforo, {
+    props: {
+      semaforo,
+      motivos,
+      ...(incompleto !== undefined ? { incompleto } : {}),
+    },
+    global: { plugins: [Quasar] },
+  });
 
 describe('PuntoSemaforo', () => {
   it.each([
     ['verde', 'bg-positive'],
-    ['ambar', 'bg-accent'],
+    ['ambar', 'bg-warning'],
     ['rojo', 'bg-negative'],
   ] as const)('pinta el %s con el color semántico %s', (semaforo, clase) => {
     const punto = montar(semaforo).find('.punto-semaforo');
@@ -34,5 +41,19 @@ describe('PuntoSemaforo', () => {
 
   it('sin semáforo (lote cerrado) no pinta nada', () => {
     expect(montar(null).find('.punto-semaforo').exists()).toBe(false);
+  });
+
+  it('si faltan datos lo marca aparte y lo dice en el nombre accesible', () => {
+    const punto = montar('ambar', [], true).find('.punto-semaforo');
+
+    expect(punto.classes()).toContain('punto-semaforo--incompleto');
+    expect(punto.attributes('aria-label')).toContain('Datos incompletos');
+  });
+
+  it('con los datos completos no lleva la marca de incompleto', () => {
+    const punto = montar('verde', [], false).find('.punto-semaforo');
+
+    expect(punto.classes()).not.toContain('punto-semaforo--incompleto');
+    expect(punto.attributes('aria-label')).not.toContain('incompletos');
   });
 });

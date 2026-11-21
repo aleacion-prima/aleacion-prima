@@ -46,6 +46,7 @@ class LoteResource extends JsonResource
             'costo_por_pieza' => $this->when($veCostos, $this->costo_por_pieza),
             'semaforo' => $semaforo?->semaforo,
             'motivos' => $semaforo->motivos ?? [],
+            'semaforo_incompleto' => $semaforo->incompleto ?? false,
             'paradas' => $this->whenLoaded('paradas', function () {
                 $anterior = null;
 
