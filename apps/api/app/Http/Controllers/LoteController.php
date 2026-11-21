@@ -7,6 +7,7 @@ use App\Enums\Rol;
 use App\Http\Requests\CrearLoteRequest;
 use App\Http\Resources\LoteResource;
 use App\Lotes\CreadorLote;
+use App\Lotes\EvaluadorSemaforo;
 use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\User;
@@ -17,23 +18,26 @@ use Symfony\Component\HttpFoundation\Response;
 
 class LoteController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request, EvaluadorSemaforo $semaforo): AnonymousResourceCollection
     {
-        return LoteResource::collection(
-            Lote::query()
-                ->with(['producto', 'areaActual', 'paradas.area'])
-                ->when($this->soloSusAreas($request), fn ($consulta, User $usuario) => $consulta->whereHas(
-                    'paradas',
-                    fn ($paradas) => $paradas->whereIn('area_id', $usuario->areas()->select('areas.id')),
-                ))
-                ->when($request->boolean('activos'), fn ($consulta) => $consulta->where(
-                    fn ($activos) => $activos
-                        ->whereIn('estado', [EstadoLote::Creado, EstadoLote::EnProceso])
-                        ->orWhere('updated_at', '>=', now((string) config('planta.zona_horaria'))->startOfDay()),
-                ))
-                ->latest('id')
-                ->get(),
-        );
+        $lotes = Lote::query()
+            ->with(['producto', 'areaActual', 'paradas.area'])
+            ->when($this->soloSusAreas($request), fn ($consulta, User $usuario) => $consulta->whereHas(
+                'paradas',
+                fn ($paradas) => $paradas->whereIn('area_id', $usuario->areas()->select('areas.id')),
+            ))
+            ->when($request->boolean('activos'), fn ($consulta) => $consulta->where(
+                fn ($activos) => $activos
+                    ->whereIn('estado', [EstadoLote::Creado, EstadoLote::EnProceso])
+                    ->orWhere('updated_at', '>=', now((string) config('planta.zona_horaria'))->startOfDay()),
+            ))
+            ->latest('id')
+            ->get();
+
+        // Una sola consulta a Mongo por los imprevistos abiertos de todos los lotes de la lista.
+        $semaforo->precargar($lotes);
+
+        return LoteResource::collection($lotes);
     }
 
     private function soloSusAreas(Request $request): ?User
