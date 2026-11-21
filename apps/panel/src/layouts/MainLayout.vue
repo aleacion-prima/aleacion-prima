@@ -29,6 +29,7 @@ const alternarMenu = (): void => {
 
 const salir = async (): Promise<void> => {
   await sesion.cerrar();
+  desconectar();
   await router.push('/login');
 };
 

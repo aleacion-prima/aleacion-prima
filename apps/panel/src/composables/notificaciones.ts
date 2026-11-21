@@ -46,6 +46,7 @@ export const useNotificaciones = () => {
   };
 
   const desconectar = (): void => {
+    if (canal) obtenerEcho().leave(canal);
     canal = null;
     pendientes.value = 0;
   };
