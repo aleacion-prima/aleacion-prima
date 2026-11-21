@@ -7,4 +7,5 @@ return [
     'inactiva' => 'Tu cuenta está desactivada.',
     'password' => 'La contraseña es incorrecta.',
     'throttle' => 'Demasiados intentos de acceso. Por favor intente nuevamente en :seconds segundos.',
+    'sin_app' => 'La app solo es para encargados y administradores.',
 ];

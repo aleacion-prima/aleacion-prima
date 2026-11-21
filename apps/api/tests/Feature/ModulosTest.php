@@ -1,5 +1,6 @@
 <?php
 
+use App\Broadcasting\CanalModulos;
 use App\Events\ModulosActualizados;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
@@ -8,31 +9,32 @@ use Laravel\Pennant\Feature;
 use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 use Laravel\Sanctum\Sanctum;
 
+use function Pest\Laravel\artisan;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 
 it('los comandos prenden y apagan el módulo para todos', function () {
     expect(Feature::active('ventas'))->toBeFalse();
 
-    $this->artisan('modulos:activar ventas')->assertSuccessful();
+    artisan('modulos:activar ventas')->assertSuccessful();
     expect(Feature::active('ventas'))->toBeTrue();
 
-    $this->artisan('modulos:desactivar ventas')->assertSuccessful();
+    artisan('modulos:desactivar ventas')->assertSuccessful();
     expect(Feature::active('ventas'))->toBeFalse();
 });
 
 it('el comando rechaza un módulo desconocido', function () {
-    $this->artisan('modulos:activar inventado')->assertFailed();
-    $this->artisan('modulos:desactivar inventado')->assertFailed();
+    artisan('modulos:activar inventado')->assertFailed();
+    artisan('modulos:desactivar inventado')->assertFailed();
 });
 
 it('con el módulo apagado una ruta de ventas no responde, y prendido sí', function () {
     Route::middleware(['auth:sanctum', EnsureFeaturesAreActive::using('ventas')])
         ->get('/_test/ventas', fn () => response()->json(['ok' => true]));
 
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
 
-    getJson('/_test/ventas')->assertStatus(400);
+    getJson('/_test/ventas')->assertStatus(404);
 
     Feature::activate('ventas');
     getJson('/_test/ventas')->assertOk();
@@ -58,12 +60,17 @@ it('ModulosActualizados viaja por el canal privado modulos', function () {
 });
 
 it('/api/user incluye el estado de los módulos', function () {
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
 
     getJson('/api/user')->assertOk()->assertJsonPath('modulos.ventas', false);
 
     Feature::activate('ventas');
     getJson('/api/user')->assertJsonPath('modulos.ventas', true);
+});
+
+it('el canal de módulos rechaza a usuarios inactivos', function () {
+    expect((new CanalModulos)->join(User::factory()->create(['activo' => true])))->toBeTrue();
+    expect((new CanalModulos)->join(User::factory()->create(['activo' => false])))->toBeFalse();
 });
 
 it('el canal de módulos rechaza a quien no tiene sesión', function () {
@@ -74,7 +81,7 @@ it('el canal de módulos rechaza a quien no tiene sesión', function () {
         'socket_id' => '1.1',
     ])->assertUnauthorized();
 
-    Sanctum::actingAs(User::factory()->create());
+    Sanctum::actingAs(User::factory()->create(), ['*']);
     postJson('/broadcasting/auth', [
         'channel_name' => 'private-modulos',
         'socket_id' => '1.1',

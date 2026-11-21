@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Enums\EstadoLote;
-use App\Enums\Rol;
 use App\Models\Lote;
 use App\Models\LoteArea;
 use Illuminate\Http\Request;
@@ -19,7 +18,7 @@ class LoteResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $veCostos = (bool) $request->user()?->hasAnyRole([Rol::Administrador, Rol::Ventas]);
+        $veCostos = (bool) $request->user()?->veCostos();
 
         return [
             'id' => $this->id,

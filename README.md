@@ -66,6 +66,8 @@ Lo que hace cada integrante:
 4. **Espera el CI en verde y una aprobación** de otro integrante. Nadie hace push directo a `main`.
 5. **Fusiona con Squash and merge.** La tarea queda como un solo commit en `main` y la rama se borra.
 
+**Bugs.** Todo bug que se encuentre (en una revisión, un test, una prueba manual o en producción) se registra como issue con la plantilla de bug, aunque se arregle en el mismo PR donde apareció: pasos para reproducirlo, comportamiento esperado y actual, causa y solución. El PR que lo corrige incluye un test que falla sin el arreglo, y al cerrar el sprint el bug entra en la tabla de defectos del acta ([`docs/sprints/`](./docs/sprints/)).
+
 Los hooks se instalan solos con `pnpm install` y hacen cumplir lo anterior en cada máquina:
 
 | Hook         | Qué hace                                                                   |
@@ -420,6 +422,8 @@ La app Android vive en el mismo proyecto que el panel (`apps/panel`) y se constr
 
 > ⚠️ **Windows:** Android Studio y el emulador funcionan mejor **instalados en Windows**, no dentro de WSL. Como el código está en WSL, la forma más simple es que quien trabaje la app móvil lo haga desde Linux nativo, o que en Windows abra el proyecto `apps/panel/src-capacitor/android` con el Android Studio de Windows a través de `\\wsl$\Ubuntu-24.04\home\...`. Si esto te complica, pregunta en el grupo antes de pelearte con ello.
 
+> **Plugins nativos:** `apps/panel/src-capacitor` tiene sus propias dependencias y su propio `pnpm-lock.yaml` (Quasar lo instala aparte y no forma parte del workspace). Un plugin nuevo se instala **en los dos lados**, con la misma versión fija: en `src-capacitor` para la parte de Android (`cd apps/panel/src-capacitor && pnpm add <plugin>@<versión>`) y en el panel para poder importarlo (`pnpm --filter panel add <plugin>@<versión>`). `@capacitor/core`, `cli` y `android` deben tener siempre la misma versión.
+
 #### 6.2 Correr la app en desarrollo
 
 ```bash
@@ -440,13 +444,32 @@ PUBLIC_API_URL=http://192.168.1.50:8000 PUBLIC_REVERB_HOST=192.168.1.50 pnpm --f
 
 Si la app no conecta a la API por `http://`, Android está bloqueando el tráfico sin cifrar: agrega `server: { cleartext: true }` en `apps/panel/src-capacitor/capacitor.config.ts` **solo mientras desarrollas** (nunca en la app publicada).
 
-#### 6.3 Generar el APK
+#### 6.3 Generar e instalar el APK
 
-```bash
-pnpm --filter panel build:android
-```
+1. Compilar contra la API y el Reverb de producción y abrir Android Studio:
 
-(Equivale a `quasar build -m capacitor -T android`.) Desde Android Studio se firma y se exporta el APK. Las variables `PUBLIC_*` de producción se pasan igual que arriba, con las URLs reales.
+   ```bash
+   PUBLIC_API_URL=https://api.20-80-56-138.sslip.io \
+   PUBLIC_REVERB_HOST=api.20-80-56-138.sslip.io \
+   PUBLIC_REVERB_PORT=443 \
+   PUBLIC_REVERB_SCHEME=https \
+   PUBLIC_REVERB_KEY=<variable REVERB_APP_KEY del repo> \
+   pnpm --filter panel exec quasar build -m capacitor -T android --ide
+   ```
+
+   Sin las variables `PUBLIC_REVERB_*` la app abre los lotes pero no se actualiza en vivo, porque busca Reverb en `localhost:8080`. Además, la app se sirve desde `https://localhost`, así que el `REVERB_ALLOWED_ORIGINS` de producción (secret `API_ENV`) debe incluir `localhost`; si no, Reverb rechaza la conexión con `Origin not allowed`.
+
+   Si Quasar no encuentra Android Studio, ábrelo tú y abre la carpeta `apps/panel/src-capacitor/android`. La compilación de la web ya quedó copiada.
+
+2. En Android Studio: **Build → Build App Bundle(s) / APK(s) → Build APK(s)**. El APK queda en `apps/panel/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+3. Instalarlo en el celular, de una de dos formas:
+   - Con el celular conectado por USB: `adb install -r app-debug.apk`.
+   - Copiar el archivo al celular y abrirlo. Android pide permitir la instalación de apps de origen desconocido.
+
+Es un APK de **debug**, firmado con la llave de depuración de Android Studio; basta para instalarlo y probarlo. Un APK de release necesita un keystore propio, que nunca va en el repo.
+
+Compila desde Android Studio y no con `gradlew` en la terminal: Gradle pide JDK 21 y la ruta del SDK, y Android Studio ya trae las dos.
 
 #### 6.4 Qué hace y qué no
 

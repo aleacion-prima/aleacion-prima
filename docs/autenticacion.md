@@ -37,6 +37,33 @@ En el código:
 - `apps/panel/src/services/echo.ts`: `obtenerEcho()` crea el cliente de Echo de forma perezosa (nunca antes del login) con un `authorizer` propio que llama a `/broadcasting/auth` con cookie y CSRF. `desconectarEcho()` se llama al cerrar sesión.
 - Cerrar sesión: `POST /logout` y luego `desconectarEcho()`.
 
+## Segundo factor al iniciar sesión (MFA)
+
+Cualquier usuario puede exigir un segundo factor además de la contraseña: un código de 6 dígitos que llega por correo. **Para el administrador es obligatorio.** La app móvil queda fuera de esta función.
+
+El login usa un flujo de "sesión pendiente": `POST /login` con la contraseña correcta llama a `activoPara()`, que decide si se pide el código según la columna `segundo_factor` del usuario **o** si es administrador y el segundo factor obligatorio está encendido por config. Si aplica, **no inicia la sesión**: además cierra cualquier sesión ya abierta en el navegador (`Auth::guard('web')->logout()`), para que deje de responder en rutas protegidas mientras el código está pendiente. Guarda el usuario pendiente en la sesión, envía el código y responde `200 { "segundo_factor": true }`. Como no hay sesión iniciada, ninguna ruta protegida responde hasta mandar el código a `POST /login/verificar`. Si no aplica, `/login` responde `204` y entra directo, como siempre.
+
+```mermaid
+sequenceDiagram
+    participant P as Panel
+    participant A as API
+    participant C as Correo
+
+    P->>A: POST /login (contraseña correcta, usuario con 2FA)
+    A->>C: Código de 6 dígitos
+    A-->>P: 200 { segundo_factor: true } · sesión pendiente
+    Note over P,A: Ninguna ruta protegida responde todavía
+    P->>A: POST /login/verificar { codigo }
+    A-->>P: 204 · sesión autenticada
+```
+
+- **El código** se guarda **hasheado** en la tabla `codigos_acceso` (uno por usuario; al reenviar se reemplaza). Vence a los 10 minutos y admite 5 intentos fallidos; después pide uno nuevo. Los valores están en `config/segundo-factor.php` (`vigencia_minutos`, `max_intentos`).
+- **Rutas** (en `routes/web.php`): `POST /login/verificar` (`throttle:verificar`) comprueba el código y, si es correcto, inicia la sesión (`Auth::login`) y la regenera; `POST /login/reenviar` (`throttle:reenviar`, 1/min) manda un código nuevo. Un código vencido, ya usado o con los intentos agotados se rechaza con **422** y un mensaje claro.
+- **`SEGUNDO_FACTOR_ADMINISTRADOR`** (`config/segundo-factor.php` → `obligatorio_administrador`) decide si el administrador está obligado a usar segundo factor aunque su columna esté en `false`. Vale `false` en desarrollo y en la prueba E2E (para no romper el login automático), y `true` por defecto en producción.
+- **El correo** lo manda la notificación `CodigoAccesoCorreo` (canal `mail`), con el mismo mailer que la recuperación de contraseña: sin dependencias nuevas.
+- **Mi cuenta:** `GET /api/perfil/segundo-factor` devuelve `{ activo, obligatorio }` y `PUT` lo activa o desactiva. El **administrador no puede desactivarlo** (422). Los seeders dejan a todos con el segundo factor **apagado**, para no romper el login automático de desarrollo ni la prueba E2E del lote.
+- **Código:** `SegundoFactorController`, el servicio `App\Acceso\SegundoFactor` (único que escribe `codigos_acceso`) y `SesionController@iniciar`, que ramifica según `segundo_factor`. En el panel: `CodigoAccesoPage.vue` (ruta `/verificar`), las acciones `verificarCodigo`/`reenviarCodigo` en `stores/sesion.ts`, y el interruptor en `MiCuentaPage.vue`. Pruebas en `tests/Feature/SegundoFactorTest.php`.
+
 ## App móvil: token con abilities
 
 La app no puede usar la cookie (origen `https://localhost` de Capacitor, fuera del navegador), así que al iniciar sesión pide un token personal:
@@ -55,7 +82,20 @@ Route::get('/lotes/{codigo}', ...)
 
 - Los tokens son opacos y se guardan hasheados en `personal_access_tokens`. Revocar = borrar la fila (desde el panel, o `POST /logout` desde la app).
 - No expiran por sí solos salvo que se configure `expiration` en `config/sanctum.php`.
+- La app inicia sesión con `POST /api/movil/login` (solo encargados y administradores activos) y la cierra con `POST /api/logout`, que borra únicamente el token de ese dispositivo.
+- En `routes/api.php`, todo lo que no es lectura de lotes va dentro del grupo `ability:panel`. Ningún token se emite con esa ability, así que el token móvil recibe 403; la sesión del panel pasa porque Sanctum le asigna un `TransientToken`, que tiene todas las abilities. **Las rutas nuevas van dentro de ese grupo**, salvo que la app las necesite.
+- Los costos usan la misma regla: `User::veCostos()` exige rol Administrador o Ventas **y** `tokenCan('panel')`, así que la app no los recibe aunque entre un administrador.
+- Por eso los tests autentican con `Sanctum::actingAs($usuario, ['*'])`: sin abilities, el token falso de Sanctum no pasa `ability:panel` ni `ability:lotes:read`.
 - El cliente HTTP del panel necesita una rama para el modo Capacitor (`import.meta.env.QUASAR_MODE === 'capacitor'`) que mande la cabecera `Authorization` en vez de la cookie y **no** llame a `/sanctum/csrf-cookie`.
+
+## Sesiones activas y cierre remoto
+
+El usuario ve y cierra sus sesiones abiertas desde **Mi cuenta**, y el administrador las de cualquier usuario desde **Usuarios**. Una "sesión" es tanto una sesión del panel (fila en `sessions`, driver `database`) como un token de la app (fila en `personal_access_tokens`): la lista une ambas tablas con una forma uniforme (dispositivo, IP, última actividad y si es la actual).
+
+- `GET /api/sesiones` — mis sesiones; `DELETE /api/sesiones/{id}` cierra una; `DELETE /api/sesiones` cierra todas menos la actual.
+- Admin, anidado bajo `role:administrador`: `GET /api/usuarios/{usuario}/sesiones`, `DELETE /api/usuarios/{usuario}/sesiones/{id}` y `DELETE /api/usuarios/{usuario}/sesiones` (cierra todas).
+- **Id compuesto `tipo:id`**: cada elemento se identifica con `panel:<id_de_sessions>` o `app:<id_de_token>`, y ese mismo id viaja en el `DELETE`. Así una sola ruta sabe de qué tabla borrar; se valida con `->where('id', '[a-z]+:[A-Za-z0-9]+')`.
+- **Revocar = borrar la fila** (la sesión del panel o el token de la app). Al borrar un token, la siguiente petición de la app con ese `Bearer` ya no resuelve usuario y responde 401; al borrar la sesión del panel, el navegador deja de estar autenticado. Cerrar una sesión del panel además **rota el `remember_token`** del usuario, para que la cookie de "recordarme" no la reviva; como Laravel guarda un solo token por usuario, eso le quita el "recordarme" a todos sus dispositivos. La lista solo muestra sesiones del panel con actividad dentro de `session.lifetime`, y cada cierre emite `UsuarioActualizado` para refrescar la sesión del afectado. La lógica vive en el servicio `App\Acceso\SesionesActivas` (único que decide, a partir del `tipo`, de qué tabla borrar), con `SesionActivaController` y `SesionActivaResource`. Las rutas propias van dentro del grupo `ability:panel`; el token de la app no las alcanza (403). En el panel, el componente compartido `SesionesActivas.vue` (prop opcional `usuarioId`) sirve tanto a Mi cuenta como al diálogo del admin. Pruebas en `tests/Feature/SesionActivaTest.php`.
 
 ## Sitio público
 
@@ -67,7 +107,7 @@ No se autentica. Solo consume rutas públicas de lectura (catálogo, disponibili
 - `User` usa el trait `HasRoles`. `RolesSeeder` crea los cuatro con `Role::findOrCreate($rol->value, 'web')` y es idempotente.
 - Alias en `bootstrap/app.php`: `role`, `permission`, `role_or_permission` (Spatie), `abilities` y `ability` (Sanctum) y `activo` (propio: si el usuario tiene `activo = false`, borra sus tokens, cierra la sesión y responde 401).
 - Toda ruta protegida lleva `['auth:sanctum', 'activo', 'role:...']`. Tres grupos según la tabla de arriba: `role:administrador|ventas` para ventas y catálogo interno, `role:administrador|encargado` para captura y lotes, `role:administrador` para catálogos y usuarios. El administrador siempre va en la lista; así "hereda" sin lógica extra. `tests/Feature/ControlAccesoTest.php` cubre los tres grupos.
-- `GET /api/user` responde con `UsuarioResource`: `id`, `name`, `email`, `rol`, `activo` y, cuando se cargan, `areas`. Las respuestas de la API no van envueltas en `data` (`JsonResource::withoutWrapping()`).
+- `GET /api/user` responde con `SesionResource` (extiende `UsuarioResource`): `id`, `name`, `email`, `rol`, `activo`, el estado de los `modulos` y, cuando se cargan, `areas`. Los `modulos` solo salen aquí; la lista de administración (`GET /api/usuarios`, con `UsuarioResource`) ya no los incluye. Las respuestas de la API no van envueltas en `data` (`JsonResource::withoutWrapping()`).
 - `DELETE /api/usuarios/{usuario}` no borra: da de baja (`activo = false`) y revoca los tokens. Un administrador **no puede darse de baja ni desactivarse a sí mismo** (la API responde 422); el panel oculta el botón de eliminar y deshabilita el de estado en su propia fila.
 - `POST /login` limita a 5 intentos por minuto por correo e IP (`throttle:login`) y responde 429 con `auth.throttle`.
 - Tipo compartido: `Rol` en `@aleacion-prima/types`, derivado de su arreglo `as const` con los mismos cuatro valores.
@@ -127,6 +167,7 @@ En el panel se definen en `build.define` de `quasar.config.ts` y se tipan en `sr
 | Config que Laravel ve | `pnpm artisan config:show cors` / `sanctum` / `reverb`                                                                         | Coincide con el `.env`; si no, `docker compose restart api` |
 | WebSocket             | Pestaña Network → WS → mensajes                                                                                                | `pusher:connection_established` (no solo el 101)            |
 | Canal privado         | Suscribirse tras login y revisar `POST /broadcasting/auth`                                                                     | 200 con `auth` en la respuesta                              |
+| Segundo factor        | Activarlo en Mi cuenta, cerrar sesión y volver a entrar; leer el código en el log de correo                                    | Redirige a `/verificar` y entra con el código               |
 
 ## Pendiente
 

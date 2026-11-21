@@ -6,6 +6,7 @@ use App\Enums\EstadoLote;
 use App\Enums\Rol;
 use App\Enums\TipoMovimientoInsumo;
 use App\Events\LoteActualizado;
+use App\Lotes\CalculadorCostoLote;
 use App\Lotes\CreadorLote;
 use App\Models\Area;
 use App\Models\Insumo;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\mock;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\travelTo;
@@ -34,7 +36,7 @@ function capturarComo(Rol $rol, array $areas = []): User
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
     $usuario->areas()->sync(Area::query()->whereIn('codigo', $areas)->pluck('id'));
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     return $usuario;
 }
@@ -162,6 +164,28 @@ it('no entrega más piezas de las que recibió', function () {
     postJson(urlCaptura($lote, paradaDe($lote, 1), 'salida'), ['piezas_entregadas' => 21])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['piezas_entregadas']);
+});
+
+it('no recibe más piezas de las que entregó el área anterior', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+    entrar($lote, 1, 20, '07:00');
+    salir($lote, 1, 19, '07:30');
+
+    postJson(urlCaptura($lote, paradaDe($lote, 2), 'entrada'), ['piezas_recibidas' => 20])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['piezas_recibidas']);
+
+    expect(paradaDe($lote, 2)->entrada_ocurrido_en)->toBeNull();
+});
+
+it('la primera parada no recibe más piezas que la cantidad objetivo', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+
+    postJson(urlCaptura($lote, paradaDe($lote, 1), 'entrada'), ['piezas_recibidas' => 21])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['piezas_recibidas']);
 });
 
 it('valida que las horas tengan sentido', function () {
@@ -377,4 +401,43 @@ it('al encargado solo le lista los lotes que pasan por sus áreas', function () 
 
     capturarComo(Rol::Ventas);
     getJson('/api/lotes')->assertJsonCount(2);
+});
+
+it('la salida de Desmolde con retorno_kg resta el retorno del costo de material', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+
+    foreach ([1, 2, 3] as $orden) {
+        entrar($lote, $orden, 20, sprintf('06:%02d', ($orden - 1) * 10));
+        salir($lote, $orden, 20, sprintf('06:%02d', $orden * 10));
+    }
+    entrar($lote, 4, 20, '06:30');
+
+    expect($lote->fresh()->costo_material)->toBe('1400.0000');
+
+    salir($lote, 4, 19, '06:40', ['retorno_kg' => 35.5]);
+
+    // 200 kg × $7 − 35.5 kg × $7 = 1151.50; 4 paradas de 10 min: 620/6 y 930/6
+    $lote = $lote->fresh();
+    expect($lote->costo_material)->toBe('1151.5000')
+        ->and($lote->costo_mano_obra)->toBe('103.3333')
+        ->and($lote->costo_maquina)->toBe('155.0000')
+        ->and($lote->costo_total)->toBe('1409.8333');
+});
+
+it('revierte la salida si el cálculo del costo falla', function () {
+    capturarComo(Rol::Administrador);
+    $lote = loteParaCaptura();
+    entrar($lote, 1, 20, '07:00');
+
+    mock(CalculadorCostoLote::class)
+        ->shouldReceive('recalcular')
+        ->andThrow(new RuntimeException('falla simulada'));
+
+    postJson(urlCaptura($lote, paradaDe($lote, 1), 'salida'), [
+        'piezas_entregadas' => 20,
+        'ocurrido_en' => '2026-11-02 07:30',
+    ])->assertServerError();
+
+    expect(paradaDe($lote, 1)->salida_ocurrido_en)->toBeNull();
 });

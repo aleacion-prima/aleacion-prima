@@ -18,7 +18,13 @@ const guardando = ref(false);
 const error = ref('');
 
 const terminadas = computed(() => props.lote.paradas.at(-1)?.piezas_entregadas ?? 0);
-const merma = computed(() => Math.max(props.lote.cantidad_objetivo - terminadas.value, 0));
+const merma = computed(() =>
+  props.lote.paradas.reduce((total, parada) => total + (parada.merma_piezas ?? 0), 0),
+);
+const faltantes = computed(() =>
+  Math.max(props.lote.cantidad_objetivo - terminadas.value - merma.value, 0),
+);
+const columna = computed(() => (faltantes.value > 0 ? 'col-3' : 'col-4'));
 const rendimiento = computed(() =>
   props.lote.cantidad_objetivo
     ? Math.round((terminadas.value / props.lote.cantidad_objetivo) * 100)
@@ -67,15 +73,19 @@ const confirmar = async (): Promise<void> => {
         }}</q-banner>
 
         <div class="row q-col-gutter-md text-center">
-          <div class="col-4">
+          <div :class="columna">
             <div class="text-overline text-secundario">Terminadas</div>
             <div class="text-h5 codigo">{{ terminadas }}</div>
           </div>
-          <div class="col-4">
+          <div :class="columna">
             <div class="text-overline text-secundario">Merma</div>
             <div class="text-h5 codigo" :class="{ 'text-negative': merma > 0 }">{{ merma }}</div>
           </div>
-          <div class="col-4">
+          <div v-if="faltantes > 0" :class="columna">
+            <div class="text-overline text-secundario">Faltantes</div>
+            <div class="text-h5 codigo text-warning">{{ faltantes }}</div>
+          </div>
+          <div :class="columna">
             <div class="text-overline text-secundario">Rendimiento</div>
             <div class="text-h5 codigo">{{ rendimiento }} %</div>
           </div>

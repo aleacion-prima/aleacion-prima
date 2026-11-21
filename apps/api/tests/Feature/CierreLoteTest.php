@@ -6,6 +6,7 @@ use App\Enums\TipoMovimientoInsumo;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
 use App\Events\LoteActualizado;
+use App\Lotes\CalculadorCostoLote;
 use App\Lotes\CapturaParada;
 use App\Lotes\CreadorLote;
 use App\Models\Area;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\mock;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\travelTo;
@@ -35,7 +37,7 @@ function adminDeCierre(): User
 {
     $admin = User::factory()->create();
     $admin->assignRole(Rol::Administrador);
-    Sanctum::actingAs($admin);
+    Sanctum::actingAs($admin, ['*']);
 
     return $admin;
 }
@@ -64,11 +66,13 @@ function recorrerHasta(Lote $lote, User $admin, int $hasta, int $entregadas = 20
 {
     $captura = app(CapturaParada::class);
     $hora = CarbonImmutable::parse('2026-11-03 08:00:00');
+    $piezas = 20;
 
     foreach ($lote->paradas()->where('orden', '<=', $hasta)->get() as $parada) {
-        $captura->entrada($lote, $parada, 20, $hora, $admin);
+        $captura->entrada($lote, $parada, $piezas, $hora, $admin);
         $hora = $hora->addMinutes(30);
         $captura->salida($lote, $parada->fresh(), $entregadas, null, null, $hora, $admin);
+        $piezas = $entregadas;
     }
 }
 
@@ -95,7 +99,7 @@ it('confirma el cierre y mete las piezas al inventario', function () {
 
     Event::assertDispatched(
         DisponibilidadActualizada::class,
-        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => 23],
+        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => true, 'cantidad' => 23],
     );
 });
 
@@ -206,7 +210,7 @@ it('solo el administrador confirma o cancela', function (Rol $rol) {
 
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
 
     postJson("/api/lotes/{$lote->codigo}/confirmar")->assertForbidden();
     postJson("/api/lotes/{$lote->codigo}/cancelar", ['motivo' => 'x'])->assertForbidden();
@@ -221,4 +225,60 @@ it('dice si el lote todavía admite devolución', function () {
     recorrerHasta($lote, $admin, 1);
 
     getJson("/api/lotes/{$lote->codigo}")->assertJsonPath('admite_devolucion', false);
+});
+
+it('confirmar congela el costo real y fija el costo por pieza', function () {
+    $admin = adminDeCierre();
+    $lote = loteParaCierre($admin);
+    recorrerHasta($lote, $admin, 4, 18);
+
+    // Con el lote abierto es "costo a la fecha": todavía sin costo por pieza.
+    getJson("/api/lotes/{$lote->codigo}")
+        ->assertJsonPath('costo_total', '2175.0000')
+        ->assertJsonPath('costo_por_pieza', null);
+
+    // 1400 material + 310 mano de obra + 465 máquina = 2175; 2175 ÷ 18 piezas
+    postJson("/api/lotes/{$lote->codigo}/confirmar")
+        ->assertOk()
+        ->assertJsonPath('costo_total', '2175.0000')
+        ->assertJsonPath('costo_por_pieza', '120.8333');
+
+    expect($lote->fresh()->costo_material)->toBe('1400.0000')
+        ->and($lote->fresh()->costo_mano_obra)->toBe('310.0000')
+        ->and($lote->fresh()->costo_maquina)->toBe('465.0000');
+});
+
+it('cancelar con devoluciones conserva el costo de lo consumido', function () {
+    $admin = adminDeCierre();
+    $lote = loteParaCierre($admin);
+    $chatarra = Insumo::query()->where('codigo', 'CHT-CIE')->firstOrFail();
+
+    // Se asignaron 200 kg y se devuelven 150.5: se consumieron 49.5 kg × $7
+    postJson("/api/lotes/{$lote->codigo}/cancelar", [
+        'motivo' => 'Pedido cancelado',
+        'devoluciones' => [['insumo_id' => $chatarra->id, 'cantidad' => 150.5]],
+    ])
+        ->assertOk()
+        ->assertJsonPath('estado', 'cancelado')
+        ->assertJsonPath('costo_total', '346.5000')
+        ->assertJsonPath('costo_por_pieza', null);
+
+    expect($lote->fresh()->costo_material)->toBe('346.5000');
+});
+
+it('revierte la confirmación si el cálculo del costo falla', function () {
+    $admin = adminDeCierre();
+    $lote = loteParaCierre($admin);
+    recorrerHasta($lote, $admin, 4, 18);
+    $existencia = $lote->producto?->fresh()?->existencia;
+
+    mock(CalculadorCostoLote::class)
+        ->shouldReceive('recalcular')
+        ->andThrow(new RuntimeException('falla simulada'));
+
+    postJson("/api/lotes/{$lote->codigo}/confirmar")->assertServerError();
+
+    expect($lote->fresh()->estado)->toBe(EstadoLote::PorConfirmar)
+        ->and(MovimientoProducto::query()->count())->toBe(0)
+        ->and($lote->producto?->fresh()?->existencia)->toBe($existencia);
 });

@@ -87,10 +87,23 @@ export const TIPOS_EVENTO_BITACORA = [
 ] as const;
 export type TipoEventoBitacora = (typeof TIPOS_EVENTO_BITACORA)[number];
 
+export interface ProductoPublico {
+  id: number;
+  nombre: string;
+  especificaciones: Record<string, string | number> | null;
+  disponible: boolean;
+  cantidad: number | null;
+}
+
 // Tiempo real (web publica)
+export interface CatalogoActualizado {
+  id: number;
+}
+
 export interface DisponibilidadActualizada {
   id: number;
-  disponible: number;
+  disponible: boolean;
+  cantidad: number | null;
 }
 
 // Lotes y roles
@@ -231,14 +244,66 @@ export interface RespuestaAjusteLote {
   lote: Lote;
 }
 
+export interface Imprevisto {
+  id: string;
+  lote_id: number;
+  area: ReferenciaCatalogo | null;
+  tipo: TipoImprevisto;
+  descripcion: string;
+  maquina: string | null;
+  piezas_afectadas: number | null;
+  duracion_minutos: number | null;
+  resuelto: boolean;
+  registrado_por: string | null;
+  ocurrido_en: string;
+  created_at: string;
+}
+
 export interface Usuario {
   id: number;
   name: string;
   email: string;
   rol: Rol | null;
   activo: boolean;
-  modulos: Record<string, boolean>;
+  dado_de_baja_en: string | null;
   areas?: AreaAsignada[];
+}
+
+// Módulos de config('modulos'): unión de los nombres de bandera (Pennant).
+export type Modulo = 'ventas';
+
+// GET /api/user: el usuario de la sesión más el estado de los módulos.
+export interface Sesion extends Usuario {
+  modulos: Record<Modulo, boolean>;
+}
+
+// Carga del evento `.modulos.actualizados` por el canal privado `modulos`.
+export interface ModulosActualizados {
+  modulos: Record<Modulo, boolean>;
+}
+
+export interface SesionMovil {
+  token: string;
+  usuario: Usuario;
+}
+
+export interface SesionActiva {
+  // Id compuesto `tipo:id` (`panel:<id>` o `app:<id>`); se manda tal cual al cerrar.
+  id: string;
+  tipo: 'panel' | 'app';
+  dispositivo: string;
+  ip: string | null;
+  ultima_actividad: string | null;
+  actual: boolean;
+}
+
+export interface Notificacion {
+  id: string;
+  tipo: 'stock_minimo' | 'lote_por_confirmar' | 'imprevisto';
+  mensaje: string;
+  codigo: string | null;
+  leida: boolean;
+  fecha: string;
 }
 
 export interface AreaAsignada {
@@ -273,6 +338,7 @@ export interface Producto {
   precio_menudeo: string;
   existencia: number;
   publicado: boolean;
+  mostrar_cantidad: boolean;
   activo: boolean;
   recorrido: ProductoArea[];
   receta: ProductoInsumo[];
@@ -309,5 +375,41 @@ export interface Area {
   obligatoria: boolean;
   orden_catalogo: number;
   activo: boolean;
-  encargados?: Usuario[];
+  encargados?: Pick<Usuario, 'id' | 'name'>[];
+}
+
+export interface HistorialParada extends LoteParada {
+  entrada_por: string | null;
+  salida_por: string | null;
+}
+
+export interface HistorialLote {
+  codigo: string;
+  estado: EstadoLote;
+  paradas: HistorialParada[];
+}
+
+export interface EventoBitacora {
+  id: string;
+  tipo: TipoEventoBitacora;
+  descripcion: string;
+  area: ReferenciaCatalogo | null;
+  usuario: string | null;
+  datos: Record<string, unknown>;
+  ocurrido_en: string;
+  registrado_en: string;
+  captura_tardia: boolean;
+}
+
+export interface CostoLote {
+  codigo: string;
+  estado: EstadoLote;
+  // Abierto: costo a la fecha. Terminado o cancelado: congelado.
+  congelado: boolean;
+  piezas_terminadas: number | null;
+  material: string;
+  mano_obra: string;
+  maquina: string;
+  total: string;
+  por_pieza: string | null;
 }

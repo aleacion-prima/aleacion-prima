@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import { correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
 const route = useRoute();
@@ -16,7 +17,15 @@ const entrar = async (): Promise<void> => {
   error.value = '';
   cargando.value = true;
   try {
-    await sesion.iniciar(credenciales.email, credenciales.password);
+    const pendiente = await sesion.iniciar(credenciales.email, credenciales.password);
+    if (pendiente) {
+      // Falta el segundo factor: a la pantalla del código, conservando "volver".
+      await router.push({
+        path: '/verificar',
+        query: typeof route.query.volver === 'string' ? { volver: route.query.volver } : {},
+      });
+      return;
+    }
     await router.push(typeof route.query.volver === 'string' ? route.query.volver : '/');
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'No se pudo iniciar sesión';
@@ -42,7 +51,8 @@ const entrar = async (): Promise<void> => {
           outlined
           autofocus
           autocomplete="username"
-          :rules="[(v) => !!v || 'Escribe tu correo']"
+          lazy-rules
+          :rules="[requerido('Escribe tu correo'), correo]"
         />
 
         <q-input
@@ -51,7 +61,7 @@ const entrar = async (): Promise<void> => {
           label="Contraseña"
           outlined
           autocomplete="current-password"
-          :rules="[(v) => !!v || 'Escribe tu contraseña']"
+          :rules="[requerido('Escribe tu contraseña')]"
         >
           <template #append>
             <q-icon

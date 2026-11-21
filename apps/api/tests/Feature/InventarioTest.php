@@ -44,7 +44,7 @@ function insumoInventario(array $atributos = []): Insumo
 }
 
 it('registra una entrada y actualiza la existencia en una transacción', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10]);
 
     postJson("/api/insumos/{$insumo->id}/entradas", [
@@ -64,7 +64,7 @@ it('registra una entrada y actualiza la existencia en una transacción', functio
 
 it('permite a ventas consultar insumos y productos, pero no registrar entradas', function () {
     $usuario = usuarioInventario(Rol::Ventas);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
     $insumo = insumoInventario(['existencia' => 4]);
 
     getJson('/api/inventario/insumos')
@@ -79,14 +79,14 @@ it('permite a ventas consultar insumos y productos, pero no registrar entradas',
 });
 
 it('rechaza al encargado para consultar existencias', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Encargado));
+    Sanctum::actingAs(usuarioInventario(Rol::Encargado), ['*']);
 
     getJson('/api/inventario/insumos')->assertForbidden();
     getJson('/api/inventario/productos')->assertForbidden();
 });
 
 it('expone si un insumo está bajo el stock mínimo comparando como números', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $critico = insumoInventario(['existencia' => 900, 'stock_minimo' => 1000]);
     $holgado = insumoInventario(['existencia' => 5000, 'stock_minimo' => 1000]);
 
@@ -97,7 +97,7 @@ it('expone si un insumo está bajo el stock mínimo comparando como números', f
 });
 
 it('expone material y peso del producto desde sus especificaciones', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Ventas));
+    Sanctum::actingAs(usuarioInventario(Rol::Ventas), ['*']);
 
     $conEspecificaciones = Producto::query()->create([
         'codigo' => 'DIS-FRE-G',
@@ -150,7 +150,7 @@ it('reconstruye existencias desde los movimientos', function () {
 
 it('solo expone lectura de movimientos y no rutas de edición o borrado', function () {
     $usuario = usuarioInventario(Rol::Administrador);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
     $insumo = insumoInventario();
 
     getJson("/api/insumos/{$insumo->id}/movimientos")->assertOk();
@@ -159,7 +159,7 @@ it('solo expone lectura de movimientos y no rutas de edición o borrado', functi
 });
 
 it('registra un ajuste positivo con motivo, valores y movimiento firmado', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [
@@ -179,7 +179,7 @@ it('registra un ajuste positivo con motivo, valores y movimiento firmado', funct
 });
 
 it('registra un ajuste negativo y deja la existencia en la cantidad real', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [
@@ -194,7 +194,7 @@ it('registra un ajuste negativo y deja la existencia en la cantidad real', funct
 
 it('emite StockMinimoAlcanzado cuando un ajuste cruza el stock mínimo', function () {
     Event::fake([StockMinimoAlcanzado::class]);
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10, 'stock_minimo' => 5]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [
@@ -212,7 +212,7 @@ it('emite StockMinimoAlcanzado cuando un ajuste cruza el stock mínimo', functio
 
 it('no emite StockMinimoAlcanzado cuando el ajuste deja la existencia por encima del mínimo', function () {
     Event::fake([StockMinimoAlcanzado::class]);
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10, 'stock_minimo' => 5]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [
@@ -224,7 +224,7 @@ it('no emite StockMinimoAlcanzado cuando el ajuste deja la existencia por encima
 });
 
 it('rechaza un ajuste a la cantidad que ya hay y no registra nada', function () {
-    Sanctum::actingAs(usuarioInventario(Rol::Administrador));
+    Sanctum::actingAs(usuarioInventario(Rol::Administrador), ['*']);
     $insumo = insumoInventario(['existencia' => 10]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [
@@ -240,7 +240,7 @@ it('rechaza un ajuste a la cantidad que ya hay y no registra nada', function () 
 });
 
 it('solo permite ajustes al administrador', function (Rol $rol) {
-    Sanctum::actingAs(usuarioInventario($rol));
+    Sanctum::actingAs(usuarioInventario($rol), ['*']);
     $insumo = insumoInventario(['existencia' => 10]);
 
     postJson("/api/insumos/{$insumo->id}/ajustes", [

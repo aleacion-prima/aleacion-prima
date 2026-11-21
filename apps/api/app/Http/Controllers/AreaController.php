@@ -14,6 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class AreaController extends Controller
 {
+    /**
+     * Catálogo en el orden natural de la planta. `?activo=1` devuelve solo las áreas
+     * disponibles para recorridos nuevos; `?activo=0`, solo las desactivadas.
+     */
     public function index(Request $request)
     {
         return AreaResource::collection(
@@ -25,6 +29,9 @@ class AreaController extends Controller
         );
     }
 
+    /**
+     * Devuelve los catálogos y listas auxiliares necesarias para formularios (ej. encargados activos).
+     */
     public function opciones(): JsonResponse
     {
         return response()->json([
@@ -46,7 +53,6 @@ class AreaController extends Controller
     {
         $datos = $request->safe()->except('encargados');
         $datos['activo'] = $request->boolean('activo', true);
-        $datos['orden_catalogo'] ??= (int) Area::max('orden_catalogo') + 1;
 
         $area = DB::transaction(function () use ($datos, $request): Area {
             $area = Area::create($datos);
@@ -60,6 +66,9 @@ class AreaController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
+    /**
+     * Cambiar tarifas no toca los lotes existentes: cada `lote_areas` guarda su copia (ADR-0009).
+     */
     public function update(AreaRequest $request, Area $area): AreaResource
     {
         DB::transaction(function () use ($request, $area): void {
@@ -73,6 +82,10 @@ class AreaController extends Controller
         return new AreaResource($area->refresh()->load('encargados:id,name'));
     }
 
+    /**
+     * Desactivar, no borrar: los lotes que usaron el área la siguen referenciando.
+     * Se reactiva editándola con `activo = true`.
+     */
     public function destroy(Area $area): Response
     {
         if ($area->obligatoria) {

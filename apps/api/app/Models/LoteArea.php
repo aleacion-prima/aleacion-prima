@@ -53,4 +53,16 @@ class LoteArea extends Model
     {
         return $this->belongsTo(Area::class);
     }
+
+    /** @return BelongsTo<User, $this> */
+    public function entradaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'entrada_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function salidaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salida_user_id');
+    }
 }

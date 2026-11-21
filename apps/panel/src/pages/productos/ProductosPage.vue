@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
+import { formatearCantidad, formatearMoneda } from '@/composables/formato';
 import type { AreaOpcion, OpcionesProducto, Producto } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
+import { useSesionStore } from '@/stores/sesion';
 
 interface OpcionMaterial {
   label: string;
@@ -33,7 +36,6 @@ interface ErrorApi {
   errors?: Record<string, string[]>;
 }
 
-/** Materiales de docs/empresa.md (sección 4). Se guardan en `especificaciones.material` y `.norma`. */
 const MATERIALES = [
   { material: 'Hierro gris clase 30', norma: 'ASTM A48' },
   { material: 'Hierro nodular 65-45-12', norma: 'ASTM A536' },
@@ -46,6 +48,9 @@ const opcionesEstado = [
 ];
 
 const $q = useQuasar();
+const sesion = useSesionStore();
+const esAdministrador = computed(() => sesion.usuario?.rol === 'administrador');
+const publicando = ref<number | null>(null);
 const productos = ref<Producto[]>([]);
 const opciones = ref<OpcionesProducto>({ areas: [], insumos: [] });
 const dialogo = ref(false);
@@ -67,16 +72,6 @@ const formulario = reactive<FormularioProducto>({
 
 /* ---------- Formato ---------- */
 
-const dinero = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
-const cantidades = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 4 });
-
-const formatearPrecio = (valor: string): string => dinero.format(Number(valor));
-
 const materialLegible = (producto: Producto): string => {
   const { material, norma } = producto.especificaciones;
   if (material === undefined) return '—';
@@ -93,7 +88,7 @@ const resumenReceta = (producto: Producto): string => {
     .slice(0, 2)
     .map(
       (renglon) =>
-        `${renglon.nombre} ${cantidades.format(Number(renglon.cantidad_por_pieza))} ${renglon.unidad}`,
+        `${renglon.nombre} ${formatearCantidad(renglon.cantidad_por_pieza)} ${renglon.unidad}`,
     );
   const restantes = producto.receta.length - visibles.length;
   return [...visibles, ...(restantes > 0 ? [`+${restantes} más`] : [])].join(' · ');
@@ -275,6 +270,25 @@ const guardar = async (): Promise<void> => {
   $q.notify({ type: 'positive', message: esEdicion ? 'Producto actualizado' : 'Producto creado' });
 };
 
+const publicar = async (
+  producto: Producto,
+  cambios: { publicado?: boolean; mostrar_cantidad?: boolean },
+): Promise<void> => {
+  publicando.value = producto.id;
+  const { data, error } = await useApi(`/productos/${producto.id}/publicacion`)
+    .patch(cambios)
+    .json<Producto>();
+  publicando.value = null;
+  if (error.value || !data.value) {
+    $q.notify({ type: 'negative', message: 'No se pudo cambiar la publicación' });
+    return;
+  }
+  const actualizado = data.value;
+  productos.value = productos.value.map((actual) =>
+    actual.id === actualizado.id ? actualizado : actual,
+  );
+};
+
 onMounted(cargar);
 </script>
 
@@ -282,13 +296,14 @@ onMounted(cargar);
   <q-page padding>
     <div class="row items-center justify-between q-mb-lg">
       <div>
-        <div class="text-h4">Productos</div>
-        <div class="text-body2 text-grey-7">
+        <div class="text-h4 catalogo-titulo">Productos</div>
+        <div class="text-body2 text-secundario">
           Administra los productos, su recorrido por defecto y la receta de insumos.
         </div>
       </div>
       <q-btn
-        unelevated
+        v-if="esAdministrador"
+        outline
         color="primary"
         icon="add"
         label="Nuevo producto"
@@ -299,49 +314,70 @@ onMounted(cargar);
 
     <q-linear-progress v-if="cargando" indeterminate color="primary" />
 
-    <div v-else-if="productos.length === 0" class="text-grey-7">Aún no hay productos.</div>
+    <EstadoVacio v-else-if="productos.length === 0" titulo="Aún no hay productos" />
 
     <div v-else class="row q-col-gutter-md">
       <div v-for="producto in productos" :key="producto.id" class="col-12 col-sm-6 col-lg-4">
-        <q-card flat bordered class="tarjeta full-height column">
+        <q-card flat bordered class="catalogo-tarjeta full-height column">
           <q-card-section class="row items-start no-wrap">
             <div class="col">
-              <div class="tarjeta__codigo">{{ producto.codigo }}</div>
-              <div class="tarjeta__nombre">{{ producto.nombre }}</div>
+              <div class="catalogo-codigo">{{ producto.codigo }}</div>
+              <div class="catalogo-nombre">{{ producto.nombre }}</div>
             </div>
-            <span class="insignia" :class="producto.activo ? 'insignia--verde' : 'insignia--gris'">
-              {{ producto.activo ? 'Activo' : 'Inactivo' }}
-            </span>
+            <q-chip
+              v-if="producto.activo"
+              class="q-ma-none"
+              color="positive"
+              text-color="white"
+              label="Activo"
+            />
+            <q-chip v-else class="q-ma-none" color="grey-3" text-color="grey-8" label="Inactivo" />
           </q-card-section>
 
-          <q-card-section class="campos q-pt-none">
-            <div class="campos__fila">
-              <div class="campo">
-                <div class="campo__etiqueta">Material</div>
-                <div class="campo__valor">{{ materialLegible(producto) }}</div>
+          <q-card-section class="catalogo-campos q-pt-none">
+            <div class="catalogo-fila">
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Material</div>
+                <div class="catalogo-valor">{{ materialLegible(producto) }}</div>
               </div>
-              <div class="campo">
-                <div class="campo__etiqueta">Precio de mayoreo / menudeo</div>
-                <div class="campo__valor campo__valor--mono">
-                  {{ formatearPrecio(producto.precio_mayoreo) }} /
-                  {{ formatearPrecio(producto.precio_menudeo) }}
+              <div class="catalogo-campo">
+                <div class="catalogo-etiqueta">Precio de mayoreo / menudeo</div>
+                <div class="catalogo-valor catalogo-valor--mono">
+                  {{ formatearMoneda(producto.precio_mayoreo) }} /
+                  {{ formatearMoneda(producto.precio_menudeo) }}
                 </div>
               </div>
             </div>
-            <div class="campo">
-              <div class="campo__etiqueta">Recorrido por defecto</div>
-              <div class="campo__valor">{{ recorridoLegible(producto) }}</div>
+            <div class="catalogo-campo">
+              <div class="catalogo-etiqueta">Recorrido por defecto</div>
+              <div class="catalogo-valor">{{ recorridoLegible(producto) }}</div>
             </div>
-            <div class="campo">
-              <div class="campo__etiqueta">Receta de insumos (por pieza)</div>
-              <div class="campo__valor">{{ resumenReceta(producto) }}</div>
+            <div class="catalogo-campo">
+              <div class="catalogo-etiqueta">Receta de insumos (por pieza)</div>
+              <div class="catalogo-valor">{{ resumenReceta(producto) }}</div>
             </div>
           </q-card-section>
 
           <q-space />
           <q-card-actions align="right">
+            <q-toggle
+              :model-value="producto.publicado"
+              label="Publicado"
+              color="positive"
+              :disable="!producto.activo || publicando === producto.id"
+              @update:model-value="(valor) => publicar(producto, { publicado: valor })"
+            />
+            <q-toggle
+              :model-value="producto.mostrar_cantidad"
+              label="Mostrar cantidad"
+              color="positive"
+              :disable="!producto.publicado || publicando === producto.id"
+              @update:model-value="(valor) => publicar(producto, { mostrar_cantidad: valor })"
+            />
+            <q-space />
             <q-btn
-              class="btn-editar"
+              v-if="esAdministrador"
+              class="catalogo-boton"
               outline
               no-caps
               color="secondary"
@@ -358,7 +394,7 @@ onMounted(cargar);
         <q-card-section class="row items-start no-wrap">
           <div class="col">
             <div class="text-h6">{{ editando ? 'Editar producto' : 'Nuevo producto' }}</div>
-            <div class="text-caption text-grey-7">
+            <div class="text-caption text-secundario">
               {{
                 editando
                   ? 'Actualiza los datos, el recorrido y la receta del producto.'
@@ -371,6 +407,7 @@ onMounted(cargar);
         <q-separator />
 
         <q-card-section class="scroll" style="max-height: 68vh">
+          <!-- Datos del producto -->
           <div>
             <div class="text-subtitle1 text-weight-bold q-mb-sm">Datos del producto</div>
             <div class="row q-col-gutter-md">
@@ -378,6 +415,8 @@ onMounted(cargar);
                 v-model="formulario.codigo"
                 class="col-12 col-sm-4"
                 label="Código"
+                placeholder="Ingresa el código"
+                stack-label
                 outlined
                 :error="campoError('codigo') !== ''"
                 :error-message="campoError('codigo')"
@@ -386,6 +425,8 @@ onMounted(cargar);
                 v-model="formulario.nombre"
                 class="col-12 col-sm-5"
                 label="Nombre del producto"
+                placeholder="Ingresa el nombre"
+                stack-label
                 outlined
                 :error="campoError('nombre') !== ''"
                 :error-message="campoError('nombre')"
@@ -395,6 +436,8 @@ onMounted(cargar);
                 class="col-12 col-sm-3"
                 :options="opcionesEstado"
                 label="Estado"
+                placeholder="Selecciona un estado"
+                stack-label
                 emit-value
                 map-options
                 outlined
@@ -409,6 +452,8 @@ onMounted(cargar);
                 option-value="material"
                 option-label="label"
                 label="Material"
+                placeholder="Selecciona el material"
+                stack-label
                 emit-value
                 map-options
                 outlined
@@ -419,6 +464,8 @@ onMounted(cargar);
                 v-model.number="formulario.precio_mayoreo"
                 class="col-12 col-sm-3"
                 label="Precio de mayoreo"
+                placeholder="Ingresa el precio"
+                stack-label
                 type="number"
                 step="any"
                 prefix="$"
@@ -430,6 +477,8 @@ onMounted(cargar);
                 v-model.number="formulario.precio_menudeo"
                 class="col-12 col-sm-3"
                 label="Precio de menudeo"
+                placeholder="Ingresa el precio"
+                stack-label
                 type="number"
                 step="any"
                 prefix="$"
@@ -440,14 +489,14 @@ onMounted(cargar);
             </div>
           </div>
           <q-separator class="q-my-lg" />
+
           <!-- Recorrido por defecto -->
           <div>
             <div class="row items-start justify-between q-mb-sm">
               <div>
                 <div class="text-subtitle1 text-weight-bold">Recorrido por defecto</div>
-                <div class="text-caption text-grey-7">
-                  Agrega áreas y arrástralas para ajustar la secuencia. Las obligatorias no se
-                  pueden quitar.
+                <div class="text-caption text-secundario">
+                  Agrega áreas y arrástralas para ajustar la secuencia.
                 </div>
               </div>
               <q-btn
@@ -473,10 +522,39 @@ onMounted(cargar);
               </q-btn>
             </div>
 
-            <div class="row items-center bg-grey-2 rounded-borders q-pa-sm" style="gap: 4px">
-              <div v-if="formulario.recorrido.length === 0" class="text-grey-7">
-                <q-icon name="drag_indicator" /> Sin áreas agregadas
+            <div
+              v-if="formulario.recorrido.length === 0"
+              style="
+                display: grid;
+                grid-template-columns: minmax(0, 2.75fr) minmax(0, 1.25fr);
+                gap: 8px;
+                align-items: start;
+              "
+            >
+              <q-select
+                :model-value="null"
+                :options="areasParaAgregar"
+                :option-label="(area: AreaOpcion) => `${area.codigo} · ${area.nombre}`"
+                option-value="id"
+                label="Área"
+                placeholder="Selecciona un área para iniciar el recorrido"
+                stack-label
+                emit-value
+                map-options
+                outlined
+                :disable="areasParaAgregar.length === 0"
+                @update:model-value="(id: number) => agregarArea(id)"
+              />
+              <div
+                class="row items-center no-wrap bg-grey-2 rounded-borders q-px-md text-secundario text-caption"
+                style="height: 56px; gap: 8px"
+              >
+                <q-icon name="drag_indicator" size="xs" />
+                Sin áreas agregadas
               </div>
+            </div>
+
+            <div v-else class="row items-center bg-grey-2 rounded-borders q-pa-sm" style="gap: 4px">
               <div
                 v-for="(areaId, indice) in formulario.recorrido"
                 :key="areaId"
@@ -507,6 +585,7 @@ onMounted(cargar);
                 />
               </div>
             </div>
+
             <div
               v-for="mensaje in erroresDe('recorrido')"
               :key="mensaje"
@@ -522,8 +601,8 @@ onMounted(cargar);
             <div class="row items-start justify-between q-mb-sm">
               <div>
                 <div class="text-subtitle1 text-weight-bold">Receta de insumos por pieza</div>
-                <div class="text-caption text-grey-7">
-                  Define el insumo y la cantidad de cada pieza; la unidad viene del insumo.
+                <div class="text-caption text-secundario">
+                  Define el insumo, la cantidad y su unidad para cada pieza.
                 </div>
               </div>
               <q-btn
@@ -551,7 +630,9 @@ onMounted(cargar);
                 :options="insumosDisponibles(indice)"
                 :option-label="(insumo) => `${insumo.codigo} · ${insumo.nombre}`"
                 option-value="id"
-                label="Selecciona un insumo"
+                label="Insumo"
+                placeholder="Selecciona un insumo"
+                stack-label
                 emit-value
                 map-options
                 outlined
@@ -561,6 +642,8 @@ onMounted(cargar);
               <q-input
                 v-model.number="renglon.cantidad_por_pieza"
                 label="Cantidad"
+                placeholder="Ingresa cantidad"
+                stack-label
                 type="number"
                 step="any"
                 outlined
@@ -570,6 +653,8 @@ onMounted(cargar);
               <q-input
                 :model-value="unidadDe(renglon.insumo_id)"
                 label="Unidad"
+                placeholder="Selecciona"
+                stack-label
                 readonly
                 outlined
               />
@@ -583,7 +668,7 @@ onMounted(cargar);
               />
             </div>
 
-            <div v-if="recetaVacia" class="bg-grey-2 rounded-borders q-pa-md text-grey-7">
+            <div v-if="recetaVacia" class="bg-grey-2 rounded-borders q-pa-md text-secundario">
               Aún no hay insumos agregados. Completa los campos para establecer la receta.
             </div>
             <div v-if="campoError('receta') !== ''" class="text-negative text-caption">
@@ -607,78 +692,3 @@ onMounted(cargar);
     </q-dialog>
   </q-page>
 </template>
-
-<style scoped lang="scss">
-.tarjeta {
-  border-radius: 16px;
-  border-color: $acero-claro;
-}
-.tarjeta__codigo {
-  font-family: $fuente-codigo;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: $grafito-medio;
-}
-.tarjeta__nombre {
-  font-family: $fuente-titulos;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: $dark;
-}
-.campos {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.campos__fila {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.campo {
-  background: $blanco-humo;
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-.campo__etiqueta {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: $grafito-medio;
-  margin-bottom: 4px;
-}
-.campo__valor {
-  font-size: 16px;
-  line-height: 1.4;
-  color: $dark;
-}
-.campo__valor--mono {
-  font-family: $fuente-codigo;
-}
-.insignia {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: #fff;
-}
-.insignia--azul {
-  background: $info;
-}
-.insignia--verde {
-  background: $positive;
-}
-.insignia--gris {
-  background: $acero-claro;
-  color: $grafito-medio;
-}
-.btn-editar {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color $duracion-rapida $curva-salida;
-}
-</style>

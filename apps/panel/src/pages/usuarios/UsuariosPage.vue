@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import type { AreaAsignada, Rol, Usuario } from '@aleacion-prima/types';
 import { ROLES } from '@aleacion-prima/types';
 import { etiquetaRol } from '@/catalogos/roles';
 import { useApi } from '@/services/api';
 import { useSesionStore } from '@/stores/sesion';
+import SesionesActivas from '@/components/cuenta/SesionesActivas.vue';
 
 interface FormularioUsuario {
   name: string;
@@ -16,6 +17,8 @@ interface FormularioUsuario {
   activo: boolean;
 }
 
+type VistaUsuarios = 'en_uso' | 'bajas';
+
 const $q = useQuasar();
 const sesion = useSesionStore();
 const usuarios = ref<Usuario[]>([]);
@@ -23,6 +26,10 @@ const areas = ref<AreaAsignada[]>([]);
 const dialogo = ref(false);
 const editando = ref<Usuario | null>(null);
 const cargando = ref(true);
+const vista = ref<VistaUsuarios>('en_uso');
+const fechaBaja = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+const dialogoSesiones = ref(false);
+const usuarioSesiones = ref<Usuario | null>(null);
 const formulario = reactive<FormularioUsuario>({
   name: '',
   email: '',
@@ -35,6 +42,13 @@ const formulario = reactive<FormularioUsuario>({
 const esUnoMismo = (usuario: Usuario | null): boolean =>
   usuario !== null && usuario.id === sesion.usuario?.id;
 
+const enUso = computed(() => usuarios.value.filter((usuario) => usuario.dado_de_baja_en === null));
+const bajas = computed(() => usuarios.value.filter((usuario) => usuario.dado_de_baja_en !== null));
+const visibles = computed(() => (vista.value === 'en_uso' ? enUso.value : bajas.value));
+
+const fechaDeBaja = (usuario: Usuario): string =>
+  usuario.dado_de_baja_en === null ? '—' : fechaBaja.format(new Date(usuario.dado_de_baja_en));
+
 const areasAsignadas = (usuario: Usuario): string => {
   if (!usuario.areas?.length) return '—';
 
@@ -44,7 +58,7 @@ const areasAsignadas = (usuario: Usuario): string => {
 const cargar = async (): Promise<void> => {
   cargando.value = true;
   const [usuariosRes, areasRes] = await Promise.all([
-    useApi<Usuario[]>('/usuarios').json<Usuario[]>(),
+    useApi<Usuario[]>('/usuarios?incluir_bajas=1').json<Usuario[]>(),
     useApi<AreaAsignada[]>('/areas?activo=1').json<AreaAsignada[]>(),
   ]);
   cargando.value = false;
@@ -56,6 +70,11 @@ const cargar = async (): Promise<void> => {
 
   usuarios.value = usuariosRes.data.value ?? [];
   areas.value = areasRes.data.value ?? [];
+};
+
+const abrirSesiones = (usuario: Usuario): void => {
+  usuarioSesiones.value = usuario;
+  dialogoSesiones.value = true;
 };
 
 const abrir = (usuario?: Usuario): void => {
@@ -110,7 +129,7 @@ const darDeBajaConfirmado = async (usuario: Usuario): Promise<void> => {
 const darDeBaja = (usuario: Usuario): void => {
   $q.dialog({
     title: 'Dar de baja',
-    message: `¿Dar de baja a ${usuario.name}? Su cuenta quedará inactiva y se cerrarán sus sesiones.`,
+    message: `¿Dar de baja a ${usuario.name}?`,
     cancel: true,
     persistent: true,
   }).onOk(() => {
@@ -137,50 +156,97 @@ onMounted(cargar);
       <q-spinner color="primary" size="40px" />
     </div>
 
-    <div v-else class="row q-col-gutter-md">
-      <div v-for="usuario in usuarios" :key="usuario.id" class="col-12 col-sm-6 col-lg-4">
-        <q-card flat bordered class="tarjeta-usuario column no-wrap">
-          <q-card-section class="q-pb-sm">
-            <div class="row items-center justify-between">
-              <div class="text-h6">{{ usuario.name }}</div>
-              <q-chip
-                dense
-                :color="usuario.activo ? 'positive' : 'grey-6'"
-                text-color="white"
-                :label="usuario.activo ? 'Activo' : 'Inactivo'"
-                class="text-weight-medium"
-              />
-            </div>
-          </q-card-section>
+    <q-card v-else flat bordered>
+      <q-tabs
+        v-model="vista"
+        dense
+        no-caps
+        align="left"
+        active-color="primary"
+        indicator-color="primary"
+        class="text-secundario"
+      >
+        <q-tab name="en_uso" :label="`En uso (${enUso.length})`" />
+        <q-tab name="bajas" :label="`Dados de baja (${bajas.length})`" />
+      </q-tabs>
 
-          <q-card-section class="q-pt-none column q-gutter-y-sm">
-            <div class="campo-usuario">
-              <div class="campo-etiqueta">Rol del sistema</div>
-              <div class="text-info">{{ etiquetaRol(usuario.rol) }}</div>
-            </div>
-            <div class="campo-usuario">
-              <div class="campo-etiqueta">Correo electrónico</div>
-              <div class="campo-valor">{{ usuario.email }}</div>
-            </div>
-            <div class="campo-usuario">
-              <div class="campo-etiqueta">Áreas asignadas</div>
-              <div class="campo-valor">{{ areasAsignadas(usuario) }}</div>
-            </div>
-          </q-card-section>
+      <q-separator />
 
-          <q-card-actions align="right" class="q-pa-md q-pt-none q-mt-auto">
-            <q-btn
-              outline
-              no-caps
-              color="secondary"
-              label="Editar usuario"
-              icon-right="arrow_forward"
-              @click="abrir(usuario)"
-            />
-          </q-card-actions>
-        </q-card>
+      <div v-if="!visibles.length" class="q-pa-xl text-center text-secundario">
+        {{ vista === 'en_uso' ? 'No hay usuarios en uso' : 'No hay usuarios dados de baja' }}
       </div>
-    </div>
+
+      <div v-else class="row q-col-gutter-md q-pa-md">
+        <div v-for="usuario in visibles" :key="usuario.id" class="col-12 col-sm-6 col-lg-4">
+          <q-card flat bordered class="tarjeta-usuario column no-wrap">
+            <q-card-section class="q-pb-sm">
+              <div class="row items-center justify-between">
+                <div class="text-h6">{{ usuario.name }}</div>
+                <q-chip
+                  dense
+                  :color="
+                    usuario.dado_de_baja_en ? 'grey-8' : usuario.activo ? 'positive' : 'grey-6'
+                  "
+                  text-color="white"
+                  :label="
+                    usuario.dado_de_baja_en
+                      ? 'Dado de baja'
+                      : usuario.activo
+                        ? 'Activo'
+                        : 'Inactivo'
+                  "
+                  class="text-weight-medium"
+                />
+              </div>
+            </q-card-section>
+
+            <q-card-section class="q-pt-none column q-gutter-y-sm">
+              <div class="campo-usuario">
+                <div class="campo-etiqueta">Rol del sistema</div>
+                <div class="text-info">{{ etiquetaRol(usuario.rol) }}</div>
+              </div>
+              <div class="campo-usuario">
+                <div class="campo-etiqueta">
+                  {{ usuario.dado_de_baja_en ? 'Correo antes de la baja' : 'Correo electrónico' }}
+                </div>
+                <div class="campo-valor">{{ usuario.email }}</div>
+              </div>
+              <div class="campo-usuario">
+                <div class="campo-etiqueta">Áreas asignadas</div>
+                <div class="campo-valor">{{ areasAsignadas(usuario) }}</div>
+              </div>
+              <div v-if="usuario.dado_de_baja_en" class="campo-usuario">
+                <div class="campo-etiqueta">Dado de baja el</div>
+                <div class="campo-valor">{{ fechaDeBaja(usuario) }}</div>
+              </div>
+            </q-card-section>
+
+            <q-card-actions
+              v-if="usuario.dado_de_baja_en === null"
+              align="right"
+              class="q-pa-md q-pt-none q-mt-auto"
+            >
+              <q-btn
+                flat
+                no-caps
+                color="secondary"
+                label="Sesiones"
+                icon="devices"
+                @click="abrirSesiones(usuario)"
+              />
+              <q-btn
+                outline
+                no-caps
+                color="secondary"
+                label="Editar usuario"
+                icon-right="arrow_forward"
+                @click="abrir(usuario)"
+              />
+            </q-card-actions>
+          </q-card>
+        </div>
+      </div>
+    </q-card>
 
     <q-dialog v-model="dialogo">
       <q-card style="width: 520px; max-width: 90vw">
@@ -241,6 +307,22 @@ onMounted(cargar);
           <q-btn v-close-popup flat label="Cancelar" />
           <q-btn color="primary" unelevated label="Guardar" @click="guardar" />
         </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dialogoSesiones">
+      <q-card style="width: 560px; max-width: 90vw">
+        <q-card-section class="row items-center justify-between">
+          <div class="text-h6">Sesiones de {{ usuarioSesiones?.name }}</div>
+          <q-btn v-close-popup flat round dense icon="close" />
+        </q-card-section>
+        <q-card-section>
+          <SesionesActivas
+            v-if="usuarioSesiones"
+            :key="usuarioSesiones.id"
+            :usuario-id="usuarioSesiones.id"
+          />
+        </q-card-section>
       </q-card>
     </q-dialog>
   </q-page>

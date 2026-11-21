@@ -1,0 +1,200 @@
+<?php
+
+use App\Enums\Rol;
+use App\Models\Lote;
+use App\Models\LoteArea;
+use App\Models\LoteInsumo;
+use App\Models\User;
+use Database\Seeders\RolesSeeder;
+use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
+
+use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
+use function Pest\Laravel\putJson;
+use function Pest\Laravel\seed;
+use function Pest\Laravel\withToken;
+
+beforeEach(function () {
+    seed(RolesSeeder::class);
+});
+
+function usuarioMovil(Rol $rol, bool $activo = true): User
+{
+    $usuario = User::factory()->create(['activo' => $activo]);
+    $usuario->assignRole($rol);
+
+    return $usuario;
+}
+
+function tokenMovil(User $usuario): string
+{
+    return postJson('/api/movil/login', ['email' => $usuario->email, 'password' => 'password'])
+        ->assertCreated()
+        ->json('token');
+}
+
+it('entrega un token de solo lectura a encargados y administradores activos', function (Rol $rol) {
+    $usuario = usuarioMovil($rol);
+
+    postJson('/api/movil/login', ['email' => $usuario->email, 'password' => 'password'])
+        ->assertCreated()
+        ->assertJsonStructure(['token', 'usuario' => ['id', 'name', 'email', 'rol', 'areas']])
+        ->assertJsonPath('usuario.rol', $rol->value);
+
+    $token = PersonalAccessToken::query()->sole();
+    expect($token->name)->toBe('movil')
+        ->and($token->abilities)->toBe(['lotes:read'])
+        ->and($token->tokenable_id)->toBe($usuario->id);
+})->with([Rol::Encargado, Rol::Administrador]);
+
+it('no entrega token a roles sin acceso a la app', function (Rol $rol) {
+    $usuario = usuarioMovil($rol);
+
+    postJson('/api/movil/login', ['email' => $usuario->email, 'password' => 'password'])
+        ->assertForbidden();
+
+    assertDatabaseCount('personal_access_tokens', 0);
+})->with([Rol::Ventas, Rol::Cliente]);
+
+it('rechaza credenciales inválidas y usuarios inactivos con el mismo error', function (bool $activo, string $password) {
+    $usuario = usuarioMovil(Rol::Encargado, $activo);
+
+    postJson('/api/movil/login', ['email' => $usuario->email, 'password' => $password])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.credenciales.0', 'Correo o contraseña incorrectos.');
+
+    assertDatabaseCount('personal_access_tokens', 0);
+})->with([
+    'contraseña incorrecta' => [true, 'otra'],
+    'usuario inactivo' => [false, 'password'],
+]);
+
+it('limita los intentos de inicio de sesión', function () {
+    $usuario = usuarioMovil(Rol::Encargado);
+
+    foreach (range(1, 5) as $intento) {
+        postJson('/api/movil/login', ['email' => $usuario->email, 'password' => 'otra'])
+            ->assertUnprocessable();
+    }
+
+    postJson('/api/movil/login', ['email' => $usuario->email, 'password' => 'password'])
+        ->assertTooManyRequests();
+});
+
+it('con el token móvil se leen los lotes', function () {
+    $lote = Lote::factory()->create();
+    $token = tokenMovil(usuarioMovil(Rol::Administrador));
+
+    withToken($token)->getJson('/api/lotes')->assertOk();
+    withToken($token)->getJson("/api/lotes/{$lote->codigo}")->assertOk()
+        ->assertJsonPath('codigo', $lote->codigo);
+    withToken($token)->getJson('/api/user')->assertOk();
+});
+
+it('con el token móvil no se reciben costos ni tarifas, aunque sea administrador', function () {
+    $lote = Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
+    LoteArea::factory()->for($lote)->create();
+    LoteInsumo::factory()->for($lote)->create();
+    $token = tokenMovil(usuarioMovil(Rol::Administrador));
+
+    withToken($token)->getJson('/api/lotes/LOT-20261111-01')
+        ->assertOk()
+        ->assertJsonMissingPath('costo_total')
+        ->assertJsonMissingPath('costo_por_pieza')
+        ->assertJsonMissingPath('paradas.0.tarifa_mano_obra_hora')
+        ->assertJsonMissingPath('paradas.0.costo_maquina_hora')
+        ->assertJsonMissingPath('insumos.0.costo_unitario');
+
+    withToken($token)->getJson('/api/lotes')
+        ->assertOk()
+        ->assertJsonPath('0.codigo', 'LOT-20261111-01')
+        ->assertJsonMissingPath('0.costo_total')
+        ->assertJsonMissingPath('0.paradas.0.tarifa_mano_obra_hora');
+});
+
+it('la sesión del panel de un administrador sí recibe los costos', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
+    $lote = Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
+    LoteArea::factory()->for($lote)->create();
+    LoteInsumo::factory()->for($lote)->create();
+    $admin = usuarioMovil(Rol::Administrador);
+
+    postJson('/login', ['email' => $admin->email, 'password' => 'password'])->assertNoContent();
+
+    getJson('/api/lotes/LOT-20261111-01')
+        ->assertOk()
+        ->assertJsonPath('paradas.0.tarifa_mano_obra_hora', fn ($valor) => $valor !== null)
+        ->assertJsonPath('insumos.0.costo_unitario', fn ($valor) => $valor !== null)
+        ->assertJsonStructure(['costo_total', 'costo_por_pieza']);
+});
+
+it('con el token móvil se rechaza todo lo que no sea lectura de lotes', function (string $metodo, string $ruta) {
+    Lote::factory()->create(['codigo' => 'LOT-20261111-01']);
+    $token = tokenMovil(usuarioMovil(Rol::Administrador));
+
+    withToken($token)->json($metodo, $ruta)->assertForbidden();
+})->with([
+    'crear lote' => ['POST', '/api/lotes'],
+    'cancelar lote' => ['POST', '/api/lotes/LOT-20261111-01/cancelar'],
+    'confirmar lote' => ['POST', '/api/lotes/LOT-20261111-01/confirmar'],
+    'listar áreas' => ['GET', '/api/areas'],
+    'crear usuario' => ['POST', '/api/usuarios'],
+    'pregunta secreta' => ['PUT', '/api/perfil/pregunta-secreta'],
+    'ver sesiones' => ['GET', '/api/sesiones'],
+    'cerrar sesiones' => ['DELETE', '/api/sesiones'],
+]);
+
+it('al cerrar sesión borra el token y deja de servir', function () {
+    $token = tokenMovil(usuarioMovil(Rol::Encargado));
+
+    withToken($token)->postJson('/api/logout')->assertNoContent();
+
+    assertDatabaseCount('personal_access_tokens', 0);
+
+    app('auth')->forgetGuards();
+    withToken($token)->getJson('/api/lotes')->assertUnauthorized();
+});
+
+it('cerrar sesión solo borra el token del dispositivo que la cierra', function () {
+    $usuario = usuarioMovil(Rol::Encargado);
+    $token = tokenMovil($usuario);
+    tokenMovil($usuario);
+
+    withToken($token)->postJson('/api/logout')->assertNoContent();
+
+    assertDatabaseCount('personal_access_tokens', 1);
+});
+
+it('la sesión del panel sigue pudiendo leer y escribir', function () {
+    config(['segundo-factor.obligatorio_administrador' => false]);
+
+    $admin = usuarioMovil(Rol::Administrador);
+
+    postJson('/login', ['email' => $admin->email, 'password' => 'password'])->assertNoContent();
+
+    getJson('/api/lotes')->assertOk();
+    getJson('/api/areas')->assertOk();
+    putJson('/api/perfil/pregunta-secreta', [])->assertUnprocessable();
+});
+
+it('un administrador puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $admin = usuarioMovil(Rol::Administrador);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertNoContent();
+});
+
+it('un usuario de ventas no puede cerrar las sesiones de otro usuario', function () {
+    $otro = usuarioMovil(Rol::Encargado);
+    $ventas = usuarioMovil(Rol::Ventas);
+
+    Sanctum::actingAs($ventas, ['*']);
+
+    deleteJson("/api/usuarios/{$otro->id}/sesiones")->assertForbidden();
+});

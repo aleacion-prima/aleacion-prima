@@ -7,10 +7,12 @@ use Database\Seeders\AreaSeeder;
 use Database\Seeders\RolesSeeder;
 use Laravel\Sanctum\Sanctum;
 
+use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
+use function Pest\Laravel\seed;
 
 beforeEach(function () {
     $this->seed(RolesSeeder::class);
@@ -20,7 +22,15 @@ function actuarComo(Rol $rol): User
 {
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
+
+    return $usuario;
+}
+
+function crearEncargado(array $atributos = []): User
+{
+    $usuario = User::factory()->create($atributos);
+    $usuario->assignRole(Rol::Encargado);
 
     return $usuario;
 }
@@ -224,17 +234,8 @@ describe('orden y encargados', function () {
         actuarComo(Rol::Administrador);
     });
 
-    it('asigna el orden al final del catálogo cuando no se envía', function () {
-        Area::factory()->create(['orden_catalogo' => 5]);
-
-        $datos = datosDeArea();
-        unset($datos['orden_catalogo']);
-
-        postJson('/api/areas', $datos)->assertCreated()->assertJsonPath('orden_catalogo', 6);
-    });
-
     it('guarda los encargados al crear y los devuelve con id y nombre', function () {
-        $encargado = User::factory()->create(['name' => 'Julio López']);
+        $encargado = crearEncargado(['name' => 'Julio López']);
 
         postJson('/api/areas', datosDeArea(['encargados' => [$encargado->id]]))
             ->assertCreated()
@@ -244,10 +245,40 @@ describe('orden y encargados', function () {
         $this->assertDatabaseHas('area_user', ['user_id' => $encargado->id]);
     });
 
+    it('rechaza como encargado a un usuario sin rol encargado', function (?Rol $rol) {
+        $usuario = User::factory()->create();
+        if ($rol !== null) {
+            $usuario->assignRole($rol);
+        }
+
+        postJson('/api/areas', datosDeArea(['encargados' => [$usuario->id]]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('encargados.0');
+
+        assertDatabaseMissing('areas', ['codigo' => 'PIN']);
+    })->with([Rol::Ventas, Rol::Administrador, Rol::Cliente, null]);
+
+    it('rechaza asignar a un usuario sin rol encargado al editar', function () {
+        $area = Area::factory()->create();
+        $ventas = User::factory()->create();
+        $ventas->assignRole(Rol::Ventas);
+
+        putJson("/api/areas/{$area->id}", datosDeArea([
+            'codigo' => $area->codigo,
+            'nombre' => $area->nombre,
+            'orden_catalogo' => $area->orden_catalogo,
+            'encargados' => [$ventas->id],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('encargados.0');
+
+        expect($area->encargados()->count())->toBe(0);
+    });
+
     it('reemplaza los encargados al editar', function () {
         $area = Area::factory()->create();
-        [$a, $b] = User::factory()->count(2)->create();
+        $a = crearEncargado();
+        $b = crearEncargado();
         $area->encargados()->sync([$a->id]);
+        Area::factory()->create()->encargados()->attach($a->id);
 
         putJson("/api/areas/{$area->id}", datosDeArea([
             'codigo' => $area->codigo,
@@ -273,9 +304,26 @@ describe('orden y encargados', function () {
         expect($area->encargados()->count())->toBe(1);
     });
 
-    it('quita todos los encargados con una lista vacía', function () {
+    it('no deja a un encargado sin áreas al quitarlo de la única que tiene', function () {
         $area = Area::factory()->create();
-        $area->encargados()->sync([User::factory()->create()->id]);
+        $encargado = crearEncargado();
+        $area->encargados()->sync([$encargado->id]);
+
+        putJson("/api/areas/{$area->id}", datosDeArea([
+            'codigo' => $area->codigo,
+            'nombre' => $area->nombre,
+            'orden_catalogo' => $area->orden_catalogo,
+            'encargados' => [],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('encargados');
+
+        expect($area->encargados()->count())->toBe(1);
+    });
+
+    it('permite quitar a un encargado que conserva otra área', function () {
+        $area = Area::factory()->create();
+        $encargado = crearEncargado();
+        $area->encargados()->sync([$encargado->id]);
+        Area::factory()->create()->encargados()->attach($encargado->id);
 
         putJson("/api/areas/{$area->id}", datosDeArea([
             'codigo' => $area->codigo,
@@ -293,6 +341,17 @@ describe('orden y encargados', function () {
 
         postJson('/api/areas', datosDeArea(['encargados' => [$encargado->id, $encargado->id]]))
             ->assertUnprocessable()->assertJsonValidationErrors('encargados.0');
+    });
+
+    it('ofrece solo encargados activos en las opciones', function () {
+        crearEncargado(['name' => 'Ana']);
+        crearEncargado(['name' => 'Baja', 'activo' => false]);
+        User::factory()->create(['name' => 'Ventas'])->assignRole(Rol::Ventas);
+
+        getJson('/api/areas/opciones')
+            ->assertOk()
+            ->assertJsonCount(1, 'encargados')
+            ->assertJsonPath('encargados.0.name', 'Ana');
     });
 });
 
@@ -323,8 +382,8 @@ describe('seeder', function () {
     });
 
     it('es idempotente', function () {
-        $this->seed(AreaSeeder::class);
-        $this->seed(AreaSeeder::class);
+        seed(AreaSeeder::class);
+        seed(AreaSeeder::class);
 
         expect(Area::count())->toBe(7);
     });
