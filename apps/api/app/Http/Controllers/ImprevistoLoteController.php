@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Rol;
 use App\Enums\TipoImprevisto;
 use App\Events\ImprevistoActualizado;
+use App\Events\LoteActualizado;
 use App\Http\Requests\RegistrarImprevistoRequest;
 use App\Http\Requests\ResolverImprevistoRequest;
 use App\Http\Resources\ImprevistoResource;
@@ -71,6 +72,8 @@ class ImprevistoLoteController extends Controller
         $almacen->marcarResuelto($encontrado, $request->boolean('resuelto'));
         ImprevistoActualizado::dispatch($lote, (string) $encontrado->getKey(), $request->boolean('resuelto'));
         $this->conNombres(collect([$encontrado]));
+
+        LoteActualizado::dispatch($lote);
 
         return new ImprevistoResource($encontrado);
     }

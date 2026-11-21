@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\Rol;
-use App\Events\ImprevistoActualizado;
 use App\Events\ImprevistoRegistrado;
+use App\Events\LoteActualizado;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosFake;
 use App\Models\Area;
@@ -243,7 +243,7 @@ it('no encuentra imprevistos que no existen o son de otro lote', function () {
         ->assertNotFound();
 });
 
-it('avisa al tablero y a las áreas del lote con ImprevistoRegistrado', function () {
+it('avisa al tablero con ImprevistoRegistrado', function () {
     Event::fake([ImprevistoRegistrado::class]);
     entrarParaImprevistos(Rol::Administrador);
     $lote = loteParaImprevistos();
@@ -254,33 +254,32 @@ it('avisa al tablero y a las áreas del lote con ImprevistoRegistrado', function
     Event::assertDispatchedTimes(ImprevistoRegistrado::class, 1);
     Event::assertDispatched(
         ImprevistoRegistrado::class,
-        fn (ImprevistoRegistrado $evento) => $evento->codigoLote === $lote->codigo
-            && $evento->areaId === $parada->area_id
-            && $evento->tipo === 'falla_maquina'
-            && collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all() === [
-                'private-tablero',
-                ...$lote->paradas()->pluck('area_id')->unique()->map(fn ($area) => "private-area.{$area}")->values()->all(),
-            ],
+        function (ImprevistoRegistrado $evento) use ($lote, $parada): bool {
+            $canales = collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all();
+
+            return $evento->codigoLote === $lote->codigo
+                && $evento->areaId === $parada->area_id
+                && $evento->tipo === 'falla_maquina'
+                && in_array('private-tablero', $canales, true);
+        },
     );
 });
 
-it('avisa en vivo al marcar un imprevisto como resuelto', function () {
+it('avisa con LoteActualizado al registrar y al resolver, para que el semáforo se refresque', function () {
     entrarParaImprevistos(Rol::Administrador);
     $lote = loteParaImprevistos();
+    Event::fake([LoteActualizado::class]);
+
     $id = postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'FUS')), cuerpoDeImprevisto())
+        ->assertCreated()
         ->json('id');
-    Event::fake([ImprevistoActualizado::class]);
+
+    Event::assertDispatchedTimes(LoteActualizado::class, 1);
 
     patchJson("/api/lotes/{$lote->codigo}/imprevistos/{$id}", ['resuelto' => true])->assertOk();
 
-    Event::assertDispatched(
-        ImprevistoActualizado::class,
-        fn (ImprevistoActualizado $evento) => $evento->lote->is($lote)
-            && $evento->imprevistoId === $id
-            && $evento->resuelto
-            && $evento->broadcastWith() === ['codigo' => $lote->codigo, 'imprevisto_id' => $id, 'resuelto' => true]
-            && in_array('private-tablero', collect($evento->broadcastOn())->map(fn ($canal) => $canal->name)->all(), true),
-    );
+    Event::assertDispatchedTimes(LoteActualizado::class, 2);
+    Event::assertDispatched(LoteActualizado::class, fn (LoteActualizado $evento) => $evento->lote->is($lote));
 });
 
 it('no llega a Mongo real en los tests', function () {

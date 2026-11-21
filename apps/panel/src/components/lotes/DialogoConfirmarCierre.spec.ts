@@ -35,6 +35,8 @@ const lote = (cantidad: number, paradas: LoteParada[]): Lote => ({
   piezas_terminadas: null,
   producto: { id: 1, codigo: 'POL-IND-G', nombre: 'Polea industrial' },
   area_actual: null,
+  semaforo: null,
+  motivos: [],
   paradas,
   confirmado_en: null,
   cancelado_en: null,
