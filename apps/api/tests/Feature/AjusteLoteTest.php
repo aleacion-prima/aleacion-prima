@@ -1,7 +1,9 @@
 <?php
 
+use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
 use App\Enums\Rol;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
 use App\Events\LoteActualizado;
@@ -35,7 +37,7 @@ function adminDeAjustes(): User
 {
     $admin = User::factory()->create();
     $admin->assignRole(Rol::Administrador);
-    Sanctum::actingAs($admin);
+    Sanctum::actingAs($admin, ['*']);
 
     return $admin;
 }
@@ -64,11 +66,15 @@ function recorrerParaAjustes(Lote $lote, User $admin, int $hasta, int $entregada
 {
     $captura = app(CapturaParada::class);
     $hora = CarbonImmutable::parse('2026-11-03 08:00:00');
+    $paradas = $lote->paradas()->where('orden', '<=', $hasta)->orderBy('orden')->get();
 
-    foreach ($lote->paradas()->where('orden', '<=', $hasta)->get() as $parada) {
+    foreach ($paradas as $indice => $parada) {
         $captura->entrada($lote, $parada, 20, $hora, $admin);
         $hora = $hora->addMinutes(30);
-        $captura->salida($lote, $parada->fresh(), $entregadas, null, null, $hora, $admin);
+        // Solo la última parada del tramo entrega menos: no se puede recibir
+        // más de lo que entregó la anterior.
+        $salida = $indice === $paradas->count() - 1 ? $entregadas : 20;
+        $captura->salida($lote, $parada->fresh(), $salida, null, null, $hora, $admin);
     }
 }
 
@@ -101,7 +107,7 @@ it('exige motivo para ajustar un lote', function () {
 it('solo permite ajustes al administrador', function (Rol $rol) {
     $usuario = User::factory()->create();
     $usuario->assignRole($rol);
-    Sanctum::actingAs($usuario);
+    Sanctum::actingAs($usuario, ['*']);
     $lote = loteParaAjustes($usuario);
     $asignado = $lote->insumos()->firstOrFail();
 
@@ -306,7 +312,7 @@ it('corrige las piezas terminadas y el inventario de la última parada de un lot
 
     Event::assertDispatched(
         DisponibilidadActualizada::class,
-        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => 25],
+        fn (DisponibilidadActualizada $evento) => $evento->broadcastWith() === ['id' => $lote->producto_id, 'disponible' => true, 'cantidad' => 25],
     );
 });
 
@@ -388,7 +394,72 @@ it('solo lista los ajustes al administrador', function (Rol $rol) {
     $admin = adminDeAjustes();
     $lote = loteParaAjustes($admin);
 
-    Sanctum::actingAs(User::factory()->create()->assignRole($rol));
+    Sanctum::actingAs(User::factory()->create()->assignRole($rol), ['*']);
 
     getJson("/api/lotes/{$lote->codigo}/ajustes")->assertForbidden();
 })->with([Rol::Ventas, Rol::Encargado]);
+
+it('no deja devolver más insumo del asignado', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    $asignado = $lote->insumos()->firstOrFail();
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad_devuelta',
+        'valor' => 250,
+        'motivo' => 'Devolución imposible',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('valor');
+
+    expect((float) $asignado->fresh()?->cantidad_devuelta)->toBe(0.0);
+});
+
+it('rechaza una salida anterior a la entrada', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    recorrerParaAjustes($lote, $admin, 1);
+    $parada = $lote->paradas()->firstOrFail();
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_area_id' => $parada->id,
+        'campo' => 'salida_ocurrido_en',
+        'valor' => CarbonImmutable::parse('2026-11-03 07:00:00')->toIso8601String(),
+        'motivo' => 'Hora de salida mal capturada',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('valor');
+
+    expect($parada->fresh()?->salida_ocurrido_en?->toIso8601String())
+        ->toBe(CarbonImmutable::parse('2026-11-03 08:30:00')->toIso8601String());
+});
+
+it('registra el ajuste en la bitácora con su contexto', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    recorrerParaAjustes($lote, $admin, 1, 18);
+    $parada = $lote->paradas()->firstOrFail();
+
+    // Reemplaza el fake del arranque: solo interesa lo que deja este ajuste.
+    $fake = Bitacora::fake();
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_area_id' => $parada->id,
+        'campo' => 'piezas_entregadas',
+        'valor' => 15,
+        'motivo' => 'Tres piezas se rompieron al desmoldar',
+    ])->assertCreated();
+
+    expect($fake->tipos())->toBe([TipoEventoBitacora::Ajuste->value]);
+    $fake->assertRegistrado(
+        TipoEventoBitacora::Ajuste,
+        fn (array $doc) => $doc['lote_id'] === $lote->id
+            && $doc['area_id'] === $parada->area_id
+            && $doc['user_id'] === $admin->id
+            && $doc['datos']['campo'] === 'piezas_entregadas'
+            && $doc['datos']['anterior'] === 18
+            && $doc['datos']['nuevo'] === 15
+            && $doc['datos']['motivo'] === 'Tres piezas se rompieron al desmoldar',
+    );
+});

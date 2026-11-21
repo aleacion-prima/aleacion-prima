@@ -2,7 +2,9 @@
 
 namespace App\Lotes;
 
+use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
+use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
 use App\Events\LoteActualizado;
@@ -26,6 +28,10 @@ use Illuminate\Validation\ValidationException;
  */
 class AjustarLote
 {
+    public function __construct(
+        private CalculadorCostoLote $calculador
+    ) {}
+
     /**
      * Campos ajustables de cada tipo de renglón.
      *
@@ -56,7 +62,7 @@ class AjustarLote
 
             // El costo se recalcula aquí, no solo con el evento posterior al
             // commit: el lote queda consistente aunque el ajuste falle después.
-            (new CalculadorCostoLote)->recalcular($lote);
+            $this->calculador->recalcular($lote);
 
             LoteActualizado::dispatch($lote);
 
@@ -105,7 +111,7 @@ class AjustarLote
             $this->ajustarPiezasTerminadas($lote, (int) $anterior, (int) $nuevo, (string) $datos['motivo'], $usuario);
         }
 
-        return Ajuste::query()->create([
+        $ajuste = Ajuste::query()->create([
             'lote_area_id' => $parada->id,
             'campo' => $campo,
             'valores' => [
@@ -115,6 +121,23 @@ class AjustarLote
             'motivo' => $datos['motivo'],
             'user_id' => $usuario->id,
         ]);
+
+        Bitacora::registrar(
+            TipoEventoBitacora::Ajuste,
+            "Ajuste de {$campo} en la parada {$parada->orden} ({$parada->area?->nombre}): {$this->texto($anterior)} → {$this->texto($nuevo)}.",
+            loteId: $lote->id,
+            areaId: $parada->area_id,
+            datos: [
+                'lote_area_id' => $parada->id,
+                'campo' => $campo,
+                'anterior' => $this->paraJson($anterior),
+                'nuevo' => $this->paraJson($nuevo),
+                'motivo' => $datos['motivo'],
+            ],
+            userId: $usuario->id,
+        );
+
+        return $ajuste;
     }
 
     /**
@@ -147,7 +170,7 @@ class AjustarLote
 
         $asignado->forceFill([$campo => $nuevo])->save();
 
-        return Ajuste::query()->create([
+        $ajuste = Ajuste::query()->create([
             'lote_insumo_id' => $asignado->id,
             'campo' => $campo,
             'valores' => [
@@ -157,6 +180,23 @@ class AjustarLote
             'motivo' => $datos['motivo'],
             'user_id' => $usuario->id,
         ]);
+
+        Bitacora::registrar(
+            TipoEventoBitacora::Ajuste,
+            "Ajuste de {$campo} del insumo {$asignado->insumo_id}: {$this->texto($anterior)} → {$this->texto($nuevo)}.",
+            loteId: $lote->id,
+            datos: [
+                'lote_insumo_id' => $asignado->id,
+                'insumo_id' => $asignado->insumo_id,
+                'campo' => $campo,
+                'anterior' => $this->paraJson($anterior),
+                'nuevo' => $this->paraJson($nuevo),
+                'motivo' => $datos['motivo'],
+            ],
+            userId: $usuario->id,
+        );
+
+        return $ajuste;
     }
 
     /**
@@ -297,6 +337,14 @@ class AjustarLote
     private function paraJson(mixed $valor): mixed
     {
         return $valor instanceof DateTimeInterface ? $valor->format(DATE_ATOM) : $valor;
+    }
+
+    /**
+     * Texto legible para la descripción de la bitácora (las fechas en ISO).
+     */
+    private function texto(mixed $valor): string
+    {
+        return $valor instanceof DateTimeInterface ? $valor->format(DATE_ATOM) : (string) $valor;
     }
 
     private function fallar(string $campo, string $mensaje): never
