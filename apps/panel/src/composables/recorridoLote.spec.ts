@@ -42,6 +42,8 @@ const lote = (paradas: LoteParada[], estado: Lote['estado'] = 'en_proceso'): Lot
   piezas_terminadas: null,
   producto: { id: 1, codigo: 'DIS-FRE-G', nombre: 'Disco de freno' },
   area_actual: null,
+  semaforo: null,
+  motivos: [],
   paradas,
   confirmado_en: null,
   cancelado_en: null,

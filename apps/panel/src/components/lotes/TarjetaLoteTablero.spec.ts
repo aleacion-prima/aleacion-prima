@@ -34,6 +34,8 @@ const lote = (cambios: Partial<Lote> = {}): Lote => ({
   producto: { id: 1, codigo: 'CAJ-TRA-N', nombre: 'Caja de transmisión' },
   area_actual: { id: 2, codigo: 'FUS', nombre: 'FUS' },
   costo_total: '8184.6',
+  semaforo: 'verde',
+  motivos: [],
   paradas: [
     parada(1, 'MOL', {
       entrada_ocurrido_en: '2026-09-28T13:00:00Z',
@@ -97,5 +99,23 @@ describe('TarjetaLoteTablero', () => {
     const wrapper = montar({ lote: sinCosto });
 
     expect(wrapper.text()).not.toContain('Costo');
+  });
+
+  it('muestra el semáforo junto al código, aparte del chip de estado', () => {
+    const wrapper = montar({
+      lote: lote({ semaforo: 'ambar', motivos: ['Merma acumulada de 5 de 100 piezas (5.0 %).'] }),
+    });
+
+    const punto = wrapper.find('[data-semaforo="ambar"]');
+    expect(punto.exists()).toBe(true);
+    expect(punto.attributes('aria-label')).toContain('Merma acumulada');
+    expect(punto.classes()).not.toContain('q-chip');
+    expect(wrapper.find('.q-chip').text()).toContain('En proceso');
+  });
+
+  it('sin semáforo no pinta el punto', () => {
+    const wrapper = montar({ lote: lote({ semaforo: null, motivos: [] }) });
+
+    expect(wrapper.find('.punto-semaforo').exists()).toBe(false);
   });
 });

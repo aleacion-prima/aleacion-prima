@@ -14,6 +14,7 @@ import PasoRecorrido from '@/components/lotes/PasoRecorrido.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
 import PaginacionTabla from '@/components/comunes/PaginacionTabla.vue';
+import PuntoSemaforo from '@/components/lotes/PuntoSemaforo.vue';
 
 const router = useRouter();
 const sesion = useSesionStore();
@@ -130,7 +131,10 @@ onMounted(() => void cargar());
             class="tabla-lotes__acento"
             :class="`bg-${ESTILOS_ESTADO_LOTE[row.estado as EstadoLote].color}`"
           />
-          {{ row.codigo }}
+          <span class="tabla-lotes__codigo">
+            <PuntoSemaforo :semaforo="(row as Lote).semaforo" :motivos="(row as Lote).motivos" />
+            {{ row.codigo }}
+          </span>
         </q-td>
       </template>
 
@@ -208,6 +212,12 @@ onMounted(() => void cargar());
     width: 3px;
     border-radius: 2px;
     transition: width $duracion-rapida $curva-salida;
+  }
+
+  &__codigo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
   }
 
   :deep(td.codigo) {

@@ -103,6 +103,9 @@ export const ESTADOS_LOTE = [
 ] as const;
 export type EstadoLote = (typeof ESTADOS_LOTE)[number];
 
+export const SEMAFOROS = ['verde', 'ambar', 'rojo'] as const;
+export type Semaforo = (typeof SEMAFOROS)[number];
+
 export const ROLES = ['administrador', 'ventas', 'encargado', 'cliente'] as const;
 export type Rol = (typeof ROLES)[number];
 
@@ -164,6 +167,8 @@ export interface Lote {
   area_actual: ReferenciaCatalogo | null;
   costo_total?: string;
   costo_por_pieza?: string | null;
+  semaforo: Semaforo | null;
+  motivos: string[];
   paradas: LoteParada[];
   insumos?: LoteInsumoAsignado[];
   confirmado_en: string | null;
