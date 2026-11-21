@@ -43,11 +43,16 @@ class EvaluadorSemaforo
                 ->groupBy('lote_id');
         } catch (Throwable $e) {
             report($e);
-
-            return;
+            $imprevistos = null;
         }
 
         foreach ($abiertos as $lote) {
+            if ($imprevistos === null) {
+                $lote->setRelation(self::RELACION_IMPREVISTOS, null);
+
+                continue;
+            }
+
             $lote->setRelation(self::RELACION_IMPREVISTOS, ($imprevistos->get($lote->id) ?? collect())->values());
         }
     }

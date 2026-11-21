@@ -35,7 +35,9 @@ class LoteController extends Controller
             ->get();
 
         // Una sola consulta a Mongo por los imprevistos abiertos de todos los lotes de la lista.
-        $semaforo->precargar($lotes);
+        if ($request->user()?->veSemaforo()) {
+            $semaforo->precargar($lotes);
+        }
 
         return LoteResource::collection($lotes);
     }

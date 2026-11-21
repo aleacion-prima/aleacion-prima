@@ -57,4 +57,9 @@ class User extends Authenticatable
     {
         return $this->tokenCan('panel') && $this->hasAnyRole([Rol::Administrador, Rol::Ventas]);
     }
+
+    public function veSemaforo(): bool
+    {
+        return $this->tokenCan('panel') && $this->hasRole(Rol::Administrador);
+    }
 }

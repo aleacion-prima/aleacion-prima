@@ -24,7 +24,9 @@ class LoteResource extends JsonResource
         /** @var Lote $lote */
         $lote = $this->resource;
         // Solo el color y los motivos: el precio de mayoreo nunca sale en el semáforo.
-        $semaforo = app(EvaluadorSemaforo::class)->evaluar($lote, $veCostos);
+        $semaforo = $request->user()?->veSemaforo()
+            ? app(EvaluadorSemaforo::class)->evaluar($lote, $veCostos)
+            : null;
 
         return [
             'id' => $this->id,

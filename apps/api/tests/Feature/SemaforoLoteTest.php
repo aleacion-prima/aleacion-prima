@@ -144,10 +144,12 @@ function almacenEspiaDeImprevistos(AlmacenImprevistos $real): object
 }
 
 /** Almacén que simula a Mongo caído: toda lectura y escritura lanza. */
-function almacenDeImprevistosCaido(): AlmacenImprevistos
+function almacenDeImprevistosCaido(): object
 {
     return new class implements AlmacenImprevistos
     {
+        public int $lecturas = 0;
+
         public function guardar(array $datos): Imprevisto
         {
             throw new RuntimeException('Mongo no responde.');
@@ -155,11 +157,15 @@ function almacenDeImprevistosCaido(): AlmacenImprevistos
 
         public function delLote(int $loteId): Collection
         {
+            $this->lecturas++;
+
             throw new RuntimeException('Mongo no responde.');
         }
 
         public function abiertosDeLotes(array $loteIds): Collection
         {
+            $this->lecturas++;
+
             throw new RuntimeException('Mongo no responde.');
         }
 
@@ -233,16 +239,30 @@ it('proyecta el costo entre las piezas que quedan, no entre las del objetivo', f
     ]);
 });
 
-it('la regla del costo solo se evalúa para quien ve costos', function (Rol $rol, string $semaforo) {
+it('solo el administrador ve el semáforo', function (Rol $rol, ?string $semaforo) {
     $lote = loteParaSemaforo(costoTotal: '10000.0000');
     entrarParaSemaforo($rol);
 
     expect(semaforoDe($lote)['semaforo'])->toBe($semaforo);
+
+    getJson('/api/lotes')->assertOk()->assertJsonPath('0.semaforo', $semaforo);
 })->with([
     'administrador' => [Rol::Administrador, 'rojo'],
-    'ventas' => [Rol::Ventas, 'rojo'],
-    'encargado' => [Rol::Encargado, 'verde'],
+    'ventas' => [Rol::Ventas, null],
+    'encargado' => [Rol::Encargado, null],
 ]);
+
+it('la app móvil no recibe el semáforo aunque entre un administrador', function () {
+    $lote = loteParaSemaforo(costoTotal: '10000.0000');
+    $administrador = User::factory()->create();
+    $administrador->assignRole(Rol::Administrador);
+    Sanctum::actingAs($administrador, ['lotes:read']);
+
+    getJson("/api/lotes/{$lote->codigo}")
+        ->assertOk()
+        ->assertJsonPath('semaforo', null)
+        ->assertJsonPath('motivos', []);
+});
 
 it('el precio de mayoreo no sale en el semáforo, solo el color y el motivo', function () {
     // 100 piezas × 123.4567 = 12345.67: justo el 100 % del precio.
@@ -370,6 +390,22 @@ it('si Mongo falla, el detalle, la lista y el tablero evalúan sin la señal de 
         ->assertJsonPath('0.semaforo', 'ambar')
         ->assertJsonPath('0.semaforo_incompleto', true);
 });
+
+it('si Mongo falla, la lista y el tablero no vuelven a leer los imprevistos lote por lote', function (string $ruta) {
+    loteParaSemaforo();
+    loteParaSemaforo();
+    loteParaSemaforo();
+
+    $caido = almacenDeImprevistosCaido();
+    app()->instance(AlmacenImprevistos::class, $caido);
+
+    getJson($ruta)
+        ->assertOk()
+        ->assertJsonCount(3)
+        ->assertJsonPath('0.semaforo_incompleto', true);
+
+    expect($caido->lecturas)->toBe(1);
+})->with(['/api/lotes', '/api/tablero']);
 
 it('si Mongo falla, la captura de una salida responde igual', function () {
     $lote = Lote::factory()->enProceso()->create([
