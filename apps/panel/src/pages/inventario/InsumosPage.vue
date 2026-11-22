@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import { useRoute } from 'vue-router';
 import type { QTableColumn } from 'quasar';
 import type { Insumo, MovimientoInsumo } from '@aleacion-prima/types';
 import { ESTILOS_ESTADO_INSUMO, estadoInsumo } from '@/catalogos/inventario';
@@ -31,6 +32,7 @@ interface ErrorApi {
 type FiltroTab = 'todos' | EstadoInsumo;
 
 const $q = useQuasar();
+const route = useRoute();
 const sesion = useSesionStore();
 const insumos = ref<Insumo[]>([]);
 const cargando = ref(true);
@@ -38,7 +40,9 @@ const dialogo = ref(false);
 const dialogoAjuste = ref(false);
 const insumoSeleccionado = ref<Insumo | null>(null);
 const filtroTab = ref<FiltroTab>('todos');
-const busqueda = ref('');
+// Abrir desde una notificación de stock llega con ?buscar=CODIGO para dejar
+// filtrado el insumo que la originó.
+const busqueda = ref(typeof route.query.buscar === 'string' ? route.query.buscar : '');
 const unidad = ref<string | null>(null);
 const formulario = reactive<FormularioEntrada>({
   insumo_id: null,
