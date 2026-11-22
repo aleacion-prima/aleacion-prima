@@ -5,10 +5,13 @@ namespace App\Lotes;
 use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
 use App\Enums\TipoEventoBitacora;
+use App\Enums\TipoMovimientoInsumo;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
 use App\Events\LoteActualizado;
+use App\Inventario\DetectorStockMinimo;
 use App\Models\Ajuste;
+use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\LoteArea;
 use App\Models\LoteInsumo;
@@ -29,7 +32,8 @@ use Illuminate\Validation\ValidationException;
 class AjustarLote
 {
     public function __construct(
-        private CalculadorCostoLote $calculador
+        private CalculadorCostoLote $calculador,
+        private DetectorStockMinimo $detector,
     ) {}
 
     /**
@@ -46,6 +50,21 @@ class AjustarLote
             'salida_ocurrido_en',
         ],
         'insumo' => ['cantidad', 'cantidad_devuelta'],
+    ];
+
+    /**
+     * Nombres legibles para la descripción de la bitácora.
+     *
+     * @var array<string, string>
+     */
+    private const ETIQUETAS = [
+        'piezas_recibidas' => 'piezas recibidas',
+        'piezas_entregadas' => 'piezas entregadas',
+        'merma_material' => 'merma de material',
+        'entrada_ocurrido_en' => 'hora de entrada',
+        'salida_ocurrido_en' => 'hora de salida',
+        'cantidad' => 'cantidad asignada',
+        'cantidad_devuelta' => 'cantidad devuelta',
     ];
 
     /**
@@ -124,7 +143,7 @@ class AjustarLote
 
         Bitacora::registrar(
             TipoEventoBitacora::Ajuste,
-            "Ajuste de {$campo} en la parada {$parada->orden} ({$parada->area?->nombre}): {$this->texto($anterior)} → {$this->texto($nuevo)}.",
+            "Ajuste de {$this->etiqueta($campo)} en la parada {$parada->orden} ({$parada->area?->nombre}): {$this->texto($anterior)} → {$this->texto($nuevo)}.",
             loteId: $lote->id,
             areaId: $parada->area_id,
             datos: [
@@ -170,6 +189,16 @@ class AjustarLote
 
         $asignado->forceFill([$campo => $nuevo])->save();
 
+        $insumo = $this->ajustarExistenciaInsumo(
+            $asignado,
+            $campo,
+            BigDecimal::of((string) $anterior),
+            BigDecimal::of((string) $nuevo),
+            (string) $datos['motivo'],
+            $lote,
+            $usuario,
+        );
+
         $ajuste = Ajuste::query()->create([
             'lote_insumo_id' => $asignado->id,
             'campo' => $campo,
@@ -183,11 +212,12 @@ class AjustarLote
 
         Bitacora::registrar(
             TipoEventoBitacora::Ajuste,
-            "Ajuste de {$campo} del insumo {$asignado->insumo_id}: {$this->texto($anterior)} → {$this->texto($nuevo)}.",
+            "Ajuste de {$this->etiqueta($campo)} de {$insumo->nombre} ({$insumo->codigo}): {$this->texto($anterior)} → {$this->texto($nuevo)} {$insumo->unidad}.",
             loteId: $lote->id,
             datos: [
                 'lote_insumo_id' => $asignado->id,
                 'insumo_id' => $asignado->insumo_id,
+                'codigo' => $insumo->codigo,
                 'campo' => $campo,
                 'anterior' => $this->paraJson($anterior),
                 'nuevo' => $this->paraJson($nuevo),
@@ -197,6 +227,59 @@ class AjustarLote
         );
 
         return $ajuste;
+    }
+
+    /**
+     * El insumo asignado ya salió del inventario al crearse el lote y lo
+     * devuelto ya regresó al cierre. Corregir cualquiera de las dos cantidades
+     * mueve la existencia por la diferencia: subir lo asignado resta y subir lo
+     * devuelto suma. La existencia nunca puede quedar en negativo.
+     */
+    private function ajustarExistenciaInsumo(
+        LoteInsumo $asignado,
+        string $campo,
+        BigDecimal $anterior,
+        BigDecimal $nuevo,
+        string $motivo,
+        Lote $lote,
+        User $usuario,
+    ): Insumo {
+        $diferencia = $campo === 'cantidad'
+            ? $anterior->minus($nuevo)
+            : $nuevo->minus($anterior);
+
+        $insumo = Insumo::query()->lockForUpdate()->findOrFail($asignado->insumo_id);
+        $existenciaAnterior = BigDecimal::of((string) $insumo->existencia);
+        $existencia = $existenciaAnterior->plus($diferencia);
+
+        if ($existencia->isNegative()) {
+            $this->fallar(
+                'valor',
+                "No hay existencia suficiente de {$insumo->nombre}: quedaría en {$existencia} {$insumo->unidad}.",
+            );
+        }
+
+        $insumo->movimientos()->create([
+            'tipo' => TipoMovimientoInsumo::Ajuste,
+            'cantidad' => (string) $diferencia,
+            'costo_unitario' => $asignado->costo_unitario,
+            'lote_proveedor' => $asignado->lote_proveedor,
+            'lote_id' => $lote->id,
+            'motivo' => $motivo,
+            'user_id' => $usuario->id,
+            'ocurrido_en' => now(),
+        ]);
+
+        $insumo->update(['existencia' => (string) $existencia]);
+
+        $this->detector->revisar(
+            $insumo->id,
+            $existenciaAnterior->toFloat(),
+            $existencia->toFloat(),
+            (float) $insumo->stock_minimo,
+        );
+
+        return $insumo;
     }
 
     /**
@@ -339,12 +422,29 @@ class AjustarLote
         return $valor instanceof DateTimeInterface ? $valor->format(DATE_ATOM) : $valor;
     }
 
+    private function etiqueta(string $campo): string
+    {
+        return self::ETIQUETAS[$campo] ?? $campo;
+    }
+
     /**
-     * Texto legible para la descripción de la bitácora (las fechas en ISO).
+     * Texto legible para la descripción de la bitácora: fechas en d/m/Y H:i y
+     * decimales sin ceros de relleno.
      */
     private function texto(mixed $valor): string
     {
-        return $valor instanceof DateTimeInterface ? $valor->format(DATE_ATOM) : (string) $valor;
+        if ($valor instanceof DateTimeInterface) {
+            return $valor->format('d/m/Y H:i');
+        }
+
+        if (is_int($valor)) {
+            return (string) $valor;
+        }
+
+        $numero = (string) BigDecimal::of((string) $valor);
+
+        // 200.000 y 200 son la misma cantidad: se muestra sin ceros de relleno.
+        return str_contains($numero, '.') ? rtrim(rtrim($numero, '0'), '.') : $numero;
     }
 
     private function fallar(string $campo, string $mensaje): never

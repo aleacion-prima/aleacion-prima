@@ -4,6 +4,7 @@ use App\Bitacora\Bitacora;
 use App\Enums\EstadoLote;
 use App\Enums\Rol;
 use App\Enums\TipoEventoBitacora;
+use App\Enums\TipoMovimientoInsumo;
 use App\Enums\TipoMovimientoProducto;
 use App\Events\DisponibilidadActualizada;
 use App\Events\LoteActualizado;
@@ -14,6 +15,7 @@ use App\Models\Ajuste;
 use App\Models\Area;
 use App\Models\Insumo;
 use App\Models\Lote;
+use App\Models\MovimientoInsumo;
 use App\Models\MovimientoProducto;
 use App\Models\Producto;
 use App\Models\User;
@@ -461,5 +463,155 @@ it('registra el ajuste en la bitácora con su contexto', function () {
             && $doc['datos']['anterior'] === 18
             && $doc['datos']['nuevo'] === 15
             && $doc['datos']['motivo'] === 'Tres piezas se rompieron al desmoldar',
+    );
+});
+
+it('mueve la existencia del insumo al ajustar la cantidad asignada', function () {
+    Event::fake([LoteActualizado::class]);
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    $asignado = $lote->insumos()->firstOrFail();
+    $insumo = Insumo::query()->findOrFail($asignado->insumo_id);
+
+    // La asignación del lote ya descontó las 200 piezas del inventario.
+    expect((float) $insumo->existencia)->toBe(800.0);
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad',
+        'valor' => 210,
+        'motivo' => 'Faltaban diez kilos en la báscula',
+    ])->assertCreated();
+
+    expect((float) $insumo->fresh()?->existencia)->toBe(790.0);
+
+    $movimiento = MovimientoInsumo::query()
+        ->where('tipo', TipoMovimientoInsumo::Ajuste)
+        ->firstOrFail();
+
+    expect((float) $movimiento->cantidad)->toBe(-10.0)
+        ->and($movimiento->lote_id)->toBe($lote->id)
+        ->and($movimiento->motivo)->toBe('Faltaban diez kilos en la báscula');
+
+    // Bajar lo asignado devuelve la diferencia al inventario.
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad',
+        'valor' => 180,
+        'motivo' => 'Se ajustó al pesaje real',
+    ])->assertCreated();
+
+    expect((float) $insumo->fresh()?->existencia)->toBe(820.0);
+
+    $ultimo = MovimientoInsumo::query()
+        ->where('tipo', TipoMovimientoInsumo::Ajuste)
+        ->latest('id')
+        ->firstOrFail();
+
+    expect((float) $ultimo->cantidad)->toBe(30.0);
+});
+
+it('mueve la existencia del insumo al ajustar la cantidad devuelta', function () {
+    Event::fake([LoteActualizado::class]);
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    $asignado = $lote->insumos()->firstOrFail();
+    $insumo = Insumo::query()->findOrFail($asignado->insumo_id);
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad_devuelta',
+        'valor' => 50,
+        'motivo' => 'Devolución capturada al cierre',
+    ])->assertCreated();
+
+    expect((float) $insumo->fresh()?->existencia)->toBe(850.0);
+
+    $movimiento = MovimientoInsumo::query()
+        ->where('tipo', TipoMovimientoInsumo::Ajuste)
+        ->firstOrFail();
+
+    expect((float) $movimiento->cantidad)->toBe(50.0);
+
+    // Bajar lo devuelto vuelve a descontar del inventario.
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad_devuelta',
+        'valor' => 20,
+        'motivo' => 'Solo regresaron veinte kilos',
+    ])->assertCreated();
+
+    expect((float) $insumo->fresh()?->existencia)->toBe(820.0);
+
+    $ultimo = MovimientoInsumo::query()
+        ->where('tipo', TipoMovimientoInsumo::Ajuste)
+        ->latest('id')
+        ->firstOrFail();
+
+    expect((float) $ultimo->cantidad)->toBe(-30.0);
+});
+
+it('rechaza un ajuste de insumo que dejaría la existencia en negativo', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    $asignado = $lote->insumos()->firstOrFail();
+    $insumo = Insumo::query()->findOrFail($asignado->insumo_id);
+    $movimientos = MovimientoInsumo::query()->count();
+
+    // Quedan 800 en inventario: subir lo asignado en 801 dejaría -1.
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad',
+        'valor' => 1001,
+        'motivo' => 'Ajuste mayor a la existencia',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('valor');
+
+    expect((float) $insumo->fresh()?->existencia)->toBe(800.0)
+        ->and((float) $asignado->fresh()?->cantidad)->toBe(200.0)
+        ->and(Ajuste::query()->count())->toBe(0)
+        ->and(MovimientoInsumo::query()->count())->toBe($movimientos);
+});
+
+it('describe el ajuste de insumo con su etiqueta, nombre y código en la bitácora', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    $asignado = $lote->insumos()->firstOrFail();
+    $insumo = Insumo::query()->findOrFail($asignado->insumo_id);
+
+    $fake = Bitacora::fake();
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_insumo_id' => $asignado->id,
+        'campo' => 'cantidad',
+        'valor' => 210,
+        'motivo' => 'Pesaje corregido',
+    ])->assertCreated();
+
+    $fake->assertRegistrado(
+        TipoEventoBitacora::Ajuste,
+        fn (array $doc) => $doc['descripcion'] === "Ajuste de cantidad asignada de {$insumo->nombre} ({$insumo->codigo}): 200 → 210 {$insumo->unidad}.",
+    );
+});
+
+it('describe las fechas de la bitácora en formato d/m/Y H:i', function () {
+    $admin = adminDeAjustes();
+    $lote = loteParaAjustes($admin);
+    recorrerParaAjustes($lote, $admin, 1);
+    $parada = $lote->paradas()->firstOrFail();
+
+    $fake = Bitacora::fake();
+
+    postJson("/api/lotes/{$lote->codigo}/ajustes", [
+        'lote_area_id' => $parada->id,
+        'campo' => 'salida_ocurrido_en',
+        'valor' => CarbonImmutable::parse('2026-11-03 09:30:00')->toIso8601String(),
+        'motivo' => 'La salida fue a las nueve y media',
+    ])->assertCreated();
+
+    $fake->assertRegistrado(
+        TipoEventoBitacora::Ajuste,
+        fn (array $doc) => $doc['descripcion'] === 'Ajuste de hora de salida en la parada 1 (Moldeo y preparación de arenas): 03/11/2026 08:30 → 03/11/2026 09:30.',
     );
 });

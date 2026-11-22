@@ -462,12 +462,7 @@ watch(
                 <h2 class="text-h6 q-my-none">Ajustes</h2>
                 <span class="text-caption text-secundario">{{ ajustes.length }} registrados</span>
               </div>
-              <EstadoVacio
-                v-if="!ajustes.length"
-                icono="tune"
-                titulo="Sin ajustes"
-                descripcion="Corrige un dato desde el recorrido o desde los insumos asignados."
-              />
+              <EstadoVacio v-if="!ajustes.length" icono="tune" titulo="Sin ajustes" />
               <q-markup-table v-else flat separator="horizontal" wrap-cells>
                 <thead>
                   <tr>

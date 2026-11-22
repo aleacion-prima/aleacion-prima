@@ -247,10 +247,6 @@ const guardar = async (): Promise<void> => {
           :error="Boolean(error('motivo'))"
           :error-message="error('motivo')"
         />
-
-        <div class="text-caption text-secundario q-mt-sm">
-          El lote conserva su estado y sus piezas se corrigen si es la última parada.
-        </div>
       </q-card-section>
 
       <q-card-actions align="right" class="q-px-md q-pb-md">
