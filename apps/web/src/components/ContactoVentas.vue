@@ -1,14 +1,9 @@
 <script setup lang="ts">
+import type { ContactoPublico } from '@aleacion-prima/types';
 import { PUBLIC_API_URL } from 'astro:env/client';
 import { onMounted, ref } from 'vue';
 
-interface Contacto {
-  correo: string;
-  telefono: string;
-  horario: string;
-}
-
-const contacto = ref<Contacto | null>(null);
+const contacto = ref<ContactoPublico | null>(null);
 const cargando = ref(true);
 const error = ref(false);
 
@@ -21,7 +16,7 @@ const cargar = async () => {
       headers: { Accept: 'application/json' },
     });
     if (!respuesta.ok) throw new Error('No se pudo cargar el contacto');
-    contacto.value = (await respuesta.json()) as Contacto;
+    contacto.value = (await respuesta.json()) as ContactoPublico;
   } catch {
     contacto.value = null;
     error.value = true;

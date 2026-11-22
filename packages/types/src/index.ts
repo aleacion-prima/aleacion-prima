@@ -95,6 +95,13 @@ export interface ProductoPublico {
   cantidad: number | null;
 }
 
+// Contacto publico
+export interface ContactoPublico {
+  correo: string;
+  telefono: string;
+  horario: string;
+}
+
 // Tiempo real (web publica)
 export interface CatalogoActualizado {
   id: number;
