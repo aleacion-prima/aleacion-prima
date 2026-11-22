@@ -4,6 +4,7 @@ namespace App\Imprevistos;
 
 use App\Enums\TipoImprevisto;
 use App\Events\ImprevistoRegistrado;
+use App\Events\LoteActualizado;
 use App\Models\Imprevisto;
 use App\Models\Lote;
 use App\Models\LoteArea;
@@ -49,6 +50,9 @@ class RegistradorImprevisto
             $tipo->value,
             $resuelto,
         );
+
+        // El semáforo del lote depende de sus imprevistos: se avisa para que el panel lo recalcule.
+        LoteActualizado::dispatch($lote);
 
         return $imprevisto;
     }

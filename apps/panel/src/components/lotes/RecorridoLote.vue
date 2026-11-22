@@ -33,7 +33,9 @@ const enlace = (i: number): 'terminado' | 'en_curso' | 'pendiente' | 'cancelado'
         :piezas="parada.piezas ?? ''"
         :aviso="parada.aviso ?? ''"
         :obligatoria="parada.obligatoria ?? false"
-      />
+      >
+        <slot name="accion" :indice="i" :parada="parada" />
+      </ParadaRecorrido>
     </template>
   </div>
 </template>

@@ -116,6 +116,9 @@ export const ESTADOS_LOTE = [
 ] as const;
 export type EstadoLote = (typeof ESTADOS_LOTE)[number];
 
+export const SEMAFOROS = ['verde', 'ambar', 'rojo'] as const;
+export type Semaforo = (typeof SEMAFOROS)[number];
+
 export const ROLES = ['administrador', 'ventas', 'encargado', 'cliente'] as const;
 export type Rol = (typeof ROLES)[number];
 
@@ -177,6 +180,9 @@ export interface Lote {
   area_actual: ReferenciaCatalogo | null;
   costo_total?: string;
   costo_por_pieza?: string | null;
+  semaforo: Semaforo | null;
+  motivos: string[];
+  semaforo_incompleto?: boolean;
   paradas: LoteParada[];
   insumos?: LoteInsumoAsignado[];
   confirmado_en: string | null;
@@ -200,6 +206,48 @@ export interface CrearLote {
   producto_id: number;
   cantidad_objetivo: number;
   recorrido?: number[];
+}
+
+export type CampoAjusteLote =
+  | 'piezas_recibidas'
+  | 'piezas_entregadas'
+  | 'merma_material'
+  | 'entrada_ocurrido_en'
+  | 'salida_ocurrido_en'
+  | 'cantidad'
+  | 'cantidad_devuelta';
+
+export interface AjusteLote {
+  id: number;
+  campo: CampoAjusteLote;
+  valores: {
+    anterior: string | number | null;
+    nuevo: string | number | null;
+  };
+  motivo: string;
+  usuario?: { id: number; name: string };
+  parada?: { id: number; orden: number; area: ReferenciaCatalogo };
+  insumo?: {
+    lote_insumo_id: number;
+    insumo_id: number;
+    codigo: string;
+    nombre: string;
+    unidad: string;
+  };
+  created_at: string;
+}
+
+export interface AjustarLote {
+  lote_area_id?: number;
+  lote_insumo_id?: number;
+  campo: CampoAjusteLote;
+  valor: string | number;
+  motivo: string;
+}
+
+export interface RespuestaAjusteLote {
+  ajuste: AjusteLote;
+  lote: Lote;
 }
 
 export interface Imprevisto {

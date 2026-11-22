@@ -67,6 +67,8 @@ const lote: Lote = {
   piezas_terminadas: null,
   producto: { id: 1, codigo: 'DIS-FRE-G', nombre: 'Disco de freno' },
   area_actual: { id: 2, codigo: 'FUS', nombre: 'Fusión' },
+  semaforo: null,
+  motivos: [],
   paradas: [
     parada(1, 'Moldeo', {
       entrada_ocurrido_en: '2026-11-02T15:00:00Z',
