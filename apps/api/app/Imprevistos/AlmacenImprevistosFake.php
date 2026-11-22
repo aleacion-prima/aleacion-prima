@@ -34,6 +34,13 @@ final class AlmacenImprevistosFake implements AlmacenImprevistos
             ->values();
     }
 
+    public function abiertosDeLotes(array $loteIds): Collection
+    {
+        return collect($this->documentos)
+            ->filter(fn (Imprevisto $imprevisto) => in_array($imprevisto->lote_id, $loteIds, true) && ! $imprevisto->resuelto)
+            ->values();
+    }
+
     public function buscar(int $loteId, string $id): ?Imprevisto
     {
         $imprevisto = $this->documentos[$id] ?? null;

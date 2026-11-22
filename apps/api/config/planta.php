@@ -23,4 +23,24 @@ return [
     'area_retorno' => env('PLANTA_AREA_RETORNO', 'DES'),
 
     'zona_horaria' => env('PLANTA_ZONA_HORARIA', 'America/Mexico_City'),
+
+    // Semáforo del lote (verde, ámbar, rojo).
+    // Un umbral se cumple cuando el valor es igual o mayor, salvo el de minutos de un imprevisto abierto, que se cumple al pasarse.
+    'semaforo' => [
+        // Merma acumulada como porcentaje de la cantidad objetivo.
+        'merma_ambar_pct' => 5,
+        'merma_rojo_pct' => 10,
+
+        // Imprevistos sin resolver: cuántos abiertos ponen ámbar y cuántos
+        // minutos abierto pone rojo.
+        'imprevistos_ambar_abiertos' => 1,
+        'imprevisto_rojo_minutos' => 120,
+
+        // Costo por pieza proyectado como porcentaje del precio de mayoreo.
+        'costo_ambar_pct' => 80,
+        'costo_rojo_pct' => 100,
+
+        // Capturas tardías acumuladas que ponen ámbar. Nunca ponen rojo.
+        'capturas_tardias_ambar' => 2,
+    ],
 ];

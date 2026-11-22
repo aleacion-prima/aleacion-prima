@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\EstadoLote;
+use App\Lotes\EvaluadorSemaforo;
 use App\Models\Lote;
 use App\Models\LoteArea;
 use Illuminate\Http\Request;
@@ -19,6 +20,13 @@ class LoteResource extends JsonResource
     public function toArray(Request $request): array
     {
         $veCostos = (bool) $request->user()?->veCostos();
+
+        /** @var Lote $lote */
+        $lote = $this->resource;
+        // Solo el color y los motivos: el precio de mayoreo nunca sale en el semáforo.
+        $semaforo = $request->user()?->veSemaforo()
+            ? app(EvaluadorSemaforo::class)->evaluar($lote, $veCostos)
+            : null;
 
         return [
             'id' => $this->id,
@@ -38,6 +46,9 @@ class LoteResource extends JsonResource
             ]),
             'costo_total' => $this->when($veCostos, $this->costo_total),
             'costo_por_pieza' => $this->when($veCostos, $this->costo_por_pieza),
+            'semaforo' => $semaforo?->semaforo,
+            'motivos' => $semaforo->motivos ?? [],
+            'semaforo_incompleto' => $semaforo->incompleto ?? false,
             'paradas' => $this->whenLoaded('paradas', function () {
                 $anterior = null;
 
