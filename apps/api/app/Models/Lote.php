@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\EstadoLote;
 use Database\Factories\LoteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,6 +68,21 @@ class Lote extends Model
     public function insumos(): HasMany
     {
         return $this->hasMany(LoteInsumo::class);
+    }
+
+    /**
+     * Los ajustes no cuelgan del lote por una sola llave: apuntan a una parada
+     * o a un insumo asignado, así que se juntan con dos subconsultas.
+     *
+     * @return Builder<Ajuste>
+     */
+    public function ajustes(): Builder
+    {
+        return Ajuste::query()->where(function (Builder $consulta): void {
+            $consulta
+                ->whereIn('lote_area_id', $this->paradas()->getQuery()->select('lote_areas.id'))
+                ->orWhereIn('lote_insumo_id', $this->insumos()->getQuery()->select('lote_insumos.id'));
+        });
     }
 
     /** @return BelongsTo<User, $this> */

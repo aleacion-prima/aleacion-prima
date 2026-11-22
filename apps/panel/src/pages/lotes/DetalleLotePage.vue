@@ -2,11 +2,13 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useIntervalFn } from '@vueuse/core';
-import type { Lote, Imprevisto } from '@aleacion-prima/types';
+import type { AjusteLote, Lote, LoteInsumoAsignado, Imprevisto } from '@aleacion-prima/types';
 import { useApi } from '@/services/api';
-import { conPlural, formatearMoneda } from '@/composables/formato';
+import { conPlural, formatearCantidad, formatearMoneda } from '@/composables/formato';
 import { estadoDeParada, paradasDeLote, siguienteCaptura } from '@/composables/recorridoLote';
 import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
+import { etiquetaCampo, type ObjetivoAjuste } from '@/catalogos/ajustes';
+import type { EstadoParada } from '@/catalogos/areas';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
@@ -14,6 +16,7 @@ import NumeroAnimado from '@/components/comunes/NumeroAnimado.vue';
 import DialogoCaptura from '@/components/lotes/DialogoCaptura.vue';
 import DialogoConfirmarCierre from '@/components/lotes/DialogoConfirmarCierre.vue';
 import DialogoCancelarLote from '@/components/lotes/DialogoCancelarLote.vue';
+import DialogoAjusteLote from '@/components/lotes/DialogoAjusteLote.vue';
 import DialogoImprevisto from '@/components/lotes/DialogoImprevisto.vue';
 import ImprevistosLote from '@/components/lotes/ImprevistosLote.vue';
 import HistorialParadas from '@/components/lotes/HistorialParadas.vue';
@@ -29,10 +32,13 @@ const INTERVALO_SIN_TIEMPO_REAL = 20_000;
 const route = useRoute();
 
 const lote = ref<Lote | null>(null);
+const ajustes = ref<AjusteLote[]>([]);
 const imprevistos = ref<Imprevisto[]>([]);
 const capturando = ref(false);
 const confirmando = ref(false);
 const cancelando = ref(false);
+const ajustando = ref(false);
+const objetivoAjuste = ref<ObjetivoAjuste | null>(null);
 const registrandoImprevisto = ref(false);
 const pestana = ref<Pestana>('resumen');
 // Sube con cada recarga del lote para que las pestañas vuelvan a pedir sus datos.
@@ -133,7 +139,49 @@ const cargar = async (silencioso = false): Promise<void> => {
   if (lote.value) {
     version.value += 1;
     await cargarImprevistos();
+    if (esAdmin.value) void cargarAjustes();
   }
+};
+
+const cargarAjustes = async (): Promise<void> => {
+  const codigo = String(route.params.codigo ?? '');
+  const { data, error } = await useApi<AjusteLote[]>(
+    `/lotes/${encodeURIComponent(codigo)}/ajustes`,
+  ).json<AjusteLote[]>();
+  ajustes.value = error.value || !Array.isArray(data.value) ? [] : data.value;
+};
+
+const abrirAjusteParada = (indice: number): void => {
+  const parada = lote.value?.paradas[indice];
+  if (!parada) return;
+  objetivoAjuste.value = { tipo: 'parada', parada };
+  ajustando.value = true;
+};
+
+const abrirAjusteInsumo = (insumo: LoteInsumoAsignado): void => {
+  objetivoAjuste.value = { tipo: 'insumo', insumo };
+  ajustando.value = true;
+};
+
+const puedeAjustarParada = (estado: EstadoParada): boolean =>
+  estado === 'terminada' || estado === 'en_curso' || estado === 'cancelada';
+
+const renglonDeAjuste = (ajuste: AjusteLote): string =>
+  ajuste.parada
+    ? `Parada ${ajuste.parada.orden} · ${ajuste.parada.area.nombre}`
+    : ajuste.insumo
+      ? `${ajuste.insumo.codigo} · ${ajuste.insumo.nombre}`
+      : '—';
+
+const valorDeAjuste = (ajuste: AjusteLote, valor: string | number | null): string => {
+  if (valor === null) return '—';
+  if (ajuste.campo === 'entrada_ocurrido_en' || ajuste.campo === 'salida_ocurrido_en') {
+    return fecha.format(new Date(String(valor)));
+  }
+  if (ajuste.campo === 'piezas_recibidas' || ajuste.campo === 'piezas_entregadas') {
+    return formatearCantidad(valor, 0);
+  }
+  return formatearCantidad(valor);
 };
 
 /** Un cambio hecho aquí (captura, cierre o cancelación): pantalla y pestañas se actualizan al momento. */
@@ -146,6 +194,12 @@ const alGuardar = (actualizado: Lote): void => {
 const alCambiarImprevistos = async (): Promise<void> => {
   await cargarImprevistos();
   version.value += 1;
+};
+
+/** Un ajuste cambia costo y bitácora, y añade un renglón a la lista de ajustes. */
+const alGuardarAjuste = (actualizado: Lote): void => {
+  alGuardar(actualizado);
+  void cargarAjustes();
 };
 
 const canales = useCanalesDeLotes();
@@ -332,7 +386,22 @@ watch(
                   @click="registrandoImprevisto = true"
                 />
               </div>
-              <RecorridoLote :paradas="paradasDeLote(lote)" />
+              <RecorridoLote :paradas="paradasDeLote(lote)">
+                <template #accion="{ indice, parada }">
+                  <q-btn
+                    v-if="esAdmin && puedeAjustarParada(parada.estado)"
+                    flat
+                    dense
+                    no-caps
+                    size="sm"
+                    color="primary"
+                    icon="tune"
+                    label="Ajustar"
+                    class="q-mt-sm"
+                    @click="abrirAjusteParada(indice)"
+                  />
+                </template>
+              </RecorridoLote>
             </q-card-section>
           </q-card>
 
@@ -356,6 +425,7 @@ watch(
                     <th v-if="lote.insumos[0]?.costo_unitario !== undefined" class="text-right">
                       Costo unitario
                     </th>
+                    <th v-if="esAdmin" class="text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -368,6 +438,52 @@ watch(
                     <td v-if="asignado.costo_unitario !== undefined" class="text-right codigo">
                       {{ formatearMoneda(asignado.costo_unitario) }}
                     </td>
+                    <td v-if="esAdmin" class="text-right">
+                      <q-btn
+                        flat
+                        dense
+                        no-caps
+                        size="sm"
+                        color="primary"
+                        icon="tune"
+                        label="Ajustar"
+                        @click="abrirAjusteInsumo(asignado)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </q-markup-table>
+            </q-card-section>
+          </q-card>
+
+          <q-card v-if="esAdmin" flat bordered class="q-mt-md">
+            <q-card-section>
+              <div class="row items-center justify-between q-mb-md">
+                <h2 class="text-h6 q-my-none">Ajustes</h2>
+                <span class="text-caption text-secundario">{{ ajustes.length }} registrados</span>
+              </div>
+              <EstadoVacio v-if="!ajustes.length" icono="tune" titulo="Sin ajustes" />
+              <q-markup-table v-else flat separator="horizontal" wrap-cells>
+                <thead>
+                  <tr>
+                    <th class="text-left">Fecha</th>
+                    <th class="text-left">Renglón</th>
+                    <th class="text-left">Dato</th>
+                    <th class="text-left">Antes</th>
+                    <th class="text-left">Después</th>
+                    <th class="text-left">Motivo</th>
+                    <th class="text-left">Responsable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="ajuste in ajustes" :key="ajuste.id">
+                    <td class="text-no-wrap">{{ fecha.format(new Date(ajuste.created_at)) }}</td>
+                    <td>{{ renglonDeAjuste(ajuste) }}</td>
+                    <td>{{ etiquetaCampo(ajuste.campo) }}</td>
+                    <td class="codigo">{{ valorDeAjuste(ajuste, ajuste.valores.anterior) }}</td>
+                    <td class="codigo">{{ valorDeAjuste(ajuste, ajuste.valores.nuevo) }}</td>
+                    <td>{{ ajuste.motivo }}</td>
+                    <td>{{ ajuste.usuario?.name ?? '—' }}</td>
                   </tr>
                 </tbody>
               </q-markup-table>
@@ -388,6 +504,14 @@ watch(
 
     <DialogoConfirmarCierre v-if="lote" v-model="confirmando" :lote="lote" @guardado="alGuardar" />
     <DialogoCancelarLote v-if="lote" v-model="cancelando" :lote="lote" @guardado="alGuardar" />
+
+    <DialogoAjusteLote
+      v-if="lote && objetivoAjuste"
+      v-model="ajustando"
+      :lote="lote"
+      :objetivo="objetivoAjuste"
+      @guardado="alGuardarAjuste"
+    />
 
     <DialogoCaptura
       v-if="lote && captura"
