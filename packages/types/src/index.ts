@@ -87,10 +87,23 @@ export const TIPOS_EVENTO_BITACORA = [
 ] as const;
 export type TipoEventoBitacora = (typeof TIPOS_EVENTO_BITACORA)[number];
 
+export interface ProductoPublico {
+  id: number;
+  nombre: string;
+  especificaciones: Record<string, string | number> | null;
+  disponible: boolean;
+  cantidad: number | null;
+}
+
 // Tiempo real (web publica)
+export interface CatalogoActualizado {
+  id: number;
+}
+
 export interface DisponibilidadActualizada {
   id: number;
-  disponible: number;
+  disponible: boolean;
+  cantidad: number | null;
 }
 
 // Lotes y roles
@@ -210,6 +223,7 @@ export interface Usuario {
   email: string;
   rol: Rol | null;
   activo: boolean;
+  dado_de_baja_en: string | null;
   areas?: AreaAsignada[];
 }
 
@@ -282,6 +296,7 @@ export interface Producto {
   precio_menudeo: string;
   existencia: number;
   publicado: boolean;
+  mostrar_cantidad: boolean;
   activo: boolean;
   recorrido: ProductoArea[];
   receta: ProductoInsumo[];
@@ -319,4 +334,40 @@ export interface Area {
   orden_catalogo: number;
   activo: boolean;
   encargados?: Pick<Usuario, 'id' | 'name'>[];
+}
+
+export interface HistorialParada extends LoteParada {
+  entrada_por: string | null;
+  salida_por: string | null;
+}
+
+export interface HistorialLote {
+  codigo: string;
+  estado: EstadoLote;
+  paradas: HistorialParada[];
+}
+
+export interface EventoBitacora {
+  id: string;
+  tipo: TipoEventoBitacora;
+  descripcion: string;
+  area: ReferenciaCatalogo | null;
+  usuario: string | null;
+  datos: Record<string, unknown>;
+  ocurrido_en: string;
+  registrado_en: string;
+  captura_tardia: boolean;
+}
+
+export interface CostoLote {
+  codigo: string;
+  estado: EstadoLote;
+  // Abierto: costo a la fecha. Terminado o cancelado: congelado.
+  congelado: boolean;
+  piezas_terminadas: number | null;
+  material: string;
+  mano_obra: string;
+  maquina: string;
+  total: string;
+  por_pieza: string | null;
 }

@@ -2,8 +2,12 @@
 
 use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\BitacoraLoteController;
+use App\Http\Controllers\CatalogoPublicoController;
 use App\Http\Controllers\CierreLoteController;
+use App\Http\Controllers\CostoLoteController;
 use App\Http\Controllers\EntradaInsumoController;
+use App\Http\Controllers\HistorialLoteController;
 use App\Http\Controllers\ImprevistoLoteController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\InventarioController;
@@ -25,6 +29,11 @@ use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 Route::post('/movil/login', [SesionMovilController::class, 'iniciar'])->middleware('throttle:login');
 
+Route::prefix('publico')->middleware('throttle:60,1')->group(function () {
+    Route::get('/productos', [CatalogoPublicoController::class, 'index']);
+    Route::get('/productos/{producto}', [CatalogoPublicoController::class, 'show'])->whereNumber('producto');
+});
+
 Route::middleware(['auth:sanctum', 'activo'])->group(function () {
     Route::get('/user', fn (Request $request) => new SesionResource($request->user()?->load('areas')));
     Route::post('/logout', [SesionMovilController::class, 'cerrar']);
@@ -33,6 +42,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::get('/lotes', [LoteController::class, 'index']);
         Route::get('/lotes/{lote}', [LoteController::class, 'show']);
         Route::get('/lotes/{lote}/imprevistos', [ImprevistoLoteController::class, 'index']);
+        Route::get('/lotes/{lote}/historial', HistorialLoteController::class);
     });
 
     Route::middleware('ability:panel')->group(function () {
@@ -75,6 +85,8 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         Route::middleware('role:administrador|ventas')->group(function () {
             Route::get('/inventario/insumos', [InventarioController::class, 'insumos']);
             Route::get('/inventario/productos', [InventarioController::class, 'productos']);
+            Route::get('/lotes/{lote}/bitacora', BitacoraLoteController::class);
+            Route::get('/lotes/{lote}/costo', CostoLoteController::class);
         });
 
         Route::middleware('role:administrador')->group(function () {
@@ -84,9 +96,14 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
             Route::post('/notificaciones/leidas', [NotificacionController::class, 'leidas']);
         });
 
-        Route::middleware('role:administrador')->group(function () {
+        Route::middleware('role:administrador|ventas')->group(function () {
             Route::get('productos/opciones', [ProductoController::class, 'opciones']);
-            Route::apiResource('productos', ProductoController::class);
+            Route::apiResource('productos', ProductoController::class)->only(['index', 'show']);
+            Route::patch('productos/{producto}/publicacion', [ProductoController::class, 'publicar']);
+        });
+
+        Route::middleware('role:administrador')->group(function () {
+            Route::apiResource('productos', ProductoController::class)->except(['index', 'show']);
         });
 
         Route::middleware('role:administrador')->group(function () {

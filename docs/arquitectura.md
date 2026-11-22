@@ -58,7 +58,7 @@ flowchart LR
 
 **Sitio → API.** Solo lectura de datos públicos, sin sesión. La disponibilidad inicial viene en el HTML estático (o en una petición pública) y se actualiza por WebSocket.
 
-**Tiempo real.** La API emite eventos a Reverb; los clientes se suscriben con Laravel Echo. Los canales privados se autorizan en `/broadcasting/auth` con la misma cookie del panel. El canal público `catalogo` transmite solo `{ id, disponible }` (ADR-0005).
+**Tiempo real.** La API emite eventos a Reverb; los clientes se suscriben con Laravel Echo. Los canales privados se autorizan en `/broadcasting/auth` con la misma cookie del panel. El canal público `catalogo` transmite solo `{ id, disponible, cantidad }` y `{ id }` (ADR-0005).
 
 **Bases de datos.** PostgreSQL es la fuente de verdad: lotes, áreas, movimientos, insumos, existencias, pedidos, clientes, usuarios. MongoDB guarda bitácora e imprevistos, siempre referenciando el `lote_id` de Postgres y escribiendo solo después del commit (ADR-0003).
 

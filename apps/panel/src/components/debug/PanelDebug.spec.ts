@@ -11,6 +11,7 @@ const usuarios: Usuario[] = [
     email: 'admin@aleacionprima.test',
     rol: 'administrador',
     activo: true,
+    dado_de_baja_en: null,
     areas: [],
   },
   {
@@ -19,6 +20,7 @@ const usuarios: Usuario[] = [
     email: 'encargado@aleacionprima.test',
     rol: 'encargado',
     activo: true,
+    dado_de_baja_en: null,
     areas: [{ id: 1, codigo: 'MOL', nombre: 'Moldeo' }],
   },
 ];
