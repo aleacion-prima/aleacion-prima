@@ -30,12 +30,21 @@ const FILTROS_TIPO: { value: FiltroTipo; etiqueta: string }[] = [
   { value: 'lote_por_confirmar', etiqueta: 'Lotes por confirmar' },
 ];
 
+type FiltroLectura = 'todas' | 'leidas' | 'no_leidas';
+
+const FILTROS_LECTURA: { value: FiltroLectura; label: string }[] = [
+  { value: 'todas', label: 'Todas' },
+  { value: 'leidas', label: 'Leídas' },
+  { value: 'no_leidas', label: 'No leídas' },
+];
+
 const $q = useQuasar();
 const router = useRouter();
 const { pendientes, actualizar, marcarLeida } = useNotificaciones();
 const filas = ref<Notificacion[]>([]);
 const cargando = ref(true);
 const tipo = ref<FiltroTipo>('todos');
+const lectura = ref<FiltroLectura>('todas');
 const pagina = ref(1);
 const porPagina = ref(15);
 const total = ref(0);
@@ -44,7 +53,7 @@ const cargar = async (): Promise<void> => {
   cargando.value = true;
   const parametros = new URLSearchParams({ page: String(pagina.value) });
   if (tipo.value !== 'todos') parametros.set('tipo', tipo.value);
-
+  if (lectura.value !== 'todas') parametros.set(lectura.value, '1');
   const respuesta = await useApi<RespuestaPaginada>(
     `/notificaciones?${parametros}`,
   ).json<RespuestaPaginada>();
@@ -82,7 +91,7 @@ const abrir = async (notificacion: Notificacion): Promise<void> => {
   if (ruta) await router.push(ruta);
 };
 
-watch(tipo, () => {
+watch([tipo, lectura], () => {
   pagina.value = 1;
   void cargar();
 });
@@ -124,6 +133,15 @@ onMounted(() => void cargar());
         :label="filtro.etiqueta"
       />
     </q-tabs>
+
+    <q-btn-toggle
+      v-model="lectura"
+      :options="FILTROS_LECTURA"
+      no-caps
+      unelevated
+      toggle-color="primary"
+      class="q-mb-md"
+    />
 
     <div v-if="cargando && !filas.length" class="q-pa-xl flex flex-center">
       <q-spinner color="primary" size="40px" />

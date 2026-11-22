@@ -122,20 +122,19 @@ describe('useNotificaciones (campana)', () => {
     expect(pendientes.value).toBe(0);
   });
 
-  it('desconectar deja el canal y resetea el contador', async () => {
+  it('desconectar resetea el contador sin tocar la conexión', async () => {
     const { pendientes, iniciar, desconectar } = await crearComposable();
     await iniciar(16, 'administrador');
 
     const entrada = echo.canales.get('App.Models.User.16')!;
     entrada.notificationCb!({ data: { tipo: 'stock_minimo' } });
     expect(pendientes.value).toBe(1);
-    expect(echo.canales.has('App.Models.User.16')).toBe(true);
+    echo.leave.mockClear();
 
     desconectar();
 
     expect(pendientes.value).toBe(0);
-    expect(echo.canales.has('App.Models.User.16')).toBe(false);
-    expect(echo.leave).toHaveBeenCalledWith('App.Models.User.16');
+    expect(echo.leave).not.toHaveBeenCalled();
   });
 
   it('carga los pendientes iniciales desde la API al iniciar', async () => {
