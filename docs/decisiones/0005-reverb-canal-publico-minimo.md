@@ -13,7 +13,7 @@ Tres cosas necesitan tiempo real: el tablero del administrador (estado de lotes,
 2. **Dos tipos de canal:**
    - **Privados** (`private-...`) para el panel: tablero, notificaciones, chat de cotizaciones. La autorización pasa por `/broadcasting/auth` con el middleware `auth:sanctum` (misma cookie del panel).
    - **Público** `catalogo` para el sitio: solo disponibilidad de productos.
-3. **Todo evento que salga por un canal público define `broadcastWith()` y manda lo indispensable.** El evento `disponibilidad.actualizada` transmite `{ id, disponible }` y nada más. Nunca el modelo completo, nunca precios ni costos.
+3. **Todo evento que salga por un canal público define `broadcastWith()` y manda lo indispensable.** El evento `disponibilidad.actualizada` transmite `{ id, disponible, cantidad }` (`cantidad` es `null` si el producto no muestra su existencia) y nada más. `catalogo.actualizado` transmite solo `{ id }`. Nunca el modelo completo, nunca precios ni costos.
 4. Los nombres de evento se fijan con `broadcastAs()` (en el cliente se escuchan con punto inicial: `.disponibilidad.actualizada`) para no exponer el namespace de PHP.
 5. En el sitio, Echo se crea de forma **perezosa** (`obtenerEcho()`), sin `authorizer` ni cookies, y solo dentro de islas de Vue con directiva `client:*`.
 

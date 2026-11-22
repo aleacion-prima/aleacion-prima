@@ -55,7 +55,16 @@ const notificaciones: SeccionMenu = {
 
 export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
   administrador: [principal, inventario, catalogos, notificaciones, ventas],
-  ventas: [principal, inventario, notificaciones, ventas],
+  ventas: [
+    principal,
+    inventario,
+    {
+      titulo: 'Catálogos',
+      elementos: [{ etiqueta: 'Productos', ruta: '/productos', icono: 'category' }],
+    },
+    notificaciones,
+    ventas,
+  ],
   encargado: [
     {
       elementos: [

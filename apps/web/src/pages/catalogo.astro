@@ -1,0 +1,51 @@
+---
+import CatalogoProductos from '../components/catalogo/CatalogoProductos.vue';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout titulo="Catálogo · Aleación Prima" seccion="catalogo">
+  <section class="encabezado">
+    <a class="enlace encabezado__volver" href="/">
+      <img src="/iconos/chevron-left.svg" width="20" height="20" alt="" />
+      Volver a inicio
+    </a>
+    <h1>Catálogo de productos</h1>
+    <p>Piezas de fundición disponibles para cotizar.</p>
+  </section>
+  <section class="productos">
+    <CatalogoProductos client:load />
+  </section>
+</Layout>
+
+<style>
+  .encabezado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 40px 32px 24px;
+  }
+
+  .encabezado__volver {
+    align-self: flex-end;
+  }
+
+  h1 {
+    margin: 24px 0 0;
+    font-family: var(--fuente-titulos);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 36px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--ap-texto-secundario);
+  }
+
+  .productos {
+    padding: 0 32px 40px;
+  }
+</style>

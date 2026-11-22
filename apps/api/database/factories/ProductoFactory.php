@@ -22,6 +22,7 @@ class ProductoFactory extends Factory
             'precio_mayoreo' => fake()->randomFloat(2, 100, 500),
             'precio_menudeo' => fake()->randomFloat(2, 150, 700),
             'publicado' => false,
+            'mostrar_cantidad' => true,
             'activo' => true,
         ];
     }

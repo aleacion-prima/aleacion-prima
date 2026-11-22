@@ -20,7 +20,7 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <meta name="generator" content={Astro.generator} />
@@ -37,14 +37,15 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
 
 <style is:global>
   :root {
-    --q-primary: #c2410c;
-    --q-accent: #f97316;
-    --q-secondary: #334155;
-    --q-dark: #0f172a;
     --ap-fondo: #f8fafc;
     --ap-superficie: #ffffff;
     --ap-borde: #e2e8f0;
     --ap-texto-secundario: #475569;
+    --q-primary: #c2410c;
+    --q-secondary: #334155;
+    --q-accent: #f97316;
+    --q-dark: #0f172a;
+    --q-positive: #15803d;
     --fuente-titulos: 'Barlow Semi Condensed', sans-serif;
     --fuente-cuerpo: Roboto, sans-serif;
     --fuente-codigo: 'IBM Plex Mono', monospace;
@@ -69,6 +70,8 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
 
   main {
     flex: 1;
+    margin: 0 auto;
+    max-width: 1440px;
     width: 100%;
   }
 
@@ -81,5 +84,57 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
 
   a {
     color: var(--q-primary);
+  }
+
+  .aviso {
+    color: var(--ap-texto-secundario);
+    padding: 48px 32px;
+    text-align: center;
+  }
+
+  .boton {
+    align-items: center;
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: flex;
+    font-size: 14px;
+    font-weight: 500;
+    gap: 8px;
+    justify-content: center;
+    letter-spacing: 0.25px;
+    line-height: 20px;
+    min-height: 40px;
+    padding: 8px 16px;
+    text-decoration: none;
+  }
+
+  .boton--primario {
+    background: var(--q-primary);
+    color: var(--ap-superficie);
+  }
+
+  .boton--primario:hover {
+    background: var(--q-accent);
+  }
+
+  .boton--contorno {
+    background: var(--ap-superficie);
+    border: 1px solid var(--q-secondary);
+    color: var(--q-secondary);
+  }
+
+  .boton--alto {
+    height: 48px;
+  }
+
+  .enlace {
+    align-items: center;
+    color: var(--q-primary);
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 500;
+    gap: 8px;
+    padding: 8px 16px;
+    text-decoration: none;
   }
 </style>

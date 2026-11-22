@@ -53,4 +53,36 @@ class LoteArea extends Model
     {
         return $this->belongsTo(Area::class);
     }
+
+    /** @return BelongsTo<User, $this> */
+    public function entradaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'entrada_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function salidaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salida_user_id');
+    }
+
+    /** Captura tardía: se registró con más de planta.umbral_captura_tardia minutos de retraso. */
+    public function entradaTardia(): bool
+    {
+        return $this->fueTardia($this->entrada_ocurrido_en, $this->entrada_registrado_en);
+    }
+
+    public function salidaTardia(): bool
+    {
+        return $this->fueTardia($this->salida_ocurrido_en, $this->salida_registrado_en);
+    }
+
+    private function fueTardia(?CarbonImmutable $ocurrido, ?CarbonImmutable $registrado): bool
+    {
+        if ($ocurrido === null || $registrado === null) {
+            return false;
+        }
+
+        return $ocurrido->diffInMinutes($registrado) > (int) config('planta.umbral_captura_tardia');
+    }
 }

@@ -12,6 +12,7 @@ use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
 use function Pest\Laravel\seed;
@@ -283,7 +284,7 @@ describe('edición', function () {
 });
 
 describe('acceso', function () {
-    it('responde 403 a roles distintos de administrador', function (Rol $rol) {
+    it('responde 403 a roles distintos de administrador y ventas', function (Rol $rol) {
         actuarComoProducto($rol);
         $producto = Producto::factory()->create();
         $payload = payloadProducto($this->areas, $this->insumo);
@@ -293,11 +294,39 @@ describe('acceso', function () {
         postJson('/api/productos', $payload)->assertForbidden();
         putJson("/api/productos/{$producto->id}", $payload)->assertForbidden();
         deleteJson("/api/productos/{$producto->id}")->assertForbidden();
-    })->with([Rol::Ventas, Rol::Encargado, Rol::Cliente]);
+        patchJson("/api/productos/{$producto->id}/publicacion", ['publicado' => true])->assertForbidden();
+    })->with([Rol::Encargado, Rol::Cliente]);
 
     describe('sin sesión', function () {
         it('responde 401 sin autenticar', function () {
             getJson('/api/productos')->assertUnauthorized();
         });
     });
+});
+
+it('ventas lee los productos y los publica, pero no los crea ni los edita', function () {
+    actuarComoProducto(Rol::Ventas);
+    $producto = Producto::factory()->create(['publicado' => false]);
+
+    getJson('/api/productos')->assertOk()->assertJsonFragment(['id' => $producto->id]);
+    getJson('/api/productos/opciones')->assertOk();
+
+    patchJson("/api/productos/{$producto->id}/publicacion", ['publicado' => true])
+        ->assertOk()
+        ->assertJsonPath('publicado', true);
+    expect($producto->fresh()->publicado)->toBeTrue();
+
+    postJson('/api/productos', [])->assertForbidden();
+    putJson("/api/productos/{$producto->id}", [])->assertForbidden();
+    deleteJson("/api/productos/{$producto->id}")->assertForbidden();
+});
+
+it('publicar exige un booleano', function () {
+    $producto = Producto::factory()->create();
+
+    actuarComoProducto(Rol::Administrador);
+    patchJson("/api/productos/{$producto->id}/publicacion", [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['publicado']);
+
 });

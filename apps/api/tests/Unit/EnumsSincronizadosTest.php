@@ -7,6 +7,7 @@ use App\Enums\EstadoLote;
 use App\Enums\EstadoPago;
 use App\Enums\EstadoPedido;
 use App\Enums\Rol;
+use App\Enums\Semaforo;
 use App\Enums\TipoEventoBitacora;
 use App\Enums\TipoImprevisto;
 use App\Enums\TipoMovimientoInsumo;
@@ -16,6 +17,7 @@ use App\Enums\TipoMovimientoProducto;
 $pares = [
     'ROLES' => ['ROLES', Rol::class],
     'ESTADOS_LOTE' => ['ESTADOS_LOTE', EstadoLote::class],
+    'SEMAFOROS' => ['SEMAFOROS', Semaforo::class],
     'CATEGORIAS_INSUMO' => ['CATEGORIAS_INSUMO', CategoriaInsumo::class],
     'TIPOS_MOVIMIENTO_INSUMO' => ['TIPOS_MOVIMIENTO_INSUMO', TipoMovimientoInsumo::class],
     'TIPOS_MOVIMIENTO_PRODUCTO' => ['TIPOS_MOVIMIENTO_PRODUCTO', TipoMovimientoProducto::class],

@@ -20,6 +20,18 @@ class AlmacenImprevistosMongo implements AlmacenImprevistos
             ->get();
     }
 
+    public function abiertosDeLotes(array $loteIds): Collection
+    {
+        if ($loteIds === []) {
+            return new Collection;
+        }
+
+        return Imprevisto::query()
+            ->whereIn('lote_id', $loteIds)
+            ->where('resuelto', false)
+            ->get();
+    }
+
     public function buscar(int $loteId, string $id): ?Imprevisto
     {
         return Imprevisto::query()

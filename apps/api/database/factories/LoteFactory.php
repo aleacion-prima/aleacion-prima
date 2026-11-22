@@ -19,7 +19,7 @@ class LoteFactory extends Factory
     public function definition(): array
     {
         return [
-            'codigo' => 'LOT-'.now()->format('Ymd').'-'.str_pad((string) fake()->unique()->numberBetween(1, 99), 2, '0', STR_PAD_LEFT),
+            'codigo' => 'LOT-'.now()->format('Ymd').'-'.str_pad((string) fake()->unique()->numberBetween(50, 99), 2, '0', STR_PAD_LEFT),
             'producto_id' => Producto::factory(),
             'cantidad_objetivo' => 20,
             'estado' => EstadoLote::Creado,

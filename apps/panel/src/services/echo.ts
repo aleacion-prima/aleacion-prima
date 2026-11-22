@@ -1,7 +1,7 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import type { ChannelAuthorizationCallback } from 'pusher-js';
-import { API_URL, cabecerasApi } from './api';
+import { API_URL, ES_MOVIL, cabecerasConToken } from './api';
 
 declare global {
   interface Window {
@@ -24,12 +24,15 @@ export const obtenerEcho = (): Echo<'reverb'> => {
     enabledTransports: ['ws', 'wss'],
     authorizer: (channel: { name: string }) => ({
       authorize: (socketId: string, callback: ChannelAuthorizationCallback) => {
-        void fetch(`${API_URL}/broadcasting/auth`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: cabecerasApi({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
-        })
+        void cabecerasConToken({ 'Content-Type': 'application/json' })
+          .then((headers) =>
+            fetch(`${API_URL}/broadcasting/auth`, {
+              method: 'POST',
+              credentials: ES_MOVIL ? 'omit' : 'include',
+              headers,
+              body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
+            }),
+          )
           .then(async (respuesta) => {
             if (!respuesta.ok) throw new Error(`Canal rechazado (${respuesta.status})`);
             callback(null, (await respuesta.json()) as Parameters<ChannelAuthorizationCallback>[1]);
