@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\ContactoPublicoResource;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class ContactoPublicoController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(): JsonResource
     {
-        return response()->json(config('contacto'));
+        return new ContactoPublicoResource(config('contacto'));
     }
 }

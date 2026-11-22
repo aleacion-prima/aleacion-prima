@@ -158,7 +158,7 @@ Sin autenticación. Solo rutas de lectura.
 Contrato de los campos (RNF-04):
 
 - Productos públicos: `id`, `nombre`, `especificaciones` y `disponible`. Solo se listan los productos publicados (RF-52).
-- Contacto: correo, teléfono y horario de atención del personal de ventas.
+- Contacto: `correo`, `telefono` y `horario` del personal de ventas, leídos de `config/contacto.php` (variables `VENTAS_CONTACTO_*`). El sitio público nunca escribe esos valores en su código.
 - Ninguna respuesta pública incluye precios, costos, tarifas, lotes ni existencias de insumos. Una prueba automatizada lo verifica en cada cambio.
 
 ## Tiempo real

@@ -2,20 +2,24 @@
 
 use function Pest\Laravel\getJson;
 
-it('devuelve los datos de contacto configurados sin precios', function () {
+it('devuelve el contacto de ventas configurado sin datos privados', function () {
     config()->set('contacto', [
-        'correo' => 'ventas.demo@aleacionprima.example',
-        'telefono' => '+52 55 0000 0000',
-        'horario' => 'Lunes a viernes, de 9:00 a 17:00',
+        'correo' => 'ventas@aleacionprima.com',
+        'telefono' => '+52 871 000 0000',
+        'horario' => 'Lunes a viernes, 07:00 a 17:00',
     ]);
 
-    getJson('/api/publico/contacto')
+    $respuesta = getJson('/api/publico/contacto')
         ->assertOk()
-        ->assertJson([
-            'correo' => 'ventas.demo@aleacionprima.example',
-            'telefono' => '+52 55 0000 0000',
-            'horario' => 'Lunes a viernes, de 9:00 a 17:00',
-        ])
-        ->assertJsonMissingPath('precio_mayoreo')
-        ->assertJsonMissingPath('precio_menudeo');
+        ->assertExactJson([
+            'correo' => 'ventas@aleacionprima.com',
+            'telefono' => '+52 871 000 0000',
+            'horario' => 'Lunes a viernes, 07:00 a 17:00',
+        ]);
+
+    $claves = collect($respuesta->json())
+        ->keys()
+        ->filter(fn (string $clave) => preg_match('/precio|costo|tarifa/i', $clave));
+
+    expect($claves)->toBeEmpty();
 });

@@ -1,0 +1,47 @@
+---
+const anio = 2026;
+---
+
+<footer class="pie">
+  <div class="pie__contenido">
+    <span>© {anio} Aleación Prima. Todos los derechos reservados.</span>
+    <a href="/aviso-privacidad">Aviso de privacidad</a>
+  </div>
+</footer>
+
+<style>
+  .pie {
+    border-top: 1px solid var(--ap-borde);
+    margin-top: 64px;
+  }
+
+  .pie__contenido {
+    align-items: center;
+    color: var(--ap-texto-secundario);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 16px;
+    justify-content: space-between;
+    line-height: 16px;
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: 24px 32px;
+  }
+
+  .pie a {
+    color: var(--q-primary);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .pie a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 720px) {
+    .pie__contenido {
+      padding: 24px 16px;
+    }
+  }
+</style>

@@ -3,51 +3,74 @@ import EstadoWebsocket from '../components/EstadoWebsocket.vue';
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout>
+<Layout titulo="Aleación Prima" seccion="inicio">
   <section class="hero">
-    <p class="eyebrow">Fundición y manufactura metalúrgica</p>
+    <p class="hero__etiqueta">Fundición y manufactura metalúrgica</p>
     <h1>Componentes confiables para la industria.</h1>
-    <p>Conoce nuestros productos y solicita una cotización con el equipo de ventas.</p>
-    <a class="boton" href="/cotizar">
+    <p class="hero__texto">
+      Conoce nuestros productos y solicita una cotización con el equipo de ventas.
+    </p>
+    <a class="hero__boton" href="/cotizar">
       Cotizar
     </a>
   </section>
-  <EstadoWebsocket client:load />
+
+  <section class="estado">
+    <EstadoWebsocket client:load />
+  </section>
 </Layout>
 
 <style>
   .hero {
-    max-width: 700px;
-    padding: 8rem 0;
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: 96px 24px 48px;
   }
 
-  .eyebrow {
-    color: #176b87;
-    font-weight: 700;
+  .hero__etiqueta {
+    color: var(--q-primary);
+    font-size: 12px;
+    font-weight: 500;
     letter-spacing: 0.08em;
+    line-height: 16px;
+    margin: 0;
     text-transform: uppercase;
   }
 
   h1 {
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    line-height: 1;
-    margin: 1rem 0;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 32px;
+    margin: 12px 0 0;
+    max-width: 560px;
   }
 
-  p {
-    color: #5d6873;
-    font-size: 1.2rem;
-    line-height: 1.6;
+  .hero__texto {
+    color: var(--ap-texto-secundario);
+    margin: 12px 0 0;
+    max-width: 480px;
   }
 
-  .boton {
-    background: #176b87;
-    border-radius: 0.4rem;
-    color: white;
-    display: inline-block;
-    font-weight: 700;
-    margin-top: 1rem;
-    padding: 0.8rem 1.5rem;
+  .hero__boton {
+    background: var(--q-primary);
+    border-radius: 8px;
+    color: var(--ap-superficie);
+    display: inline-flex;
+    font-weight: 500;
+    margin-top: 24px;
+    padding: 12px 20px;
     text-decoration: none;
+  }
+
+  .hero__boton:hover {
+    background: var(--q-accent);
+  }
+
+  .estado {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: 0 24px 48px;
   }
 </style>
