@@ -3,9 +3,18 @@ import { onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import type { Notificacion } from '@aleacion-prima/types';
+import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 import PaginacionTabla from '@/components/comunes/PaginacionTabla.vue';
 import { useApi } from '@/services/api';
 import { useNotificaciones } from '@/composables/notificaciones';
+import {
+  ESTILOS_NOTIFICACION,
+  accionDeNotificacion,
+  detalleDeNotificacion,
+  fechaDeNotificacion,
+  rutaDeNotificacion,
+  tituloDeNotificacion,
+} from '@/catalogos/notificaciones';
 
 interface RespuestaPaginada {
   data: Notificacion[];
@@ -13,32 +22,28 @@ interface RespuestaPaginada {
 }
 
 type FiltroTipo = 'todos' | Notificacion['tipo'];
-type FiltroLectura = 'todas' | 'no_leidas' | 'leidas';
+
+const FILTROS_TIPO: { value: FiltroTipo; etiqueta: string }[] = [
+  { value: 'todos', etiqueta: 'Todas' },
+  { value: 'imprevisto', etiqueta: 'Imprevistos' },
+  { value: 'stock_minimo', etiqueta: 'Stock mínimo' },
+  { value: 'lote_por_confirmar', etiqueta: 'Lotes por confirmar' },
+];
 
 const $q = useQuasar();
 const router = useRouter();
-const { pendientes, actualizar } = useNotificaciones();
+const { pendientes, actualizar, marcarLeida } = useNotificaciones();
 const filas = ref<Notificacion[]>([]);
 const cargando = ref(true);
 const tipo = ref<FiltroTipo>('todos');
-const lectura = ref<FiltroLectura>('todas');
 const pagina = ref(1);
 const porPagina = ref(15);
 const total = ref(0);
-
-const etiquetaTipo: Record<FiltroTipo, string> = {
-  todos: 'Todos los tipos',
-  imprevisto: 'Imprevistos',
-  stock_minimo: 'Stock mínimo',
-  lote_por_confirmar: 'Por confirmar',
-};
 
 const cargar = async (): Promise<void> => {
   cargando.value = true;
   const parametros = new URLSearchParams({ page: String(pagina.value) });
   if (tipo.value !== 'todos') parametros.set('tipo', tipo.value);
-  if (lectura.value === 'no_leidas') parametros.set('no_leidas', '1');
-  if (lectura.value === 'leidas') parametros.set('leidas', '1');
 
   const respuesta = await useApi<RespuestaPaginada>(
     `/notificaciones?${parametros}`,
@@ -54,14 +59,9 @@ const cargar = async (): Promise<void> => {
 };
 
 const marcar = async (notificacion: Notificacion): Promise<void> => {
-  if (notificacion.leida) return;
-  const respuesta = await useApi(`/notificaciones/${notificacion.id}/leida`).patch().text();
-  if (respuesta.error.value) {
+  if (!(await marcarLeida(notificacion))) {
     $q.notify({ type: 'negative', message: 'No se pudo marcar la notificación' });
-    return;
   }
-  notificacion.leida = true;
-  actualizar(Math.max(0, pendientes.value - 1));
 };
 
 const marcarTodas = async (): Promise<void> => {
@@ -70,24 +70,19 @@ const marcarTodas = async (): Promise<void> => {
     $q.notify({ type: 'negative', message: 'No se pudieron marcar las notificaciones' });
     return;
   }
-  filas.value.forEach((notificacion) => {
-    notificacion.leida = true;
-  });
   actualizar(0);
+  // Se recarga para que el filtro y la paginación reflejen lo que quedó en la API.
+  pagina.value = 1;
+  await cargar();
 };
 
 const abrir = async (notificacion: Notificacion): Promise<void> => {
   await marcar(notificacion);
-  if (notificacion.codigo) {
-    await router.push(
-      notificacion.tipo === 'stock_minimo'
-        ? '/inventario/insumos'
-        : `/lotes/${encodeURIComponent(notificacion.codigo)}`,
-    );
-  }
+  const ruta = rutaDeNotificacion(notificacion);
+  if (ruta) await router.push(ruta);
 };
 
-watch([tipo, lectura], () => {
+watch(tipo, () => {
   pagina.value = 1;
   void cargar();
 });
@@ -97,86 +92,165 @@ onMounted(() => void cargar());
 
 <template>
   <q-page padding>
-    <div class="row items-start justify-between q-mb-lg">
+    <div class="row items-start justify-between q-mb-lg q-col-gutter-y-sm">
       <div>
-        <div class="text-h4">Notificaciones</div>
-        <div class="text-secundario q-mt-xs">Avisos importantes de la operación.</div>
+        <div class="text-h4">Centro de notificaciones</div>
+        <div class="text-secundario q-mt-xs">Imprevistos, stock mínimo y lotes por confirmar</div>
       </div>
       <q-btn
-        flat
+        outline
         no-caps
+        color="secondary"
+        icon="check_circle_outline"
         label="Marcar todas como leídas"
+        class="boton-marcar"
         :disable="pendientes === 0"
         @click="marcarTodas"
       />
     </div>
 
-    <div class="row q-col-gutter-md q-mb-md">
-      <q-select
-        v-model="tipo"
-        outlined
-        dense
-        emit-value
-        map-options
-        :options="Object.entries(etiquetaTipo).map(([value, label]) => ({ value, label }))"
-        label="Tipo"
-        class="col-12 col-sm-4"
+    <q-tabs
+      v-model="tipo"
+      no-caps
+      align="left"
+      active-color="primary"
+      indicator-color="primary"
+      class="tabs-tipo q-mb-md"
+    >
+      <q-tab
+        v-for="filtro in FILTROS_TIPO"
+        :key="filtro.value"
+        :name="filtro.value"
+        :label="filtro.etiqueta"
       />
-      <q-select
-        v-model="lectura"
-        outlined
-        dense
-        emit-value
-        map-options
-        :options="[
-          { value: 'todas', label: 'Todas' },
-          { value: 'no_leidas', label: 'No leídas' },
-          { value: 'leidas', label: 'Leídas' },
-        ]"
-        label="Estado"
-        class="col-12 col-sm-4"
-      />
+    </q-tabs>
+
+    <div v-if="cargando && !filas.length" class="q-pa-xl flex flex-center">
+      <q-spinner color="primary" size="40px" />
     </div>
 
-    <q-card flat bordered>
-      <q-list separator>
-        <q-item
-          v-for="notificacion in filas"
-          :key="notificacion.id"
-          clickable
-          @click="abrir(notificacion)"
-        >
-          <q-item-section avatar
-            ><q-icon
-              :name="notificacion.leida ? 'notifications_none' : 'notifications_active'"
-              :color="notificacion.leida ? 'grey' : 'primary'"
-          /></q-item-section>
-          <q-item-section>
-            <q-item-label :class="{ 'text-weight-medium': !notificacion.leida }">{{
-              notificacion.mensaje
-            }}</q-item-label>
-            <q-item-label caption>{{ notificacion.fecha }}</q-item-label>
-          </q-item-section>
-          <q-item-section side
-            ><q-badge v-if="!notificacion.leida" color="accent" text-color="dark"
-              >Nueva</q-badge
-            ></q-item-section
+    <EstadoVacio
+      v-else-if="!filas.length"
+      icono="notifications_off"
+      titulo="No hay notificaciones"
+      descripcion="No hay avisos que coincidan con estos filtros."
+    />
+
+    <template v-else>
+      <q-card
+        v-for="notificacion in filas"
+        :key="notificacion.id"
+        flat
+        bordered
+        class="notificacion q-mb-md cursor-pointer"
+        :class="{ 'notificacion--leida': notificacion.leida }"
+        role="button"
+        tabindex="0"
+        @click="abrir(notificacion)"
+        @keyup.enter="abrir(notificacion)"
+      >
+        <q-card-section>
+          <div class="row items-start justify-between no-wrap q-gutter-md">
+            <div class="text-caption text-secundario">
+              {{ fechaDeNotificacion(notificacion.fecha) }}
+            </div>
+            <q-badge
+              :color="ESTILOS_NOTIFICACION[notificacion.tipo].color"
+              text-color="white"
+              class="badge-tipo"
+            >
+              {{ ESTILOS_NOTIFICACION[notificacion.tipo].etiqueta }}
+            </q-badge>
+          </div>
+          <div class="notificacion__titulo q-mt-sm">
+            {{ tituloDeNotificacion(notificacion) }}
+          </div>
+          <div
+            v-if="detalleDeNotificacion(notificacion)"
+            class="text-body2 text-secundario q-mt-xs"
           >
-        </q-item>
-        <q-item v-if="!cargando && !filas.length"
-          ><q-item-section class="text-center text-secundario"
-            >No hay notificaciones.</q-item-section
-          ></q-item
-        >
-      </q-list>
-      <div class="q-pa-md">
-        <PaginacionTabla
-          v-model:pagina="pagina"
-          :por-pagina="porPagina"
-          :total="total"
-          sustantivo="notificaciones"
-        />
-      </div>
-    </q-card>
+            {{ detalleDeNotificacion(notificacion) }}
+          </div>
+          <div class="row justify-end q-mt-md">
+            <q-btn
+              outline
+              no-caps
+              color="secondary"
+              :label="accionDeNotificacion(notificacion)"
+              class="boton-ver"
+              @click.stop="abrir(notificacion)"
+            />
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <PaginacionTabla
+        v-if="filas.length"
+        v-model:pagina="pagina"
+        :por-pagina="porPagina"
+        :total="total"
+        sustantivo="notificaciones"
+        class="q-mt-md"
+      />
+    </template>
   </q-page>
 </template>
+
+<style scoped lang="scss">
+.tabs-tipo {
+  :deep(.q-tab) {
+    min-height: 40px;
+    padding: 0 12px;
+    text-transform: lowercase;
+  }
+
+  :deep(.q-tab__label) {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  :deep(.q-tab__indicator) {
+    height: 2px;
+  }
+}
+
+.notificacion {
+  background: white;
+  border-radius: 12px;
+  border-color: $acero-claro;
+  transition:
+    border-color $duracion-rapida ease,
+    box-shadow $duracion-rapida ease;
+
+  &:hover {
+    border-color: $grafito-medio;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+
+  &--leida {
+    opacity: 0.7;
+  }
+}
+
+.notificacion__titulo {
+  font-family: $fuente-titulos;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: $dark;
+}
+
+.badge-tipo {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.boton-marcar,
+.boton-ver {
+  border-radius: 8px;
+}
+</style>
