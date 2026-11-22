@@ -47,6 +47,11 @@ const rutasPanel: RouteRecordRaw[] = [
         component: () => import('@/pages/usuarios/UsuariosPage.vue'),
         meta: { roles: ['administrador'] },
       },
+      {
+        path: 'notificaciones',
+        component: () => import('@/pages/notificaciones/NotificacionesPage.vue'),
+        meta: { roles: ['administrador'] },
+      },
       { path: 'mi-cuenta', component: () => import('@/pages/cuenta/MiCuentaPage.vue') },
       {
         path: 'inventario/insumos',

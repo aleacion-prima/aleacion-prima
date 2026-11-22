@@ -25,6 +25,14 @@ class NotificacionController extends Controller
             $consulta->whereNull('read_at');
         }
 
+        if ($request->filled('tipo')) {
+            $consulta->where('data->tipo', $request->string('tipo')->toString());
+        }
+
+        if ($request->boolean('leidas')) {
+            $consulta->whereNotNull('read_at');
+        }
+
         return NotificacionResource::collection($consulta->paginate(15));
     }
 

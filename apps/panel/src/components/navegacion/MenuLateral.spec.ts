@@ -30,11 +30,12 @@ describe('MenuLateral', () => {
     expect(texto).not.toContain('Cotizaciones');
   });
 
-  it('al encargado solo le muestra su área, lotes y notificaciones', () => {
+  it('al encargado solo le muestra su área y lotes', () => {
     const wrapper = montar('encargado');
 
     expect(wrapper.text()).toContain('Mi área');
     expect(wrapper.text()).not.toContain('Catálogos');
-    expect(wrapper.findAll('.q-item')).toHaveLength(3);
+    expect(wrapper.text()).not.toContain('Notificaciones');
+    expect(wrapper.findAll('.q-item')).toHaveLength(2);
   });
 });

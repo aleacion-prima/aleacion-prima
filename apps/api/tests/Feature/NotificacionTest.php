@@ -76,17 +76,26 @@ it('puede enviar la notificación de imprevisto a un administrador', function ()
     });
 });
 
-it('lista las notificaciones del administrador, paginadas y filtrando no leídas', function () {
+it('lista las notificaciones del administrador, paginadas y con filtros', function () {
     $admin = admin();
     $insumo = Insumo::factory()->create();
-    $admin->notify(new StockMinimoBajo($insumo));
+    $lote = Lote::factory()->create();
+
     $admin->notify(new StockMinimoBajo($insumo));
     $admin->unreadNotifications->first()?->markAsRead();
+    $admin->notify(new LotePorConfirmar($lote));
+    $admin->notify(new ImprevistoRegistrado('LOT-20260101-01', 'Falla de máquina'));
 
     Sanctum::actingAs($admin, ['*']);
 
-    getJson('/api/notificaciones')->assertOk()->assertJsonCount(2, 'data');
-    getJson('/api/notificaciones?no_leidas=1')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones')->assertOk()->assertJsonCount(3, 'data');
+    getJson('/api/notificaciones?no_leidas=1')->assertOk()->assertJsonCount(2, 'data');
+    getJson('/api/notificaciones?leidas=1')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=stock_minimo')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=lote_por_confirmar')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=imprevisto')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=stock_minimo&leidas=1')->assertOk()->assertJsonCount(1, 'data');
+    getJson('/api/notificaciones?tipo=stock_minimo&no_leidas=1')->assertOk()->assertJsonCount(0, 'data');
 });
 
 it('marca una notificación como leída', function () {

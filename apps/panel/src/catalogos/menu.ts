@@ -62,7 +62,6 @@ export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
       titulo: 'Catálogos',
       elementos: [{ etiqueta: 'Productos', ruta: '/productos', icono: 'category' }],
     },
-    notificaciones,
     ventas,
   ],
   encargado: [
@@ -72,7 +71,6 @@ export const MENU_POR_ROL: Record<Rol, SeccionMenu[]> = {
         { etiqueta: 'Lotes', ruta: '/lotes', icono: 'precision_manufacturing' },
       ],
     },
-    notificaciones,
   ],
   cliente: [
     {
