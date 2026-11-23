@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import LogoMarca from '@/components/navegacion/LogoMarca.vue';
 import { correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
@@ -28,6 +29,7 @@ const entrar = async (): Promise<void> => {
 <template>
   <q-page class="acceso-movil">
     <q-form class="acceso-movil__formulario" @submit="entrar">
+      <LogoMarca :tamano="56" class="self-center" />
       <h1 class="acceso-movil__marca">ALEACIÓN PRIMA</h1>
 
       <q-input

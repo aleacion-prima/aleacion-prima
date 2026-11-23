@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import LogoMarca from '@/components/navegacion/LogoMarca.vue';
 import { coincideCon, contrasenaSegura, requerido } from '@/composables/reglas';
 
 const route = useRoute();
@@ -41,6 +42,7 @@ const guardar = async (): Promise<void> => {
     <q-card flat bordered class="q-pa-xl" style="width: 400px">
       <q-form v-if="enlaceValido" class="column q-gutter-md" @submit="guardar">
         <div class="text-center">
+          <LogoMarca :tamano="56" />
           <div class="text-h5 text-weight-bold">ALEACIÓN PRIMA</div>
           <div class="text-secundario">Nueva contraseña</div>
         </div>

@@ -44,15 +44,29 @@ useCatalogoEnVivo({
   <p v-else-if="!productos.length" class="aviso">Aún no hay productos publicados.</p>
   <template v-else>
     <section v-if="disponibles.length" class="grupo">
-      <h2 class="grupo__titulo">Disponibles</h2>
+      <h2 class="grupo__titulo">
+        Disponibles <span>{{ disponibles.length }}</span>
+      </h2>
       <div class="cuadricula">
-        <TarjetaProducto v-for="producto in disponibles" :key="producto.id" :producto="producto" />
+        <TarjetaProducto
+          v-for="(producto, i) in disponibles"
+          :key="producto.id"
+          :producto="producto"
+          :style="{ '--i': i }"
+        />
       </div>
     </section>
     <section v-if="sobrePedido.length" class="grupo">
-      <h2 class="grupo__titulo">Sobre pedido</h2>
+      <h2 class="grupo__titulo">
+        Sobre pedido <span>{{ sobrePedido.length }}</span>
+      </h2>
       <div class="cuadricula">
-        <TarjetaProducto v-for="producto in sobrePedido" :key="producto.id" :producto="producto" />
+        <TarjetaProducto
+          v-for="(producto, i) in sobrePedido"
+          :key="producto.id"
+          :producto="producto"
+          :style="{ '--i': i + disponibles.length }"
+        />
       </div>
     </section>
   </template>
@@ -60,16 +74,47 @@ useCatalogoEnVivo({
 
 <style scoped>
 .grupo + .grupo {
-  margin-top: 40px;
+  margin-top: 56px;
 }
 
 .grupo__titulo {
-  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding-left: 14px;
+  border-left: 4px solid var(--q-primary);
   font-family: var(--fuente-titulos);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 28px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 30px;
+  text-transform: uppercase;
   color: var(--q-dark);
+}
+
+.grupo__titulo span {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--ap-borde);
+  font-family: Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--ap-texto-secundario);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cuadricula > * {
+    animation: subir 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 80ms + 0.15s);
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
 }
 
 .cuadricula {

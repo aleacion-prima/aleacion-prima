@@ -1,13 +1,384 @@
 ---
-import EstadoWebsocket from '../components/EstadoWebsocket.vue';
-import Welcome from '../components/Welcome.astro';
+import DatosPlanta from '../components/inicio/DatosPlanta.astro';
+import EncabezadoBloque from '../components/inicio/EncabezadoBloque.astro';
+import PlanoDisco from '../components/inicio/PlanoDisco.astro';
+import MaterialesHierro from '../components/inicio/MaterialesHierro.astro';
+import ProcesoFundicion from '../components/inicio/ProcesoFundicion.astro';
+import ProductosDestacados from '../components/inicio/ProductosDestacados.vue';
+import SobreFabrica from '../components/inicio/SobreFabrica.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-  <EstadoWebsocket client:load />
-  <Welcome />
+<Layout titulo="Aleación Prima" seccion="inicio">
+  <script is:inline>
+    document.documentElement.classList.add('con-animaciones');
+  </script>
+  <section class="portada">
+    <div class="portada__texto">
+      <h1>
+        <span>Piezas de hierro</span>
+        <span>gris y nodular,</span>
+        <span class="portada__acento">lote por lote</span>
+      </h1>
+      <p>
+        Fundimos en Torreón, Coahuila, piezas en bruto para refaccionarias, fabricantes de
+        maquinaria agrícola y talleres. Cada colada queda registrada de la arena a la entrega.
+      </p>
+      <div class="portada__acciones">
+        <a class="boton portada__boton" href="/catalogo">
+          Ver catálogo
+        </a>
+        <a class="portada__enlace" href="#proceso">
+          Cómo fabricamos
+        </a>
+      </div>
+    </div>
+    <div class="portada__plano">
+      <PlanoDisco />
+    </div>
+  </section>
+
+  <DatosPlanta />
+
+  <section class="bloque">
+    <EncabezadoBloque
+      numero="01"
+      titulo="Lo que fundimos"
+      texto="Primero las piezas que tenemos en existencia."
+      enlace={{ href: '/catalogo', texto: 'Ver todo el catálogo' }}
+    />
+    <div class="destacados">
+      <ProductosDestacados client:load />
+    </div>
+  </section>
+
+  <ProcesoFundicion />
+
+  <MaterialesHierro />
+
+  <SobreFabrica />
+
+  <section class="llamado">
+    <div class="llamado__contenido" data-revelar>
+      <h2>
+        ¿Una pieza, una serie,
+        <br />
+        <span>un plano?</span>
+      </h2>
+      <div class="llamado__acciones">
+        <p>Escríbele a ventas con la pieza, el material y la cantidad.</p>
+        <div>
+          <a class="boton llamado__boton" href="/cotizar">
+            Cotizar
+          </a>
+          <a class="boton llamado__secundario" href="/catalogo">
+            Ver catálogo
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
 </Layout>
+
+<script>
+  const observador = new IntersectionObserver(
+    (entradas) => {
+      for (const entrada of entradas) {
+        if (!entrada.isIntersecting) continue;
+        entrada.target.classList.add('revelado');
+        observador.unobserve(entrada.target);
+      }
+    },
+    { threshold: 0.2 },
+  );
+  document.querySelectorAll('[data-revelar]').forEach((elemento) => observador.observe(elemento));
+</script>
+
+<style is:global>
+  .bloque {
+    padding: 80px 32px 0;
+    scroll-margin-top: 16px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .con-animaciones [data-revelar] {
+      opacity: 0;
+      translate: 0 20px;
+      transition:
+        opacity 0.6s ease calc(var(--i, 0) * 70ms),
+        translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * 70ms);
+    }
+
+    .con-animaciones [data-revelar].revelado {
+      opacity: 1;
+      translate: none;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .bloque {
+      padding: 56px 16px 0;
+    }
+  }
+</style>
+
+<style>
+  .portada {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 56px;
+    padding: 64px 32px 72px;
+    background: var(--q-dark);
+    color: var(--ap-superficie);
+  }
+
+  .portada__texto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  h1 {
+    font-size: clamp(48px, 7vw, 104px);
+    font-weight: 700;
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  h1 span {
+    display: block;
+  }
+
+  .portada__acento {
+    color: var(--q-accent);
+  }
+
+  .portada p {
+    max-width: 520px;
+    margin: 0;
+    font-size: 17px;
+    line-height: 26px;
+    color: #cbd5e1;
+  }
+
+  .portada__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .portada__boton,
+  .llamado__boton {
+    min-height: 48px;
+    padding: 12px 28px;
+    font-size: 15px;
+    background: var(--q-primary);
+    color: var(--ap-superficie);
+    transition: background 0.2s ease;
+  }
+
+  .portada__boton:hover {
+    background: var(--q-accent);
+  }
+
+  .portada__enlace {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ap-superficie);
+    text-decoration: underline;
+    text-decoration-color: rgb(248 250 252 / 35%);
+    text-underline-offset: 5px;
+    transition: text-decoration-color 0.2s ease;
+  }
+
+  .portada__enlace:hover {
+    text-decoration-color: var(--q-accent);
+  }
+
+  .portada__boton:focus-visible,
+  .portada__enlace:focus-visible,
+  .llamado__boton:focus-visible,
+  .llamado__secundario:focus-visible {
+    outline: 2px solid var(--q-accent);
+    outline-offset: 3px;
+  }
+
+  .portada__plano {
+    width: 100%;
+    max-width: 560px;
+    justify-self: end;
+  }
+
+  .destacados {
+    padding-top: 32px;
+  }
+
+  .llamado {
+    margin-top: 96px;
+    padding: 64px 32px;
+    background: var(--q-dark);
+    color: var(--ap-superficie);
+  }
+
+  .llamado__contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 40px;
+  }
+
+  .llamado h2 {
+    font-size: clamp(40px, 5.6vw, 80px);
+    font-weight: 700;
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .llamado h2 span {
+    color: var(--q-accent);
+  }
+
+  .llamado__acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-left: 32px;
+    border-left: 1px solid #334155;
+  }
+
+  .llamado__acciones p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    color: #cbd5e1;
+  }
+
+  .llamado__acciones div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .llamado__boton:hover {
+    background: var(--q-accent);
+  }
+
+  .llamado__secundario {
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 15px;
+    border: 1px solid #475569;
+    color: var(--ap-superficie);
+    transition: border-color 0.2s ease;
+  }
+
+  .llamado__secundario:hover {
+    border-color: var(--ap-superficie);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    h1 span {
+      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    }
+
+    h1 span:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+
+    h1 span:nth-child(3) {
+      animation-delay: 0.16s;
+    }
+
+    .portada p,
+    .portada__acciones {
+      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.26s backwards;
+    }
+
+    .portada__plano {
+      animation: entrar 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s backwards;
+    }
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .portada__texto,
+      .portada__plano > :global(*) {
+        animation: alejarse linear both;
+        animation-timeline: view();
+        animation-range: exit 0% exit 100%;
+      }
+
+      .portada__plano > :global(*) {
+        animation-name: alejarse-lento;
+      }
+
+      .llamado h2 {
+        animation: acercarse linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 45%;
+      }
+    }
+  }
+
+  @keyframes alejarse {
+    to {
+      opacity: 0.2;
+      transform: translateY(-120px);
+    }
+  }
+
+  @keyframes alejarse-lento {
+    to {
+      transform: translateY(-40px) scale(0.96);
+    }
+  }
+
+  @keyframes acercarse {
+    from {
+      transform: translateX(-6%);
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .portada {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+
+    .portada__plano {
+      justify-self: start;
+    }
+
+    .llamado__contenido {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .llamado__acciones {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .portada {
+      padding: 48px 16px 56px;
+    }
+
+    .llamado {
+      margin-top: 72px;
+      padding: 48px 16px;
+    }
+  }
+</style>

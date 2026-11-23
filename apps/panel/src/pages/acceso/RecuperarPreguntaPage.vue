@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import LogoMarca from '@/components/navegacion/LogoMarca.vue';
 import { coincideCon, contrasenaSegura, correo, requerido } from '@/composables/reglas';
 
 const router = useRouter();
@@ -51,6 +52,7 @@ const restablecer = async (): Promise<void> => {
   <q-page class="flex flex-center">
     <q-card flat bordered class="q-pa-xl" style="width: 400px">
       <div class="text-center q-mb-md">
+        <LogoMarca :tamano="56" />
         <div class="text-h5 text-weight-bold">ALEACIÓN PRIMA</div>
         <div class="text-secundario">Recuperar con pregunta de seguridad</div>
       </div>

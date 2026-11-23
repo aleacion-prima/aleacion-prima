@@ -1,0 +1,81 @@
+---
+const datos = [
+  { clave: 'Materiales', valor: 'Hierro gris ASTM A48 · nodular ASTM A536' },
+  { clave: 'Horno', valor: 'Inducción, 750 kg por carga' },
+  { clave: 'Trazabilidad', valor: 'Ficha por lote en 6 etapas' },
+  { clave: 'Planta', valor: 'Torreón, Coahuila · L–V 07:00–17:00' },
+];
+---
+
+<dl class="datos">
+  {datos.map(({ clave, valor }, i) => (
+    <div class="dato" data-revelar style={`--i: ${i}`}>
+      <dt>{clave}</dt>
+      <dd>{valor}</dd>
+    </div>
+  ))}
+</dl>
+
+<style>
+  .datos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    background: var(--ap-superficie);
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .dato {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 32px;
+  }
+
+  .dato + .dato {
+    border-left: 1px solid #cbd5e1;
+  }
+
+  dt {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--ap-texto-secundario);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+  }
+
+  @media (max-width: 1023px) {
+    .datos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dato:nth-child(3) {
+      border-left: 0;
+    }
+
+    .dato:nth-child(n + 3) {
+      border-top: 1px solid #cbd5e1;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .datos {
+      grid-template-columns: 1fr;
+    }
+
+    .dato {
+      padding: 16px;
+    }
+
+    .dato + .dato {
+      border-top: 1px solid #cbd5e1;
+      border-left: 0;
+    }
+  }
+</style>
