@@ -1,52 +1,53 @@
 ---
 const materiales = [
   {
+    clave: 'gris',
     nombre: 'Hierro gris',
     grado: 'Clase 30 · ASTM A48',
-    texto: 'Grafito laminar. Buena absorción de vibraciones y disipación de calor.',
+    estructura: 'Grafito laminar',
+    texto: 'Buena absorción de vibraciones y disipación de calor.',
     piezas: ['Discos de freno', 'Poleas industriales'],
   },
   {
+    clave: 'nodular',
     nombre: 'Hierro nodular',
     grado: '65-45-12 y 80-55-06 · ASTM A536',
-    texto: 'Grafito esferoidal. Mayor resistencia y ductilidad para servicio pesado.',
+    estructura: 'Grafito esferoidal',
+    texto: 'Mayor resistencia y ductilidad para servicio pesado.',
     piezas: ['Cajas de transmisión', 'Carcasas de precisión', 'Soportes de mangueta agrícola'],
   },
 ];
 ---
 
-<section class="materiales">
-  <h2 data-revelar>Materiales</h2>
+<section class="bloque">
+  <header class="bloque__encabezado" data-revelar>
+    <div>
+      <h2>Materiales</h2>
+      <p>Las dos familias de hierro que fundimos y en qué piezas las usamos.</p>
+    </div>
+  </header>
   <div class="materiales__lista">
-    {materiales.map(({ nombre, grado, texto, piezas }, i) => (
+    {materiales.map(({ clave, nombre, grado, estructura, texto, piezas }, i) => (
       <article class="material" data-revelar style={`--i: ${i}`}>
-        <h3>{nombre}</h3>
-        <span class="material__grado">{grado}</span>
-        <p>{texto}</p>
-        <ul>
-          {piezas.map((pieza) => (
-            <li>{pieza}</li>
-          ))}
-        </ul>
+        <div class={`material__micro material__micro--${clave}`} aria-hidden="true">
+          <span class="material__lente">{estructura}</span>
+        </div>
+        <div class="material__cuerpo">
+          <h3>{nombre}</h3>
+          <span class="material__grado">{grado}</span>
+          <p>{texto}</p>
+          <ul>
+            {piezas.map((pieza) => (
+              <li>{pieza}</li>
+            ))}
+          </ul>
+        </div>
       </article>
     ))}
   </div>
 </section>
 
 <style>
-  .materiales {
-    padding: 0 32px 40px;
-  }
-
-  h2 {
-    margin: 0 0 24px;
-    font-family: var(--fuente-titulos);
-    font-size: 28px;
-    font-weight: 600;
-    line-height: 32px;
-    text-align: center;
-  }
-
   .materiales__lista {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -54,30 +55,105 @@ const materiales = [
   }
 
   .material {
-    transition:
-      transform 0.25s ease,
-      box-shadow 0.25s ease;
+    overflow: hidden;
+    background: var(--ap-superficie);
+    border: 1px solid var(--ap-borde);
+    border-radius: 12px;
+    transition: border-color 0.2s ease;
+  }
+
+  .material:hover {
+    border-color: var(--q-secondary);
+  }
+
+  .material__micro {
+    position: relative;
+    height: 132px;
+    background-color: #d6dbe1;
+    transition: background-size 0.6s ease;
+  }
+
+  .material__micro--gris {
+    background-image:
+      repeating-linear-gradient(
+        28deg,
+        transparent 0 14px,
+        rgb(30 41 59 / 55%) 14px 16px,
+        transparent 16px 31px
+      ),
+      repeating-linear-gradient(
+        -36deg,
+        transparent 0 22px,
+        rgb(30 41 59 / 45%) 22px 24px,
+        transparent 24px 47px
+      ),
+      repeating-linear-gradient(
+        74deg,
+        transparent 0 30px,
+        rgb(30 41 59 / 35%) 30px 31px,
+        transparent 31px 58px
+      );
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%;
+  }
+
+  .material__micro--nodular {
+    background-image:
+      radial-gradient(circle, rgb(30 41 59 / 75%) 0 5px, transparent 6px),
+      radial-gradient(circle, rgb(30 41 59 / 60%) 0 3.5px, transparent 4.5px),
+      radial-gradient(circle, rgb(30 41 59 / 50%) 0 2.5px, transparent 3.5px);
+    background-size:
+      38px 34px,
+      26px 30px,
+      18px 22px;
+    background-position:
+      0 0,
+      11px 9px,
+      5px 15px;
+  }
+
+  .material__micro::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 40%, rgb(15 23 42 / 35%) 100%);
+  }
+
+  .material:hover .material__micro--nodular {
+    background-size:
+      42px 38px,
+      29px 33px,
+      20px 24px;
+  }
+
+  .material__lente {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    z-index: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgb(15 23 42 / 80%);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ap-superficie);
+  }
+
+  .material__cuerpo {
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 24px;
-    background: var(--ap-superficie);
-    border: 1px solid var(--ap-borde);
-    border-top: 4px solid var(--q-primary);
-    border-radius: 12px;
-  }
-
-  .material:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgb(15 23 42 / 10%);
   }
 
   h3 {
     margin: 0;
     font-family: var(--fuente-titulos);
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
-    line-height: 24px;
+    line-height: 28px;
   }
 
   .material__grado {
@@ -95,10 +171,22 @@ const materiales = [
   }
 
   ul {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 14px;
-    line-height: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    padding: 4px 10px;
+    border: 1px solid var(--ap-borde);
+    border-radius: 999px;
+    background: var(--ap-fondo);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
   }
 
   @media (max-width: 767px) {

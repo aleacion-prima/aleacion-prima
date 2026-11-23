@@ -1,17 +1,20 @@
 ---
 const cifras = [
-  { valor: '750 kg', texto: 'por colada en horno de inducción' },
-  { valor: '6', texto: 'etapas de proceso por lote' },
-  { valor: '2', texto: 'tipos de hierro: gris y nodular' },
-  { valor: '100 %', texto: 'de los lotes con trazabilidad' },
+  { numero: 750, unidad: 'kg', texto: 'de metal por colada' },
+  { numero: 6, unidad: '', texto: 'etapas de proceso por lote' },
+  { numero: 2, unidad: '', texto: 'tipos de hierro: gris y nodular' },
+  { numero: 20, unidad: '', texto: 'personas en un turno' },
 ];
 ---
 
-<section class="cifras">
-  {cifras.map(({ valor, texto }, i) => (
-    <div class="cifra" data-revelar style={`--i: ${i}`}>
-      <strong>{valor}</strong>
-      <span>{texto}</span>
+<section class="cifras" data-revelar>
+  {cifras.map(({ numero, unidad, texto }) => (
+    <div class="cifra">
+      <strong>
+        <span data-contar={numero}>{numero}</span>
+        {unidad && <small>{unidad}</small>}
+      </strong>
+      <span class="cifra__texto">{texto}</span>
     </div>
   ))}
 </section>
@@ -20,36 +23,62 @@ const cifras = [
   .cifras {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
-    padding: 32px;
-    background: var(--q-secondary);
+    background: var(--ap-superficie);
+    border-bottom: 1px solid var(--ap-borde);
   }
 
   .cifra {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 4px;
-    text-align: center;
+    padding: 28px 32px;
+  }
+
+  .cifra + .cifra {
+    border-left: 1px solid var(--ap-borde);
   }
 
   strong {
-    font-family: var(--fuente-codigo);
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 40px;
-    color: var(--q-accent);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: var(--fuente-titulos);
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
 
-  span {
+  small {
+    font-size: 22px;
+    color: var(--ap-texto-secundario);
+  }
+
+  .cifra__texto {
     font-size: 14px;
     line-height: 20px;
-    color: var(--ap-borde);
+    color: var(--ap-texto-secundario);
   }
 
   @media (max-width: 767px) {
     .cifras {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cifra {
+      padding: 20px 16px;
+    }
+
+    .cifra:nth-child(3) {
+      border-left: 0;
+    }
+
+    .cifra:nth-child(n + 3) {
+      border-top: 1px solid var(--ap-borde);
+    }
+
+    strong {
+      font-size: 36px;
     }
   }
 </style>

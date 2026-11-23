@@ -6,7 +6,7 @@ const sectores = [
 ];
 ---
 
-<section class="fabrica">
+<section class="bloque fabrica">
   <div class="fabrica__info" data-revelar>
     <h2>Sobre la fábrica</h2>
     <p>
@@ -20,20 +20,23 @@ const sectores = [
       ))}
     </ul>
     <dl>
-      <dt>Ubicación</dt>
-      <dd>Torreón, Coahuila</dd>
-      <dt>Horario</dt>
-      <dd>Lunes a viernes, 07:00 a 17:00</dd>
+      <div>
+        <dt>Ubicación</dt>
+        <dd>Torreón, Coahuila</dd>
+      </div>
+      <div>
+        <dt>Horario</dt>
+        <dd>Lunes a viernes, 07:00 a 17:00</dd>
+      </div>
     </dl>
   </div>
-  <iframe
-    class="fabrica__mapa"
-    data-revelar
-    style="--i: 1"
-    title="Ubicación de la planta en Torreón, Coahuila"
-    src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
-    loading="lazy"
-  ></iframe>
+  <div class="fabrica__mapa" data-revelar style="--i: 1">
+    <iframe
+      title="Ubicación de la planta en Torreón, Coahuila"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
+      loading="lazy"
+    ></iframe>
+  </div>
 </section>
 
 <style>
@@ -41,14 +44,14 @@ const sectores = [
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
-    padding: 0 32px 40px;
+    padding-top: 0;
   }
 
   .fabrica__info {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 24px;
+    padding: 32px;
     background: var(--ap-superficie);
     border: 1px solid var(--ap-borde);
     border-radius: 12px;
@@ -58,54 +61,101 @@ const sectores = [
   h3 {
     margin: 0;
     font-family: var(--fuente-titulos);
-    font-size: 20px;
     font-weight: 600;
-    line-height: 24px;
+  }
+
+  h2 {
+    padding-left: 14px;
+    border-left: 4px solid var(--q-primary);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 32px;
+    text-transform: uppercase;
   }
 
   h3 {
     margin-top: 8px;
     font-size: 16px;
+    line-height: 20px;
   }
 
-  p,
-  ul,
-  dd {
+  p {
     margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    letter-spacing: 0.25px;
+    font-size: 15px;
+    line-height: 22px;
     color: var(--ap-texto-secundario);
   }
 
   ul {
-    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ap-texto-secundario);
+  }
+
+  li::before {
+    content: '';
+    width: 3px;
+    height: 18px;
+    flex-shrink: 0;
+    background: var(--q-accent);
   }
 
   dl {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4px 16px;
-    margin: 8px 0 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: auto 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--ap-borde);
   }
 
   dt {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ap-texto-secundario);
+  }
+
+  dd {
+    margin: 4px 0 0;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .fabrica__mapa {
-    width: 100%;
-    min-height: 320px;
-    border: 0;
+    overflow: hidden;
+    min-height: 360px;
+    border: 1px solid var(--ap-borde);
     border-radius: 12px;
     background: var(--ap-borde);
+  }
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    border: 0;
   }
 
   @media (max-width: 767px) {
     .fabrica {
       grid-template-columns: 1fr;
+    }
+
+    .fabrica__info {
+      padding: 24px;
     }
   }
 </style>

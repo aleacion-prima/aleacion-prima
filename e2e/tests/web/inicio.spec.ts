@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 test('el inicio presenta la empresa y lleva al catálogo', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { level: 1, name: 'ALEACIÓN PRIMA' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: /trazadas lote por lote/ }),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Nuestros productos' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Sobre la fábrica' })).toBeVisible();
   await expect(page.getByText('Welcome to Astro')).toHaveCount(0);

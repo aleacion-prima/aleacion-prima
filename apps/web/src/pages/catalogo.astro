@@ -5,12 +5,15 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout titulo="Catálogo · Aleación Prima" seccion="catalogo">
   <section class="encabezado">
-    <a class="enlace encabezado__volver" href="/">
+    <a class="encabezado__volver" href="/">
       <img src="/iconos/chevron-left.svg" width="20" height="20" alt="" />
-      Volver a inicio
+      Inicio
     </a>
     <h1>Catálogo de productos</h1>
-    <p>Piezas de fundición disponibles para cotizar.</p>
+    <p>
+      Piezas de fundición en bruto de hierro gris y nodular. La existencia se actualiza en vivo
+      desde la planta.
+    </p>
   </section>
   <section class="productos">
     <CatalogoProductos client:load />
@@ -21,31 +24,56 @@ import Layout from '../layouts/Layout.astro';
   .encabezado {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 40px 32px 24px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 40px 32px 48px;
+    background: var(--q-dark);
+    color: var(--ap-superficie);
   }
 
   .encabezado__volver {
-    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: -6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #cbd5e1;
+    text-decoration: none;
+  }
+
+  .encabezado__volver:hover {
+    color: var(--ap-superficie);
   }
 
   h1 {
-    margin: 24px 0 0;
+    margin: 8px 0 0;
     font-family: var(--fuente-titulos);
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 36px;
+    font-size: clamp(34px, 4.5vw, 52px);
+    font-weight: 700;
+    line-height: 1.05;
+    text-transform: uppercase;
   }
 
   p {
+    max-width: 560px;
     margin: 0;
-    font-size: 14px;
-    line-height: 20px;
-    color: var(--ap-texto-secundario);
+    font-size: 16px;
+    line-height: 24px;
+    color: #cbd5e1;
   }
 
   .productos {
-    padding: 0 32px 40px;
+    padding: 40px 32px 72px;
+  }
+
+  @media (max-width: 599px) {
+    .encabezado {
+      padding: 32px 16px 40px;
+    }
+
+    .productos {
+      padding: 32px 16px 56px;
+    }
   }
 </style>
