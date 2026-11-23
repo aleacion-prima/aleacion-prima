@@ -12,7 +12,11 @@ const { numero, titulo, texto, enlace } = Astro.props;
 <header class="encabezado" data-revelar>
   <span class="encabezado__numero">{numero}</span>
   <div class="encabezado__titulo">
-    <h2>{titulo}</h2>
+    <h2>
+      <span class="encabezado__mascara">
+        <span>{titulo}</span>
+      </span>
+    </h2>
     {texto && <p>{texto}</p>}
   </div>
   {enlace && (
@@ -52,6 +56,27 @@ const { numero, titulo, texto, enlace } = Astro.props;
     font-weight: 700;
     line-height: 0.95;
     text-transform: uppercase;
+  }
+
+  .encabezado__mascara {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+  }
+
+  .encabezado__mascara > span {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.con-animaciones) .encabezado__mascara > span {
+      transform: translateY(105%);
+    }
+
+    .encabezado:global(.revelado) .encabezado__mascara > span {
+      transform: none;
+      transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+    }
   }
 
   p {

@@ -1,0 +1,327 @@
+---
+const cx = 190;
+const cy = 190;
+const pernos = Array.from({ length: 5 }, (_, i) => {
+  const angulo = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+  return { x: cx + Math.cos(angulo) * 42, y: cy + Math.sin(angulo) * 42 };
+});
+
+const circulo = (x: number, y: number, r: number): string =>
+  `M${x - r} ${y}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0Z`;
+
+const cara = [
+  circulo(cx, cy, 130),
+  circulo(cx, cy, 24),
+  ...pernos.map(({ x, y }) => circulo(x, y, 6)),
+].join('');
+
+const corteSuperior = 'M400 60H424V104H468V166H456V116H424V112H400Z';
+const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
+---
+
+<figure class="plano animando" data-plano>
+  <svg
+    viewBox="0 0 560 410"
+    role="img"
+    aria-label="Plano del disco de freno de 300 mm que se cuela y se enfría"
+  >
+    <defs>
+      <pattern
+        id="rayado"
+        width="8"
+        height="8"
+        patternUnits="userSpaceOnUse"
+        patternTransform="rotate(45)"
+      >
+        <line x1="0" y1="0" x2="0" y2="8" class="plano__rayado"></line>
+      </pattern>
+    </defs>
+
+    <g class="plano__ejes">
+      <line x1="40" y1={cy} x2="340" y2={cy}></line>
+      <line x1={cx} y1="40" x2={cx} y2="340"></line>
+      <line x1="385" y1={cy} x2="485" y2={cy}></line>
+      <circle cx={cx} cy={cy} r="42" fill="none"></circle>
+    </g>
+
+    <path class="plano__colada" d={cara} fill-rule="evenodd"></path>
+    <path class="plano__corte" d={corteSuperior}></path>
+    <path class="plano__corte" d={corteInferior}></path>
+    <path class="plano__colada" d={corteSuperior}></path>
+    <path class="plano__colada" d={corteInferior}></path>
+
+    <g class="plano__trazos">
+      <path d={circulo(cx, cy, 130)} pathLength="1" style="--i: 0"></path>
+      <path d={circulo(cx, cy, 78)} pathLength="1" style="--i: 1"></path>
+      <path d={circulo(cx, cy, 62)} pathLength="1" style="--i: 2"></path>
+      <path d={circulo(cx, cy, 24)} pathLength="1" style="--i: 3"></path>
+      {pernos.map(({ x, y }, i) => (
+        <path d={circulo(x, y, 6)} pathLength="1" style={`--i: ${4 + i * 0.3}`} />
+      ))}
+      <path d={corteSuperior} pathLength="1" style="--i: 5"></path>
+      <path d={corteInferior} pathLength="1" style="--i: 5.4"></path>
+    </g>
+
+    <g class="plano__cotas">
+      <line x1="60" y1={cy + 8} x2="60" y2="372"></line>
+      <line x1="320" y1={cy + 8} x2="320" y2="372"></line>
+      <line x1="60" y1="362" x2="320" y2="362"></line>
+      <path d="M60 362l10-4v8Z M320 362l-10-4v8Z"></path>
+      <text x={cx} y="354" text-anchor="middle">
+        Ø 300
+      </text>
+      <text x="430" y="350" text-anchor="middle" class="plano__vista">
+        CORTE A-A
+      </text>
+    </g>
+
+    <g class="plano__rotulo">
+      <rect x="332" y="370" width="220" height="34"></rect>
+      <line x1="452" y1="370" x2="452" y2="404"></line>
+      <text x="342" y="384" class="plano__rotulo-nombre">
+        DISCO DE FRENO
+      </text>
+      <text x="342" y="398">
+        Hierro gris clase 30
+      </text>
+      <text x="462" y="384">
+        DIS-FRE-G
+      </text>
+      <text x="462" y="398">
+        8.5 kg
+      </text>
+    </g>
+  </svg>
+
+  <figcaption>
+    <span class="plano__estado plano__estado--1">Plano</span>
+    <span class="plano__estado plano__estado--2">Colada · 1,450 °C</span>
+    <span class="plano__estado plano__estado--3">Pieza en bruto</span>
+    <button type="button" class="plano__repetir" data-repetir>
+      Repetir
+    </button>
+  </figcaption>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-plano]').forEach((plano) => {
+    plano.querySelector('[data-repetir]')?.addEventListener('click', () => {
+      plano.classList.remove('animando');
+      void plano.offsetWidth;
+      plano.classList.add('animando');
+    });
+  });
+</script>
+
+<style>
+  .plano {
+    margin: 0;
+    width: 100%;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .plano__ejes line,
+  .plano__ejes circle {
+    stroke: #475569;
+    stroke-width: 1;
+    stroke-dasharray: 14 4 3 4;
+  }
+
+  .plano__trazos path {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 1.6;
+  }
+
+  .plano__corte {
+    fill: url(#rayado);
+    stroke: none;
+  }
+
+  .plano__rayado {
+    stroke: #64748b;
+    stroke-width: 1.2;
+  }
+
+  .plano__colada {
+    fill: #475569;
+    fill-opacity: 0.55;
+  }
+
+  .plano__cotas line,
+  .plano__rotulo line,
+  .plano__rotulo rect {
+    fill: none;
+    stroke: #94a3b8;
+    stroke-width: 1;
+  }
+
+  .plano__cotas path {
+    fill: #94a3b8;
+  }
+
+  text {
+    fill: #cbd5e1;
+    font-family: var(--fuente-codigo);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .plano__vista {
+    fill: #94a3b8;
+    font-size: 10px;
+  }
+
+  .plano__rotulo-nombre {
+    font-family: var(--fuente-titulos);
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--ap-superficie);
+  }
+
+  figcaption {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #334155;
+  }
+
+  .plano__estado {
+    grid-area: 1 / 1;
+    font-family: var(--fuente-titulos);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ap-superficie);
+    opacity: 0;
+  }
+
+  .plano__estado--3 {
+    opacity: 1;
+  }
+
+  .plano__repetir {
+    padding: 6px 12px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    background: transparent;
+    color: #cbd5e1;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .plano__repetir:hover {
+    border-color: var(--ap-superficie);
+    color: var(--ap-superficie);
+  }
+
+  .plano__repetir:focus-visible {
+    outline: 2px solid var(--q-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .plano__repetir {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .animando .plano__trazos path {
+      stroke-dasharray: 1;
+      animation: trazar 1s ease-in-out backwards;
+      animation-delay: calc(0.3s + var(--i) * 0.18s);
+    }
+
+    .animando .plano__ejes,
+    .animando .plano__cotas,
+    .animando .plano__rotulo,
+    .animando .plano__corte {
+      animation: aparecer 0.5s ease 1.4s backwards;
+    }
+
+    .animando .plano__colada {
+      animation: colar 3.4s ease-out 2.2s backwards;
+    }
+
+    .animando .plano__estado--1 {
+      animation:
+        aparecer 0.3s ease 0.2s both,
+        desaparecer 0.3s ease 2.1s forwards;
+    }
+
+    .animando .plano__estado--2 {
+      animation:
+        aparecer 0.3s ease 2.2s both,
+        desaparecer 0.3s ease 4.4s forwards;
+    }
+
+    .animando .plano__estado--3 {
+      animation: aparecer 0.3s ease 4.5s backwards;
+    }
+  }
+
+  @keyframes trazar {
+    from {
+      stroke-dashoffset: 1;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes desaparecer {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes colar {
+    0% {
+      fill: #fde68a;
+      fill-opacity: 0;
+    }
+
+    12% {
+      fill: #fdba74;
+      fill-opacity: 1;
+    }
+
+    35% {
+      fill: #f97316;
+      fill-opacity: 1;
+    }
+
+    60% {
+      fill: #9a3412;
+      fill-opacity: 0.9;
+    }
+
+    100% {
+      fill: #475569;
+      fill-opacity: 0.55;
+    }
+  }
+</style>

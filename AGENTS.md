@@ -11,7 +11,7 @@ Sistema de trazabilidad de lotes de producción y ventas para una empresa metal�
 | ----------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | `apps/api`        | API REST + WebSockets                                              | Laravel (PHP 8.4), Sanctum, Reverb, Spatie Permission, Scramble, PostgreSQL + MongoDB                       |
 | `apps/panel`      | Panel administrativo **y** app Android                             | Quasar `@quasar/app-vite` v3 (Vue 3 + TS), Pinia, Vue Router, VueUse, Laravel Echo, Capacitor, `qrcode.vue` |
-| `apps/web`        | Sitio público (catálogo sin precios)                               | Astro, estático, islas de Vue, Laravel Echo                                                                 |
+| `apps/web`        | Sitio público (catálogo sin precios)                               | Astro, estático, islas de Vue, Laravel Echo, Lenis                                                          |
 | `packages/types`  | Tipos TS compartidos de la API (`@aleacion-prima/types`)           | TypeScript, sin build                                                                                       |
 | `packages/config` | ESLint, Prettier y tsconfig compartidos (`@aleacion-prima/config`) | TypeScript                                                                                                  |
 | `e2e`             | Pruebas de extremo a extremo                                       | Playwright                                                                                                  |

@@ -32,6 +32,14 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
       <slot />
     </main>
     <PiePagina />
+    <script>
+      import Lenis from 'lenis';
+      import 'lenis/dist/lenis.css';
+
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        new Lenis({ autoRaf: true, anchors: true, lerp: 0.09 });
+      }
+    </script>
   </body>
 </html>
 

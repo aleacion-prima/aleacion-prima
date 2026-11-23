@@ -1,5 +1,6 @@
 ---
 import EncabezadoBloque from './EncabezadoBloque.astro';
+import FichaLote from './FichaLote.astro';
 
 const etapas = [
   {
@@ -40,21 +41,76 @@ const etapas = [
   <EncabezadoBloque
     numero="02"
     titulo="De la arena a la entrega"
-    texto="Cada lote es una colada. En cada etapa se registran piezas recibidas, entregadas y mermas."
+    texto="Cada lote es una colada. Baja por las etapas y mira cómo se llena el registro de un lote real."
   />
-  <ol class="operaciones">
-    {etapas.map(({ codigo, nombre, detalle }, i) => (
-      <li class="operacion" data-revelar style={`--i: ${i}`}>
-        <span class="operacion__numero">{String(i + 1).padStart(2, '0')}</span>
-        <h3>{nombre}</h3>
-        <span class="operacion__codigo">{codigo}</span>
-        <p>{detalle}</p>
-      </li>
-    ))}
-  </ol>
+  <div class="proceso">
+    <ol class="operaciones">
+      {etapas.map(({ codigo, nombre, detalle }, i) => (
+        <li class="operacion" data-operacion={i}>
+          <span class="operacion__numero">{String(i + 1).padStart(2, '0')}</span>
+          <div class="operacion__cuerpo">
+            <h3>
+              {nombre} <span>{codigo}</span>
+            </h3>
+            <p>{detalle}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+    <div class="proceso__ficha">
+      <FichaLote />
+    </div>
+  </div>
 </section>
 
+<script>
+  const ficha = document.querySelector<HTMLElement>('[data-ficha]');
+  const operaciones = [...document.querySelectorAll<HTMLElement>('[data-operacion]')];
+
+  if (ficha && operaciones.length) {
+    const filas = [...ficha.querySelectorAll<HTMLElement>('[data-ficha-etapa]')];
+    const estado = ficha.querySelector<HTMLElement>('[data-ficha-estado]');
+    const piezas = ficha.querySelector<HTMLElement>('[data-ficha-piezas]');
+
+    const mostrar = (actual: number): void => {
+      const ultima = actual === filas.length - 1;
+      filas.forEach((fila, i) => {
+        fila.classList.toggle('pendiente', i > actual);
+        fila.classList.toggle('actual', i === actual && !ultima);
+      });
+      operaciones.forEach((operacion, i) => operacion.classList.toggle('activa', i === actual));
+      ficha.style.setProperty('--avance', String((actual + 1) / filas.length));
+      if (estado) {
+        estado.textContent = ultima ? 'Terminado' : `En proceso · ${filas[actual]?.dataset.codigo}`;
+        estado.classList.toggle('en-proceso', !ultima);
+      }
+      if (piezas) piezas.textContent = filas[actual]?.dataset.entregadas ?? '';
+    };
+
+    mostrar(0);
+
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (entrada.isIntersecting) {
+            mostrar(Number((entrada.target as HTMLElement).dataset.operacion));
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px' },
+    );
+    operaciones.forEach((operacion) => observador.observe(operacion));
+  }
+</script>
+
 <style>
+  .proceso {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+    gap: 56px;
+    align-items: start;
+  }
+
   .operaciones {
     margin: 0;
     padding: 0;
@@ -64,11 +120,10 @@ const etapas = [
   .operacion {
     position: relative;
     display: grid;
-    grid-template-columns: 96px 220px 64px minmax(0, 1fr);
-    align-items: center;
-    min-height: 72px;
+    grid-template-columns: 96px minmax(0, 1fr);
+    min-height: 144px;
     border-bottom: 1px solid #cbd5e1;
-    transition: background 0.2s ease;
+    transition: background 0.3s ease;
   }
 
   .operacion::before {
@@ -79,86 +134,109 @@ const etapas = [
     background: var(--q-primary);
     transform: scaleY(0);
     transform-origin: top;
-    transition: transform 0.25s ease;
+    transition: transform 0.35s ease;
   }
 
-  .operacion:hover {
+  .operacion.activa {
     background: var(--ap-superficie);
   }
 
-  .operacion:hover::before {
+  .operacion.activa::before {
     transform: none;
   }
 
   .operacion__numero {
-    align-self: stretch;
     display: flex;
     align-items: center;
+    padding-left: 20px;
     border-right: 1px solid #cbd5e1;
     font-family: var(--fuente-titulos);
-    font-size: 34px;
+    font-size: 40px;
     font-weight: 700;
-    color: #94a3b8;
-    padding-left: 20px;
-    transition: color 0.2s ease;
+    color: #cbd5e1;
+    transition: color 0.3s ease;
   }
 
-  .operacion:hover .operacion__numero {
+  .operacion.activa .operacion__numero {
     color: var(--q-primary);
   }
 
-  h3 {
-    padding: 0 24px;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 28px;
-    text-transform: uppercase;
+  .operacion__cuerpo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 28px;
   }
 
-  .operacion__codigo {
+  h3 {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    color: #94a3b8;
+    transition: color 0.3s ease;
+  }
+
+  .operacion.activa h3 {
+    color: var(--q-dark);
+  }
+
+  h3 span {
+    margin-left: 6px;
     font-family: var(--fuente-codigo);
     font-size: 13px;
-    font-weight: 600;
     color: var(--q-primary);
   }
 
   p {
+    max-width: 480px;
     margin: 0;
-    padding: 16px 24px 16px 0;
     font-size: 15px;
     line-height: 22px;
     color: var(--ap-texto-secundario);
   }
 
-  @media (max-width: 899px) {
+  .proceso__ficha {
+    position: sticky;
+    top: 32px;
+    padding: 32px 8px 8px 0;
+  }
+
+  @media (max-width: 1023px) {
+    .proceso {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .proceso__ficha {
+      order: -1;
+      top: 8px;
+      z-index: 1;
+      padding: 24px 8px 0 0;
+    }
+
     .operacion {
-      grid-template-columns: 64px minmax(0, 1fr) auto;
-      grid-template-areas:
-        'numero nombre codigo'
-        'numero detalle detalle';
-      padding: 16px 0;
+      min-height: 112px;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .operacion {
+      grid-template-columns: 56px minmax(0, 1fr);
     }
 
     .operacion__numero {
-      grid-area: numero;
       padding-left: 12px;
-      font-size: 26px;
+      font-size: 28px;
+    }
+
+    .operacion__cuerpo {
+      padding: 16px;
     }
 
     h3 {
-      grid-area: nombre;
-      padding: 0 16px;
-      font-size: 22px;
-    }
-
-    .operacion__codigo {
-      grid-area: codigo;
-      padding-right: 16px;
-    }
-
-    p {
-      grid-area: detalle;
-      padding: 6px 16px 0;
+      font-size: 24px;
     }
   }
 </style>

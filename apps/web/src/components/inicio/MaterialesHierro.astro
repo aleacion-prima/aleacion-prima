@@ -104,6 +104,16 @@ const materiales = [
   </div>
 </section>
 
+<script>
+  document.querySelectorAll<SVGSVGElement>('.micrografia').forEach((micrografia) => {
+    micrografia.addEventListener('pointermove', (evento) => {
+      const caja = micrografia.getBoundingClientRect();
+      micrografia.style.setProperty('--x', `${((evento.clientX - caja.left) / caja.width) * 100}%`);
+      micrografia.style.setProperty('--y', `${((evento.clientY - caja.top) / caja.height) * 100}%`);
+    });
+  });
+</script>
+
 <style>
   .mitades {
     display: grid;
@@ -125,6 +135,24 @@ const materiales = [
     display: block;
     width: 100%;
     height: 180px;
+  }
+
+  .micrografia__laminas,
+  .micrografia__nodulos {
+    transform-box: view-box;
+    transform-origin: var(--x, 50%) var(--y, 50%);
+    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  @media (hover: hover) {
+    .micrografia {
+      cursor: zoom-in;
+    }
+
+    .micrografia:hover .micrografia__laminas,
+    .micrografia:hover .micrografia__nodulos {
+      transform: scale(2.2);
+    }
   }
 
   .mitad--gris rect {
