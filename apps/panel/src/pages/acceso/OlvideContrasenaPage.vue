@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue';
 import { useSesionStore } from '@/stores/sesion';
+import LogoMarca from '@/components/navegacion/LogoMarca.vue';
 import { correo, requerido } from '@/composables/reglas';
 
 const sesion = useSesionStore();
@@ -45,6 +46,7 @@ onUnmounted(() => {
     <q-card flat bordered class="q-pa-xl" style="width: 400px">
       <q-form class="column q-gutter-md" @submit="enviar">
         <div class="text-center">
+          <LogoMarca :tamano="56" />
           <div class="text-h5 text-weight-bold">ALEACIÓN PRIMA</div>
           <div class="text-secundario">Recuperar contraseña</div>
         </div>

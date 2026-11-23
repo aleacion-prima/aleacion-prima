@@ -2,6 +2,7 @@
 import { onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
+import LogoMarca from '@/components/navegacion/LogoMarca.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -61,6 +62,7 @@ onUnmounted(() => {
     <q-card flat bordered class="q-pa-xl" style="width: 400px">
       <q-form class="column q-gutter-md" @submit="verificar">
         <div class="text-center">
+          <LogoMarca :tamano="56" />
           <div class="text-h5 text-weight-bold">ALEACIÓN PRIMA</div>
           <div class="text-secundario">Verificación en dos pasos</div>
         </div>
