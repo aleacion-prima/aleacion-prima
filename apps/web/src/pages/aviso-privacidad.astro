@@ -7,22 +7,21 @@ interface Seccion {
   lista?: string[];
 }
 
-const fechaActualizacion = '20 de noviembre de 2026';
+const fechaActualizacion = '22 de noviembre de 2026';
 
 const secciones: Seccion[] = [
   {
     titulo: 'Identidad y domicilio del responsable',
     parrafos: [
-      'Aleación Prima, con razón social [Razón social de Aleación Prima, S.A. de C.V.], domicilio en [domicilio fiscal completo, ciudad, estado y código postal] y correo electrónico [correo del área responsable de privacidad], es responsable del tratamiento de los datos personales que recaba a través de este sitio y de sus canales de contacto.',
-      'Para cualquier asunto relacionado con la protección de datos personales puede comunicarse también al teléfono [teléfono del área responsable de privacidad].',
+      'Aleación Prima, S.A. de C.V., con domicilio en Avenida de los Metales 100, Colonia Parque Industrial, Torreón, Coahuila, C.P. 27000, y correo electrónico privacidad@aleacionprima.com, es responsable del tratamiento de los datos personales que recaba a través de sus canales de contacto.',
+      'Para cualquier asunto relacionado con la protección de datos personales puede comunicarse también al teléfono +52 871 000 0000.',
     ],
   },
   {
     titulo: 'Datos personales que recabamos',
     parrafos: [
-      'De visitantes y clientes potenciales: nombre, correo electrónico, teléfono, empresa y el contenido de la solicitud de cotización.',
-      'De clientes: razón social, Registro Federal de Contribuyentes, domicilio fiscal, datos de contacto y condiciones de pago.',
-      'De los archivos que adjunte: la información contenida en planos, especificaciones, órdenes de compra y documentos técnicos que decida compartir.',
+      'Cuando usted nos contacta por correo electrónico o teléfono, podemos recibir su nombre, correo electrónico, teléfono, empresa y el motivo de su consulta. Este sitio no cuenta con formularios ni guarda la información que usted escribe en esos canales.',
+      'Cuando existe una relación comercial, tratamos razón social, Registro Federal de Contribuyentes, domicilio fiscal, datos de contacto y condiciones de pago para gestionar la relación y cumplir obligaciones legales.',
       'De usuarios del sistema: nombre, correo electrónico, rol, área asignada y registros de acceso.',
       'No recabamos datos personales sensibles.',
     ],
@@ -30,8 +29,8 @@ const secciones: Seccion[] = [
   {
     titulo: 'Finalidades del tratamiento',
     parrafos: [
-      'Finalidades primarias: atender solicitudes de información, elaborar cotizaciones, dar seguimiento a las comunicaciones, gestionar la relación comercial, emitir comprobantes fiscales, operar el sistema y cumplir obligaciones legales.',
-      'Finalidades secundarias: enviar información sobre productos, novedades y encuestas de satisfacción. Puede oponerse a estas finalidades en cualquier momento escribiendo a [correo del área responsable de privacidad]; su oposición no afecta la atención de su solicitud.',
+      'Finalidades primarias: atender las consultas que nos envíe por correo o teléfono, dar seguimiento a las comunicaciones, elaborar cotizaciones cuando usted las solicite por esos canales, gestionar la relación comercial, emitir comprobantes fiscales, operar el sistema y cumplir obligaciones legales.',
+      'Finalidades secundarias: enviar información sobre productos, novedades y encuestas de satisfacción. Puede oponerse a estas finalidades en cualquier momento escribiendo a privacidad@aleacionprima.com; su oposición no afecta la atención de su consulta.',
     ],
   },
   {
@@ -44,7 +43,7 @@ const secciones: Seccion[] = [
   {
     titulo: 'Medidas de seguridad',
     parrafos: [
-      'Implementamos medidas administrativas, técnicas y físicas para proteger sus datos: control de acceso por rol, cifrado de datos fiscales, resguardo de contraseñas mediante funciones de hash, registros de actividad, capacitación del personal y restricción del acceso a la información a quienes la necesitan para cumplir sus funciones.',
+      'Implementamos medidas administrativas, técnicas y físicas para proteger sus datos: control de acceso por rol, resguardo de contraseñas mediante funciones de hash, registros de actividad, capacitación del personal y restricción del acceso a la información a quienes la necesitan para cumplir sus funciones.',
     ],
   },
   {
@@ -56,7 +55,7 @@ const secciones: Seccion[] = [
   {
     titulo: 'Derechos ARCO y revocación del consentimiento',
     parrafos: [
-      'Puede ejercer sus derechos de acceso, rectificación, cancelación y oposición, así como revocar su consentimiento o limitar el uso de sus datos, enviando una solicitud a [correo del área responsable de privacidad] o presentándola en [domicilio fiscal completo]. La solicitud debe incluir:',
+      'Puede ejercer sus derechos de acceso, rectificación, cancelación y oposición, así como revocar su consentimiento o limitar el uso de sus datos, enviando una solicitud a privacidad@aleacionprima.com o presentándola en Avenida de los Metales 100, Colonia Parque Industrial, Torreón, Coahuila, C.P. 27000. La solicitud debe incluir:',
     ],
     lista: [
       'Nombre completo y domicilio u otro medio para recibir la respuesta.',
@@ -69,7 +68,7 @@ const secciones: Seccion[] = [
   {
     titulo: 'Cookies y tecnologías de rastreo',
     parrafos: [
-      'Este sitio utiliza cookies y tecnologías similares necesarias para su funcionamiento y, en su caso, para medir el uso del catálogo. Puede deshabilitarlas desde la configuración de su navegador; algunas funciones podrían dejar de estar disponibles. No utilizamos cookies para mostrar precios ni para elaborar perfiles comerciales.',
+      'Este sitio no utiliza cookies para recabar datos personales ni para elaborar perfiles comerciales. Solo puede emplear almacenamiento técnico necesario para su funcionamiento; puede borrarlo desde la configuración de su navegador.',
     ],
   },
   {
@@ -81,12 +80,10 @@ const secciones: Seccion[] = [
   {
     titulo: 'Autoridad',
     parrafos: [
-      'Si considera que sus derechos de protección de datos personales han sido vulnerados, puede acudir al Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (INAI), con domicilio en [domicilio del INAI] y sitio electrónico [sitio electrónico del INAI].',
+      'Si considera que sus derechos de protección de datos personales han sido vulnerados, puede acudir a la Secretaría Anticorrupción y Buen Gobierno, autoridad competente en materia de protección de datos personales desde marzo de 2025. Puede presentar su solicitud por los canales oficiales de esa dependencia.',
     ],
   },
 ];
-
-const conMarcas = (texto: string): string => texto.replace(/\[([^\]]+)\]/g, '<mark>$1</mark>');
 ---
 
 <Layout titulo="Aviso de privacidad | Aleación Prima">
@@ -107,7 +104,7 @@ const conMarcas = (texto: string): string => texto.replace(/\[([^\]]+)\]/g, '<ma
           <div class="seccion__cuerpo">
             <h2>{seccion.titulo}</h2>
             {seccion.parrafos.map((parrafo) => (
-              <p set:html={conMarcas(parrafo)} />
+              <p>{parrafo}</p>
             ))}
             {seccion.lista && (
               <ol class="seccion__lista">
@@ -206,14 +203,6 @@ const conMarcas = (texto: string): string => texto.replace(/\[([^\]]+)\]/g, '<ma
 
   .seccion__lista li + li {
     margin-top: 6px;
-  }
-
-  .seccion__cuerpo mark {
-    background: #ffedd5;
-    border-radius: 4px;
-    color: var(--q-primary);
-    font-weight: 500;
-    padding: 1px 6px;
   }
 
   @media (max-width: 640px) {

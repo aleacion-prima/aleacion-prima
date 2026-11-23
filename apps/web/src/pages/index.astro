@@ -1,76 +1,13 @@
 ---
 import EstadoWebsocket from '../components/EstadoWebsocket.vue';
+import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+
+// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
+// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout titulo="Aleación Prima" seccion="inicio">
-  <section class="hero">
-    <p class="hero__etiqueta">Fundición y manufactura metalúrgica</p>
-    <h1>Componentes confiables para la industria.</h1>
-    <p class="hero__texto">
-      Conoce nuestros productos y solicita una cotización con el equipo de ventas.
-    </p>
-    <a class="hero__boton" href="/cotizar">
-      Cotizar
-    </a>
-  </section>
-
-  <section class="estado">
-    <EstadoWebsocket client:load />
-  </section>
+<Layout>
+  <EstadoWebsocket client:load />
+  <Welcome />
 </Layout>
-
-<style>
-  .hero {
-    box-sizing: border-box;
-    margin: 0 auto;
-    max-width: 1440px;
-    padding: 96px 24px 48px;
-  }
-
-  .hero__etiqueta {
-    color: var(--q-primary);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    line-height: 16px;
-    margin: 0;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    font-size: 28px;
-    font-weight: 600;
-    line-height: 32px;
-    margin: 12px 0 0;
-    max-width: 560px;
-  }
-
-  .hero__texto {
-    color: var(--ap-texto-secundario);
-    margin: 12px 0 0;
-    max-width: 480px;
-  }
-
-  .hero__boton {
-    background: var(--q-primary);
-    border-radius: 8px;
-    color: var(--ap-superficie);
-    display: inline-flex;
-    font-weight: 500;
-    margin-top: 24px;
-    padding: 12px 20px;
-    text-decoration: none;
-  }
-
-  .hero__boton:hover {
-    background: var(--q-accent);
-  }
-
-  .estado {
-    box-sizing: border-box;
-    margin: 0 auto;
-    max-width: 1440px;
-    padding: 0 24px 48px;
-  }
-</style>
