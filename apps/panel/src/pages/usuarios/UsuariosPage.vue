@@ -17,6 +17,11 @@ interface FormularioUsuario {
   activo: boolean;
 }
 
+interface ErrorApi {
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 type VistaUsuarios = 'en_uso' | 'bajas';
 
 const $q = useQuasar();
@@ -30,6 +35,7 @@ const vista = ref<VistaUsuarios>('en_uso');
 const fechaBaja = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
 const dialogoSesiones = ref(false);
 const usuarioSesiones = ref<Usuario | null>(null);
+const errores = ref<Record<string, string[]>>({});
 const formulario = reactive<FormularioUsuario>({
   name: '',
   email: '',
@@ -48,6 +54,13 @@ const visibles = computed(() => (vista.value === 'en_uso' ? enUso.value : bajas.
 
 const fechaDeBaja = (usuario: Usuario): string =>
   usuario.dado_de_baja_en === null ? '—' : fechaBaja.format(new Date(usuario.dado_de_baja_en));
+
+const erroresDe = (...campos: string[]): string[] =>
+  Object.entries(errores.value)
+    .filter(([campo]) =>
+      campos.some((buscado) => campo === buscado || campo.startsWith(`${buscado}.`)),
+    )
+    .flatMap(([, mensajes]) => mensajes);
 
 const areasAsignadas = (usuario: Usuario): string => {
   if (!usuario.areas?.length) return '—';
@@ -85,11 +98,13 @@ const abrir = (usuario?: Usuario): void => {
   formulario.rol = usuario?.rol ?? 'encargado';
   formulario.area_ids = usuario?.areas?.map((area) => area.id) ?? [];
   formulario.activo = usuario?.activo ?? true;
+  errores.value = {};
   dialogo.value = true;
 };
 
 const guardar = async (): Promise<void> => {
   const esEdicion = editando.value !== null;
+  errores.value = {};
   const cuerpo = {
     name: formulario.name,
     email: formulario.email,
@@ -99,14 +114,17 @@ const guardar = async (): Promise<void> => {
     ...(esEdicion && !esUnoMismo(editando.value) ? { activo: formulario.activo } : {}),
   };
 
-  const { error } = esEdicion
+  const { data, error } = esEdicion
     ? await useApi(`/usuarios/${editando.value?.id ?? ''}`)
         .put(cuerpo)
-        .json<Usuario>()
-    : await useApi('/usuarios').post(cuerpo).json<Usuario>();
+        .json<Usuario | ErrorApi>()
+    : await useApi('/usuarios').post(cuerpo).json<Usuario | ErrorApi>();
 
   if (error.value) {
-    $q.notify({ type: 'negative', message: 'No se pudo guardar el usuario' });
+    errores.value = (data.value as ErrorApi | null)?.errors ?? {};
+    if (!Object.keys(errores.value).length) {
+      $q.notify({ type: 'negative', message: 'No se pudo guardar el usuario' });
+    }
     return;
   }
   dialogo.value = false;
@@ -254,13 +272,29 @@ onMounted(cargar);
           editando ? 'Editar usuario' : 'Nuevo usuario'
         }}</q-card-section>
         <q-card-section class="column q-gutter-md">
-          <q-input v-model="formulario.name" label="Nombre" outlined autofocus />
-          <q-input v-model="formulario.email" label="Correo" type="email" outlined />
+          <q-input
+            v-model="formulario.name"
+            label="Nombre"
+            outlined
+            autofocus
+            :error="erroresDe('name').length > 0"
+            :error-message="erroresDe('name')[0]"
+          />
+          <q-input
+            v-model="formulario.email"
+            label="Correo"
+            type="email"
+            outlined
+            :error="erroresDe('email').length > 0"
+            :error-message="erroresDe('email')[0]"
+          />
           <q-input
             v-model="formulario.password"
             :label="editando ? 'Nueva contraseña (opcional)' : 'Contraseña'"
             type="password"
             outlined
+            :error="erroresDe('password').length > 0"
+            :error-message="erroresDe('password')[0]"
           />
           <q-select
             v-model="formulario.rol"
@@ -270,6 +304,8 @@ onMounted(cargar);
             emit-value
             :option-label="etiquetaRol"
             :disable="esUnoMismo(editando)"
+            :error="erroresDe('rol').length > 0"
+            :error-message="erroresDe('rol')[0]"
           />
           <q-select
             v-if="formulario.rol === 'encargado'"
@@ -282,6 +318,8 @@ onMounted(cargar);
             emit-value
             map-options
             outlined
+            :error="erroresDe('area_ids').length > 0"
+            :error-message="erroresDe('area_ids')[0]"
           />
           <q-toggle
             v-if="editando"
