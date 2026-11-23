@@ -193,6 +193,48 @@ describe('sesión en el panel', () => {
   });
 });
 
+describe('sesión cerrada desde otro dispositivo', () => {
+  it('en el panel, cualquier 401 limpia la sesión aunque no llegue el aviso', async () => {
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    const sesion = await crearSesion('spa');
+    await sesion.cargar();
+    const { useApi } = await import('@/services/api');
+
+    fetchFalso.mockResolvedValueOnce(respuesta(401, { message: 'Unauthenticated.' }));
+    await useApi('/lotes').json();
+
+    await vi.waitFor(() => expect(sesion.usuario).toBeNull());
+    expect(echo.desconectar).toHaveBeenCalled();
+  });
+
+  it('en la app, un 401 borra el token y los escaneados', async () => {
+    preferencias.set('token', '1|revocado');
+    preferencias.set('ultimos-escaneados', '[]');
+    fetchFalso.mockResolvedValueOnce(respuesta(200, encargado));
+    const sesion = await crearSesion('capacitor');
+    await sesion.cargar();
+    const { useApi } = await import('@/services/api');
+
+    fetchFalso.mockResolvedValueOnce(respuesta(401, { message: 'Unauthenticated.' }));
+    await useApi('/lotes/LOT-20261102-01').json();
+
+    await vi.waitFor(() => expect(sesion.usuario).toBeNull());
+    expect(preferencias.has('token')).toBe(false);
+    expect(preferencias.has('ultimos-escaneados')).toBe(false);
+  });
+
+  it('un 401 sin sesión iniciada no hace nada', async () => {
+    const sesion = await crearSesion('spa');
+    const { useApi } = await import('@/services/api');
+
+    fetchFalso.mockResolvedValueOnce(respuesta(401, { message: 'Unauthenticated.' }));
+    await useApi('/user').json();
+
+    expect(sesion.usuario).toBeNull();
+    expect(echo.desconectar).not.toHaveBeenCalled();
+  });
+});
+
 describe('cambios del usuario en vivo', () => {
   const avisar = async (id: number): Promise<void> => {
     echo.oyentes.get(`App.Models.User.${id} .usuario.actualizado`)?.();

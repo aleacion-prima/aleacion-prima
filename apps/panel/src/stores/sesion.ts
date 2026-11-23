@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { Usuario, Sesion, ModulosActualizados, SesionMovil } from '@aleacion-prima/types';
-import { SIN_CONEXION, peticionSesion, prepararCsrf, useApi } from '@/services/api';
+import { SIN_CONEXION, alPerderSesion, peticionSesion, prepararCsrf, useApi } from '@/services/api';
 import { desconectarEcho, obtenerEcho } from '@/services/echo';
 
 const ES_MOVIL = import.meta.env.QUASAR_MODE === 'capacitor';
@@ -119,20 +119,28 @@ export const useSesionStore = defineStore('sesion', () => {
     return cuerpo.message ?? 'Te enviamos un código nuevo.';
   };
 
-  const cerrar = async (): Promise<void> => {
+  const limpiar = async (): Promise<void> => {
     if (ES_MOVIL) {
       const { borrarToken } = await import('@/services/tokenMovil');
       const { borrarEscaneados } = await import('@/services/escaneados');
-      await useApi('/logout').post();
       await Promise.all([borrarToken(), borrarEscaneados()]);
     } else {
-      await peticionSesion('/logout');
       desconectarEcho();
     }
     usuario.value = null;
     modulos.value = {};
     suscritoModulos = false;
     canalUsuario = null;
+  };
+
+  alPerderSesion(() => {
+    if (usuario.value) void limpiar();
+  });
+
+  const cerrar = async (): Promise<void> => {
+    if (ES_MOVIL) await useApi('/logout').post();
+    else await peticionSesion('/logout');
+    await limpiar();
   };
 
   const recuperar = async (email: string): Promise<string> => {
