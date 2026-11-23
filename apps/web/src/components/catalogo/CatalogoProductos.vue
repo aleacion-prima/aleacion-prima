@@ -48,7 +48,12 @@ useCatalogoEnVivo({
         Disponibles <span>{{ disponibles.length }}</span>
       </h2>
       <div class="cuadricula">
-        <TarjetaProducto v-for="producto in disponibles" :key="producto.id" :producto="producto" />
+        <TarjetaProducto
+          v-for="(producto, i) in disponibles"
+          :key="producto.id"
+          :producto="producto"
+          :style="{ '--i': i }"
+        />
       </div>
     </section>
     <section v-if="sobrePedido.length" class="grupo">
@@ -56,7 +61,12 @@ useCatalogoEnVivo({
         Sobre pedido <span>{{ sobrePedido.length }}</span>
       </h2>
       <div class="cuadricula">
-        <TarjetaProducto v-for="producto in sobrePedido" :key="producto.id" :producto="producto" />
+        <TarjetaProducto
+          v-for="(producto, i) in sobrePedido"
+          :key="producto.id"
+          :producto="producto"
+          :style="{ '--i': i + disponibles.length }"
+        />
       </div>
     </section>
   </template>
@@ -91,6 +101,20 @@ useCatalogoEnVivo({
   font-weight: 500;
   line-height: 22px;
   color: var(--ap-texto-secundario);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cuadricula > * {
+    animation: subir 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 80ms + 0.15s);
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
 }
 
 .cuadricula {

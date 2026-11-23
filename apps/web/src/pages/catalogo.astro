@@ -9,7 +9,11 @@ import Layout from '../layouts/Layout.astro';
       <img src="/iconos/chevron-left.svg" width="20" height="20" alt="" />
       Inicio
     </a>
-    <h1>Catálogo de productos</h1>
+    <h1>
+      <span class="mascara">
+        <span>Catálogo de productos</span>
+      </span>
+    </h1>
     <p>
       Piezas de fundición en bruto de hierro gris y nodular. La existencia se actualiza en vivo
       desde la planta.
@@ -65,6 +69,55 @@ import Layout from '../layouts/Layout.astro';
 
   .productos {
     padding: 40px 32px 72px;
+  }
+
+  .mascara {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+  }
+
+  .mascara > span {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mascara > span {
+      animation: subir-mascara 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+    }
+
+    .encabezado__volver,
+    .encabezado p {
+      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s backwards;
+    }
+
+    @supports (animation-timeline: view()) {
+      .encabezado h1 {
+        animation: alejarse linear both;
+        animation-timeline: view();
+        animation-range: exit 0% exit 100%;
+      }
+    }
+  }
+
+  @keyframes subir-mascara {
+    from {
+      transform: translateY(105%);
+    }
+  }
+
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+  }
+
+  @keyframes alejarse {
+    to {
+      opacity: 0.3;
+      translate: 0 -60px;
+    }
   }
 
   @media (max-width: 599px) {
