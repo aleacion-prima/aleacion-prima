@@ -72,13 +72,17 @@ const etapas = [
     const estado = ficha.querySelector<HTMLElement>('[data-ficha-estado]');
     const piezas = ficha.querySelector<HTMLElement>('[data-ficha-piezas]');
 
+    const activar = (actual: number): void => {
+      operaciones.forEach((operacion, i) => operacion.classList.toggle('activa', i === actual));
+    };
+
     const mostrar = (actual: number): void => {
       const ultima = actual === filas.length - 1;
       filas.forEach((fila, i) => {
         fila.classList.toggle('pendiente', i > actual);
         fila.classList.toggle('actual', i === actual && !ultima);
       });
-      operaciones.forEach((operacion, i) => operacion.classList.toggle('activa', i === actual));
+      activar(actual);
       ficha.style.setProperty('--avance', String((actual + 1) / filas.length));
       if (estado) {
         estado.textContent = ultima ? 'Terminado' : `En proceso · ${filas[actual]?.dataset.codigo}`;
@@ -89,13 +93,15 @@ const etapas = [
 
     const fija = window.matchMedia('(min-width: 1024px)');
     mostrar(fija.matches ? 0 : filas.length - 1);
+    if (!fija.matches) activar(-1);
 
     const observador = new IntersectionObserver(
       (entradas) => {
         for (const entrada of entradas) {
-          if (entrada.isIntersecting && fija.matches) {
-            mostrar(Number((entrada.target as HTMLElement).dataset.operacion));
-          }
+          if (!entrada.isIntersecting) continue;
+          const actual = Number((entrada.target as HTMLElement).dataset.operacion);
+          if (fija.matches) mostrar(actual);
+          else activar(actual);
         }
       },
       { rootMargin: '-45% 0px -45% 0px' },
