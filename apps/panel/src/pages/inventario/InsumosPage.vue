@@ -42,7 +42,9 @@ const insumoSeleccionado = ref<Insumo | null>(null);
 const filtroTab = ref<FiltroTab>('todos');
 // Abrir desde una notificación de stock llega con ?buscar=CODIGO para dejar
 // filtrado el insumo que la originó.
-const busqueda = ref(typeof route.query.buscar === 'string' ? route.query.buscar : '');
+const busqueda = ref<string | null>(
+  typeof route.query.buscar === 'string' ? route.query.buscar : '',
+);
 const unidad = ref<string | null>(null);
 const formulario = reactive<FormularioEntrada>({
   insumo_id: null,
@@ -101,7 +103,7 @@ const unidades = computed(() =>
 );
 
 const filas = computed(() => {
-  const termino = busqueda.value.trim().toLowerCase();
+  const termino = (busqueda.value ?? '').trim().toLowerCase();
 
   return insumos.value.filter((insumo) => {
     if (filtroTab.value !== 'todos' && estadoInsumo(insumo) !== filtroTab.value) return false;
