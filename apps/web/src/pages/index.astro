@@ -1,13 +1,121 @@
 ---
-import EstadoWebsocket from '../components/EstadoWebsocket.vue';
-import Welcome from '../components/Welcome.astro';
+import ProductosDestacados from '../components/inicio/ProductosDestacados.vue';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-  <EstadoWebsocket client:load />
-  <Welcome />
+<Layout titulo="Aleación Prima" seccion="inicio">
+  <section class="portada">
+    <h1>ALEACIÓN PRIMA</h1>
+    <p>
+      Fundición de hierro gris y nodular. Piezas bajo plano, trazadas lote por lote desde la colada
+      hasta la entrega.
+    </p>
+    <a class="boton portada__boton" href="/catalogo">
+      Ver catálogo
+    </a>
+  </section>
+
+  <section class="productos">
+    <h2>Nuestros productos</h2>
+    <ProductosDestacados client:load />
+  </section>
+
+  <section class="fabrica">
+    <h2>Sobre la fábrica</h2>
+    <p>
+      Fabricamos piezas de hierro gris y nodular para los sectores automotriz, agrícola e
+      industrial. Cada lote se registra y se puede rastrear en todas sus etapas.
+    </p>
+  </section>
 </Layout>
+
+<style>
+  .portada {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 80px 32px;
+    background: var(--q-dark);
+    text-align: center;
+  }
+
+  .portada h1 {
+    margin: 0;
+    font-family: var(--fuente-titulos);
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 64px;
+    color: var(--ap-superficie);
+  }
+
+  .portada p {
+    max-width: 576px;
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--ap-borde);
+  }
+
+  .portada__boton {
+    min-height: 44px;
+    padding: 8px 24px;
+    font-size: 15px;
+    background: var(--q-primary);
+    color: var(--ap-superficie);
+  }
+
+  .portada__boton:hover {
+    background: var(--q-accent);
+  }
+
+  .productos {
+    padding: 40px 32px;
+  }
+
+  .productos h2 {
+    margin: 0 0 24px;
+    font-family: var(--fuente-titulos);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 32px;
+    text-align: center;
+  }
+
+  .fabrica {
+    margin: 0 32px 40px;
+    padding: 24px;
+    background: var(--ap-superficie);
+    border: 1px solid var(--ap-borde);
+    border-radius: 12px;
+  }
+
+  .fabrica h2 {
+    margin: 0 0 12px;
+    font-family: var(--fuente-titulos);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  .fabrica p {
+    max-width: 576px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    letter-spacing: 0.25px;
+    color: var(--ap-texto-secundario);
+  }
+
+  @media (max-width: 599px) {
+    .portada h1 {
+      font-size: 40px;
+      line-height: 48px;
+    }
+
+    .fabrica {
+      margin: 0 16px 40px;
+    }
+  }
+</style>
