@@ -15,6 +15,8 @@ const cara = [
   ...pernos.map(({ x, y }) => circulo(x, y, 6)),
 ].join('');
 
+const pista = circulo(cx, cy, 130) + circulo(cx, cy, 78);
+
 const corteSuperior = 'M400 60H424V104H468V166H456V116H424V112H400Z';
 const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
 ---
@@ -44,20 +46,28 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
       <circle cx={cx} cy={cy} r="42" fill="none"></circle>
     </g>
 
-    <path class="plano__colada" d={cara} fill-rule="evenodd"></path>
+    <g class="plano__disco" data-disco>
+      <path class="plano__colada" d={cara} fill-rule="evenodd"></path>
+      <path class="plano__calor" d={pista} fill-rule="evenodd"></path>
+      <g class="plano__trazos">
+        <path d={circulo(cx, cy, 130)} pathLength="1" style="--i: 0"></path>
+        <path d={circulo(cx, cy, 78)} pathLength="1" style="--i: 1"></path>
+        <path d={circulo(cx, cy, 62)} pathLength="1" style="--i: 2"></path>
+        <path d={circulo(cx, cy, 24)} pathLength="1" style="--i: 3"></path>
+        {pernos.map(({ x, y }, i) => (
+          <path d={circulo(x, y, 6)} pathLength="1" style={`--i: ${4 + i * 0.3}`} />
+        ))}
+      </g>
+    </g>
+
     <path class="plano__corte" d={corteSuperior}></path>
     <path class="plano__corte" d={corteInferior}></path>
     <path class="plano__colada" d={corteSuperior}></path>
     <path class="plano__colada" d={corteInferior}></path>
+    <rect class="plano__calor" x="400" y="60" width="24" height="52"></rect>
+    <rect class="plano__calor" x="400" y="268" width="24" height="52"></rect>
 
     <g class="plano__trazos">
-      <path d={circulo(cx, cy, 130)} pathLength="1" style="--i: 0"></path>
-      <path d={circulo(cx, cy, 78)} pathLength="1" style="--i: 1"></path>
-      <path d={circulo(cx, cy, 62)} pathLength="1" style="--i: 2"></path>
-      <path d={circulo(cx, cy, 24)} pathLength="1" style="--i: 3"></path>
-      {pernos.map(({ x, y }, i) => (
-        <path d={circulo(x, y, 6)} pathLength="1" style={`--i: ${4 + i * 0.3}`} />
-      ))}
       <path d={corteSuperior} pathLength="1" style="--i: 5"></path>
       <path d={corteInferior} pathLength="1" style="--i: 5.4"></path>
     </g>
@@ -104,7 +114,22 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
 </figure>
 
 <script>
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
+
   document.querySelectorAll<HTMLElement>('[data-plano]').forEach((plano) => {
+    const disco = plano.querySelector<SVGGElement>('[data-disco]');
+    let giro = 0;
+    let enfriar = 0;
+
+    plano.querySelector('svg')?.addEventListener('pointerenter', () => {
+      if (!disco || sinMovimiento.matches) return;
+      giro += 720;
+      disco.style.rotate = `${giro}deg`;
+      plano.classList.add('frenando');
+      window.clearTimeout(enfriar);
+      enfriar = window.setTimeout(() => plano.classList.remove('frenando'), 1500);
+    });
+
     plano.querySelector('[data-repetir]')?.addEventListener('click', () => {
       plano.classList.remove('animando');
       void plano.offsetWidth;
@@ -124,6 +149,28 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
     width: 100%;
     height: auto;
     overflow: visible;
+  }
+
+  .plano__disco {
+    transform-box: view-box;
+    transform-origin: 190px 190px;
+    transition: rotate 2.2s cubic-bezier(0.1, 0.7, 0.25, 1);
+  }
+
+  svg {
+    cursor: pointer;
+  }
+
+  .plano__calor {
+    fill: #ea580c;
+    opacity: 0;
+    transition: opacity 3s ease-out;
+    pointer-events: none;
+  }
+
+  .frenando .plano__calor {
+    opacity: 0.65;
+    transition: opacity 0.5s ease-in;
   }
 
   .plano__ejes line,

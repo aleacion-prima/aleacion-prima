@@ -21,12 +21,8 @@ const datos = [
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 0;
-    background: var(--ap-superficie);
-    border-bottom: 1px solid #cbd5e1;
-    box-shadow:
-      0 0 0 100vmax var(--ap-superficie),
-      0 1px 0 100vmax #cbd5e1;
-    clip-path: inset(0 -100vmax -1px);
+    border-image: linear-gradient(to top, #cbd5e1 1px, var(--ap-superficie) 1px) fill 0 // 0
+      100vmax;
   }
 
   .dato {
