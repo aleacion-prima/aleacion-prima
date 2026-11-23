@@ -1,0 +1,222 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+interface Seccion {
+  titulo: string;
+  parrafos: string[];
+  lista?: string[];
+}
+
+const fechaActualizacion = '22 de noviembre de 2026';
+
+const secciones: Seccion[] = [
+  {
+    titulo: 'Identidad y domicilio del responsable',
+    parrafos: [
+      'Aleación Prima, S.A. de C.V., con domicilio en Avenida de los Metales 100, Colonia Parque Industrial, Torreón, Coahuila, C.P. 27000, y correo electrónico privacidad@aleacionprima.com, es responsable del tratamiento de los datos personales que recaba a través de sus canales de contacto.',
+      'Para cualquier asunto relacionado con la protección de datos personales puede comunicarse también al teléfono +52 871 000 0000.',
+    ],
+  },
+  {
+    titulo: 'Datos personales que recabamos',
+    parrafos: [
+      'Cuando usted nos contacta por correo electrónico o teléfono, podemos recibir su nombre, correo electrónico, teléfono, empresa y el motivo de su consulta. Este sitio no cuenta con formularios ni guarda la información que usted escribe en esos canales.',
+      'Cuando existe una relación comercial, tratamos razón social, Registro Federal de Contribuyentes, domicilio fiscal, datos de contacto y condiciones de pago para gestionar la relación y cumplir obligaciones legales.',
+      'De usuarios del sistema: nombre, correo electrónico, rol, área asignada y registros de acceso.',
+      'No recabamos datos personales sensibles.',
+    ],
+  },
+  {
+    titulo: 'Finalidades del tratamiento',
+    parrafos: [
+      'Finalidades primarias: atender las consultas que nos envíe por correo o teléfono, dar seguimiento a las comunicaciones, elaborar cotizaciones cuando usted las solicite por esos canales, gestionar la relación comercial, emitir comprobantes fiscales, operar el sistema y cumplir obligaciones legales.',
+      'Finalidades secundarias: enviar información sobre productos, novedades y encuestas de satisfacción. Puede oponerse a estas finalidades en cualquier momento escribiendo a privacidad@aleacionprima.com; su oposición no afecta la atención de su consulta.',
+    ],
+  },
+  {
+    titulo: 'Transferencias y remisiones de datos',
+    parrafos: [
+      'No vendemos ni rentamos datos personales. Compartimos la información únicamente con proveedores que prestan servicios de alojamiento, correo electrónico, facturación y soporte, quienes están obligados a guardar confidencialidad, y con autoridades cuando exista un requerimiento legal debidamente fundado.',
+      'Cualquier otra transferencia se realizará con su consentimiento, salvo las excepciones previstas en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.',
+    ],
+  },
+  {
+    titulo: 'Medidas de seguridad',
+    parrafos: [
+      'Implementamos medidas administrativas, técnicas y físicas para proteger sus datos: control de acceso por rol, resguardo de contraseñas mediante funciones de hash, registros de actividad, capacitación del personal y restricción del acceso a la información a quienes la necesitan para cumplir sus funciones.',
+    ],
+  },
+  {
+    titulo: 'Conservación',
+    parrafos: [
+      'Conservamos los datos personales durante la relación comercial y, después de concluida, durante los plazos que exigen la legislación fiscal, mercantil y de responsabilidades. Al vencer esos plazos, los eliminamos o anonimizamos cuando no exista una obligación legal de conservarlos.',
+    ],
+  },
+  {
+    titulo: 'Derechos ARCO y revocación del consentimiento',
+    parrafos: [
+      'Puede ejercer sus derechos de acceso, rectificación, cancelación y oposición, así como revocar su consentimiento o limitar el uso de sus datos, enviando una solicitud a privacidad@aleacionprima.com o presentándola en Avenida de los Metales 100, Colonia Parque Industrial, Torreón, Coahuila, C.P. 27000. La solicitud debe incluir:',
+    ],
+    lista: [
+      'Nombre completo y domicilio u otro medio para recibir la respuesta.',
+      'Documento que acredite su identidad o la representación legal.',
+      'Descripción clara y precisa de los datos personales y del derecho que desea ejercer.',
+      'Cualquier elemento que facilite la localización de los datos personales.',
+      'Medio por el que desea recibir la respuesta.',
+    ],
+  },
+  {
+    titulo: 'Cookies y tecnologías de rastreo',
+    parrafos: [
+      'Este sitio no utiliza cookies para recabar datos personales ni para elaborar perfiles comerciales. Solo puede emplear almacenamiento técnico necesario para su funcionamiento; puede borrarlo desde la configuración de su navegador.',
+    ],
+  },
+  {
+    titulo: 'Cambios al aviso',
+    parrafos: [
+      'Podemos modificar este aviso para reflejar cambios en el tratamiento de los datos o en la legislación aplicable. Publicaremos la versión actualizada en esta misma página, con su fecha de última actualización. El uso posterior del sitio implica que conoce la versión vigente.',
+    ],
+  },
+  {
+    titulo: 'Autoridad',
+    parrafos: [
+      'Si considera que sus derechos de protección de datos personales han sido vulnerados, puede acudir a la Secretaría Anticorrupción y Buen Gobierno, autoridad competente en materia de protección de datos personales desde marzo de 2025. Puede presentar su solicitud por los canales oficiales de esa dependencia.',
+    ],
+  },
+];
+---
+
+<Layout titulo="Aviso de privacidad | Aleación Prima">
+  <section class="privacidad">
+    <header class="privacidad__encabezado">
+      <h1>Aviso de privacidad</h1>
+      <p>
+        Cómo Aleación Prima recaba, usa y protege sus datos personales, y cómo puede ejercer sus
+        derechos.
+      </p>
+      <span class="privacidad__fecha">Última actualización: {fechaActualizacion}</span>
+    </header>
+
+    <ol class="secciones">
+      {secciones.map((seccion, indice) => (
+        <li class="seccion">
+          <span class="seccion__numero">{String(indice + 1).padStart(2, '0')}</span>
+          <div class="seccion__cuerpo">
+            <h2>{seccion.titulo}</h2>
+            {seccion.parrafos.map((parrafo) => (
+              <p>{parrafo}</p>
+            ))}
+            {seccion.lista && (
+              <ol class="seccion__lista">
+                {seccion.lista.map((punto) => (
+                  <li>{punto}</li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+</Layout>
+
+<style>
+  .privacidad {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 960px;
+    padding: 48px 24px 0;
+  }
+
+  .privacidad__encabezado {
+    max-width: 720px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 32px;
+  }
+
+  .privacidad__encabezado p {
+    color: var(--ap-texto-secundario);
+    margin: 12px 0 0;
+  }
+
+  .privacidad__fecha {
+    color: var(--ap-texto-secundario);
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
+    margin-top: 12px;
+  }
+
+  .secciones {
+    background: var(--ap-superficie);
+    border: 1px solid var(--ap-borde);
+    border-radius: 12px;
+    list-style: none;
+    margin: 32px 0 0;
+    padding: 0 32px;
+  }
+
+  .seccion {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 32px 1fr;
+    padding: 28px 0;
+  }
+
+  .seccion + .seccion {
+    border-top: 1px solid var(--ap-borde);
+  }
+
+  .seccion__numero {
+    color: var(--q-primary);
+    font-family: var(--fuente-codigo);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  .seccion__cuerpo h2 {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+    margin-bottom: 8px;
+  }
+
+  .seccion__cuerpo p {
+    color: var(--ap-texto-secundario);
+    margin: 0 0 12px;
+  }
+
+  .seccion__cuerpo p:last-child {
+    margin-bottom: 0;
+  }
+
+  .seccion__lista {
+    color: var(--ap-texto-secundario);
+    margin: 0 0 12px;
+    padding-left: 20px;
+  }
+
+  .seccion__lista li + li {
+    margin-top: 6px;
+  }
+
+  @media (max-width: 640px) {
+    .privacidad {
+      padding: 32px 16px 0;
+    }
+
+    .secciones {
+      padding: 0 20px;
+    }
+
+    .seccion {
+      gap: 12px;
+      grid-template-columns: 24px 1fr;
+    }
+  }
+</style>

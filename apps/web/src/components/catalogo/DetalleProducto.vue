@@ -84,10 +84,13 @@ useCatalogoEnVivo({
           </div>
         </div>
 
-        <a class="boton boton--contorno boton--alto" href="/catalogo">
-          <img src="/iconos/arrow-back.svg" width="20" height="20" alt="" />
-          Volver al catálogo
-        </a>
+        <div class="detalle__acciones">
+          <a class="boton boton--primario boton--alto" href="/cotizar">Cotizar</a>
+          <a class="boton boton--contorno boton--alto" href="/catalogo">
+            <img src="/iconos/arrow-back.svg" width="20" height="20" alt="" />
+            Volver al catálogo
+          </a>
+        </div>
       </div>
     </section>
 
@@ -129,6 +132,12 @@ useCatalogoEnVivo({
   flex-direction: column;
   gap: 24px;
   width: 523px;
+}
+
+.detalle__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .detalle__nombre {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSesionStore } from '@/stores/sesion';
 
@@ -10,6 +10,13 @@ const saliendo = ref(false);
 
 const codigo = computed(() =>
   typeof route.params.codigo === 'string' ? route.params.codigo : null,
+);
+
+watch(
+  () => sesion.usuario,
+  async (actual, anterior) => {
+    if (anterior && !actual) await router.replace('/login');
+  },
 );
 
 const salir = async (): Promise<void> => {

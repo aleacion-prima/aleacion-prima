@@ -39,6 +39,12 @@ export const cabecerasConToken = async (base?: HeadersInit): Promise<Headers> =>
   return headers;
 };
 
+let sesionPerdida: (() => void) | null = null;
+
+export const alPerderSesion = (accion: () => void): void => {
+  sesionPerdida = accion;
+};
+
 export const useApi = createFetch({
   baseUrl: `${API_URL}/api`,
   fetchOptions: {
@@ -49,6 +55,10 @@ export const useApi = createFetch({
     async beforeFetch({ options }) {
       options.headers = await cabecerasConToken(options.headers);
       return { options };
+    },
+    onFetchError(contexto) {
+      if (contexto.response?.status === 401) sesionPerdida?.();
+      return contexto;
     },
   },
 });

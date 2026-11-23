@@ -12,6 +12,11 @@ export default defineConfig({
         access: 'public',
         default: 'http://localhost:8000',
       }),
+      PUBLIC_PANEL_URL: envField.string({
+        context: 'client',
+        access: 'public',
+        default: 'http://localhost:9000',
+      }),
       PUBLIC_REVERB_HOST: envField.string({
         context: 'client',
         access: 'public',
