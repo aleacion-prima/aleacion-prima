@@ -1,0 +1,61 @@
+---
+import ContactoVentas from '../components/ContactoVentas.vue';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout titulo="Cotizar | Aleación Prima">
+  <section class="cotizar">
+    <header class="cotizar__encabezado">
+      <h1>Cotizar</h1>
+      <p>
+        Para cotizar una pieza, contacta a nuestro equipo de ventas o inicia sesión si ya eres
+        cliente.
+      </p>
+    </header>
+
+    <ContactoVentas client:load />
+
+    <a class="cotizar__volver" href="/catalogo">
+      ← Volver a catálogo
+    </a>
+  </section>
+</Layout>
+
+<style>
+  .cotizar {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: 64px 24px;
+  }
+
+  .cotizar__encabezado {
+    margin: 0 auto 32px;
+    max-width: 520px;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 32px;
+  }
+
+  .cotizar__encabezado p {
+    color: var(--ap-texto-secundario);
+    margin: 12px 0 0;
+  }
+
+  .cotizar__volver {
+    color: var(--q-primary);
+    display: block;
+    font-weight: 500;
+    margin-top: 24px;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .cotizar__volver:hover {
+    text-decoration: underline;
+  }
+</style>

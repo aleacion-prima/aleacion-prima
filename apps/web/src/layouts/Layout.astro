@@ -1,4 +1,7 @@
 ---
+import BarraSuperior from '../components/BarraSuperior.astro';
+import PiePagina from '../components/PiePagina.astro';
+
 interface Props {
   titulo?: string;
   seccion?: 'inicio' | 'catalogo';
@@ -17,37 +20,18 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@600&family=Roboto:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <meta name="generator" content={Astro.generator} />
     <title>{titulo}</title>
   </head>
   <body>
-    <header class="barra">
-      <a class="barra__logo" href="/">
-        <img src="/logo.svg" width="28" height="28" alt="" />
-        <span>ALEACIÓN PRIMA</span>
-      </a>
-      <nav class="barra__nav">
-        <a
-          href="/"
-          class:list={['barra__enlace', { 'barra__enlace--activo': seccion === 'inicio' }]}
-        >
-          Inicio
-        </a>
-        <a
-          href="/catalogo"
-          class:list={['barra__enlace', { 'barra__enlace--activo': seccion === 'catalogo' }]}
-        >
-          Catálogo
-        </a>
-      </nav>
-      <span class="barra__espacio"></span>
-    </header>
+    <BarraSuperior seccion={seccion} />
     <main>
       <slot />
     </main>
+    <PiePagina />
   </body>
 </html>
 
@@ -63,6 +47,7 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
     --q-dark: #0f172a;
     --q-positive: #15803d;
     --fuente-titulos: 'Barlow Semi Condensed', sans-serif;
+    --fuente-cuerpo: Roboto, sans-serif;
     --fuente-codigo: 'IBM Plex Mono', monospace;
   }
 
@@ -70,36 +55,66 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
   body {
     margin: 0;
     min-height: 100%;
+  }
+
+  body {
     background: var(--ap-fondo);
-    font-family: Roboto, sans-serif;
     color: var(--q-dark);
+    display: flex;
+    flex-direction: column;
+    font-family: var(--fuente-cuerpo);
+    font-size: 14px;
+    line-height: 20px;
+    min-height: 100vh;
   }
 
   main {
-    max-width: 1440px;
+    flex: 1;
     margin: 0 auto;
+    max-width: 1440px;
+    width: 100%;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--fuente-titulos);
+    margin: 0;
+  }
+
+  a {
+    color: var(--q-primary);
   }
 
   .aviso {
+    color: var(--ap-texto-secundario);
     padding: 48px 32px;
     text-align: center;
-    color: var(--ap-texto-secundario);
   }
 
   .boton {
-    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 8px 16px;
     border-radius: 8px;
+    box-sizing: border-box;
+    display: flex;
     font-size: 14px;
     font-weight: 500;
-    line-height: 20px;
+    gap: 8px;
+    justify-content: center;
     letter-spacing: 0.25px;
+    line-height: 20px;
+    min-height: 40px;
+    padding: 8px 16px;
     text-decoration: none;
-    box-sizing: border-box;
+  }
+
+  .boton--primario {
+    background: var(--q-primary);
+    color: var(--ap-superficie);
+  }
+
+  .boton--primario:hover {
+    background: var(--q-accent);
   }
 
   .boton--contorno {
@@ -113,72 +128,13 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
   }
 
   .enlace {
-    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    color: var(--q-primary);
+    display: inline-flex;
     font-size: 14px;
     font-weight: 500;
-    color: var(--q-primary);
+    gap: 8px;
+    padding: 8px 16px;
     text-decoration: none;
-  }
-</style>
-
-<style>
-  .barra {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 32px;
-    background: var(--q-secondary);
-  }
-
-  .barra__logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 280px;
-    height: 44px;
-    font-family: var(--fuente-titulos);
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--ap-superficie);
-    text-decoration: none;
-  }
-
-  .barra__nav {
-    display: flex;
-    gap: 16px;
-  }
-
-  .barra__enlace {
-    padding: 12px 16px 9px;
-    border-bottom: 3px solid transparent;
-    font-size: 20px;
-    font-weight: 500;
-    line-height: 20px;
-    letter-spacing: 0.25px;
-    color: var(--ap-superficie);
-    text-decoration: none;
-  }
-
-  .barra__enlace--activo {
-    border-bottom-color: var(--q-accent);
-  }
-
-  .barra__espacio {
-    width: 280px;
-  }
-
-  @media (max-width: 767px) {
-    .barra__logo span,
-    .barra__espacio {
-      display: none;
-    }
-
-    .barra__logo {
-      width: auto;
-    }
   }
 </style>
