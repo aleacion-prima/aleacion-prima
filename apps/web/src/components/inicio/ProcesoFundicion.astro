@@ -1,0 +1,217 @@
+---
+const etapas = [
+  { codigo: 'MOL', nombre: 'Moldeo', detalle: 'Moldes en arena verde, 80 % reciclada' },
+  { codigo: 'FUS', nombre: 'Fusión', detalle: 'Horno de inducción y ajuste metalúrgico' },
+  { codigo: 'COL', nombre: 'Colada', detalle: 'Inoculación en cuchara y enfriamiento' },
+  { codigo: 'DES', nombre: 'Desmolde', detalle: 'Separación de piezas y retornos' },
+  { codigo: 'GRA', nombre: 'Granallado', detalle: 'Limpieza con granalla y rebabeo' },
+  { codigo: 'CAL', nombre: 'Calidad', detalle: 'Dureza Brinell, espectrometría y ultrasonido' },
+];
+---
+
+<section class="proceso">
+  <h2 data-revelar>Cómo fabricamos</h2>
+  <p class="proceso__intro" data-revelar style="--i: 1">
+    Cada lote es una colada y pasa por estas etapas. En cada una se registran piezas, mermas e
+    imprevistos.
+  </p>
+  <ol class="recorrido" data-revelar style="--i: 2">
+    {etapas.map(({ codigo, nombre, detalle }, i) => (
+      <li class="etapa" style={`--i: ${i}`}>
+        <span class="etapa__codigo">{codigo}</span>
+        <h3>{nombre}</h3>
+        <p>{detalle}</p>
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .proceso {
+    padding: 56px 32px;
+    background: var(--q-dark);
+    color: var(--ap-superficie);
+    text-align: center;
+  }
+
+  h2 {
+    margin: 0;
+    font-family: var(--fuente-titulos);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 32px;
+  }
+
+  .proceso__intro {
+    max-width: 576px;
+    margin: 12px auto 40px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--ap-borde);
+  }
+
+  .recorrido {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .etapa {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .etapa:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: calc(50% + 32px);
+    width: calc(100% - 48px);
+    height: 3px;
+    background: var(--q-accent);
+    transform-origin: left;
+  }
+
+  .etapa__codigo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: 3px solid var(--q-accent);
+    border-radius: 50%;
+    font-family: var(--fuente-codigo);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--q-accent);
+  }
+
+  h3 {
+    margin: 4px 0 0;
+    font-family: var(--fuente-titulos);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  .etapa p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--ap-borde);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.con-animaciones) .etapa__codigo,
+    :global(.con-animaciones) .etapa h3,
+    :global(.con-animaciones) .etapa p {
+      opacity: 0;
+    }
+
+    :global(.con-animaciones) .etapa:not(:last-child)::after {
+      transform: scaleX(0);
+    }
+
+    .recorrido:global(.revelado) .etapa__codigo,
+    .recorrido:global(.revelado) .etapa h3,
+    .recorrido:global(.revelado) .etapa p {
+      opacity: 1;
+    }
+
+    .recorrido:global(.revelado) .etapa:not(:last-child)::after {
+      transform: none;
+    }
+
+    .recorrido:global(.revelado) .etapa__codigo {
+      animation: encender 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+      animation-delay: calc(var(--i) * 280ms);
+    }
+
+    .recorrido:global(.revelado) .etapa h3,
+    .recorrido:global(.revelado) .etapa p {
+      animation: aparecer 0.5s ease backwards;
+      animation-delay: calc(var(--i) * 280ms + 150ms);
+    }
+
+    .recorrido:global(.revelado) .etapa:not(:last-child)::after {
+      animation: avanzar 0.35s ease-out backwards;
+      animation-delay: calc(var(--i) * 280ms + 250ms);
+    }
+
+    .etapa__codigo {
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .etapa:hover .etapa__codigo {
+      background: var(--q-accent);
+      color: var(--q-dark);
+      box-shadow: 0 0 24px rgb(249 115 22 / 60%);
+    }
+  }
+
+  @keyframes encender {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    60% {
+      box-shadow: 0 0 28px rgb(249 115 22 / 80%);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+      box-shadow: 0 0 0 transparent;
+    }
+  }
+
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes avanzar {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .recorrido {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      row-gap: 32px;
+    }
+
+    .etapa::after {
+      display: none;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .recorrido {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -31,6 +31,14 @@ defineProps<{ producto: ProductoPublico }>();
   background: var(--ap-superficie);
   border: 1px solid var(--ap-borde);
   border-radius: 12px;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.tarjeta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgb(15 23 42 / 10%);
 }
 
 .tarjeta__imagen {

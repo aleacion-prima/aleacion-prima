@@ -1,11 +1,21 @@
 ---
+import CifrasPlanta from '../components/inicio/CifrasPlanta.astro';
+import MaterialesHierro from '../components/inicio/MaterialesHierro.astro';
+import ProcesoFundicion from '../components/inicio/ProcesoFundicion.astro';
 import ProductosDestacados from '../components/inicio/ProductosDestacados.vue';
+import SobreFabrica from '../components/inicio/SobreFabrica.astro';
 import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout titulo="Aleación Prima" seccion="inicio">
+  <script is:inline>
+    document.documentElement.classList.add('con-animaciones');
+  </script>
   <section class="portada">
-    <h1>ALEACIÓN PRIMA</h1>
+    <h1 class="portada__marca">
+      <img class="portada__logo" src="/logo.svg" width="112" height="112" alt="" />
+      <span>ALEACIÓN PRIMA</span>
+    </h1>
     <p>
       Fundición de hierro gris y nodular. Piezas bajo plano, trazadas lote por lote desde la colada
       hasta la entrega.
@@ -15,22 +25,88 @@ import Layout from '../layouts/Layout.astro';
     </a>
   </section>
 
+  <CifrasPlanta />
+
   <section class="productos">
-    <h2>Nuestros productos</h2>
+    <h2 data-revelar>Nuestros productos</h2>
     <ProductosDestacados client:load />
+    <a class="enlace productos__todos" href="/catalogo">
+      Ver todo el catálogo
+    </a>
   </section>
 
-  <section class="fabrica">
-    <h2>Sobre la fábrica</h2>
-    <p>
-      Fabricamos piezas de hierro gris y nodular para los sectores automotriz, agrícola e
-      industrial. Cada lote se registra y se puede rastrear en todas sus etapas.
-    </p>
+  <ProcesoFundicion />
+
+  <section class="seccion-clara">
+    <MaterialesHierro />
+    <SobreFabrica />
+  </section>
+
+  <section class="llamado" data-revelar>
+    <h2>¿Buscas una pieza de fundición?</h2>
+    <p>Revisa la disponibilidad de cada pieza en el catálogo.</p>
+    <a class="boton portada__boton" href="/catalogo">
+      Ver catálogo
+    </a>
   </section>
 </Layout>
 
+<script>
+  const observador = new IntersectionObserver(
+    (entradas) => {
+      for (const entrada of entradas) {
+        if (!entrada.isIntersecting) continue;
+        entrada.target.classList.add('revelado');
+        observador.unobserve(entrada.target);
+      }
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+  );
+  document.querySelectorAll('[data-revelar]').forEach((elemento) => observador.observe(elemento));
+</script>
+
+<style is:global>
+  @media (prefers-reduced-motion: no-preference) {
+    .con-animaciones [data-revelar] {
+      opacity: 0;
+      translate: 0 32px;
+      transition:
+        opacity 0.7s ease calc(var(--i, 0) * 100ms),
+        translate 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * 100ms),
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .con-animaciones [data-revelar].revelado {
+      opacity: 1;
+      translate: none;
+    }
+  }
+</style>
+
 <style>
   .portada {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .portada::before {
+    content: '';
+    position: absolute;
+    inset: -20% -10% auto;
+    z-index: -1;
+    height: 140%;
+    background: radial-gradient(
+      ellipse at 50% 35%,
+      rgb(249 115 22 / 22%),
+      rgb(194 65 12 / 8%) 35%,
+      transparent 65%
+    );
+  }
+
+  .portada,
+  .llamado {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -40,16 +116,22 @@ import Layout from '../layouts/Layout.astro';
     text-align: center;
   }
 
-  .portada h1 {
+  .portada__marca {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
     margin: 0;
     font-family: var(--fuente-titulos);
     font-size: 56px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 64px;
+    letter-spacing: 6px;
     color: var(--ap-superficie);
   }
 
-  .portada p {
+  .portada p,
+  .llamado p {
     max-width: 576px;
     margin: 0;
     font-size: 16px;
@@ -58,6 +140,10 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .portada__boton {
+    transition:
+      background 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
     min-height: 44px;
     padding: 8px 24px;
     font-size: 15px;
@@ -67,13 +153,88 @@ import Layout from '../layouts/Layout.astro';
 
   .portada__boton:hover {
     background: var(--q-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgb(249 115 22 / 35%);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .portada::before {
+      animation: brasa 6s ease-in-out infinite alternate;
+    }
+
+    .portada__logo {
+      animation: forjar 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+
+    .portada__marca span,
+    .portada p,
+    .portada .portada__boton {
+      animation: subir 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    }
+
+    .portada__marca span {
+      animation-delay: 0.35s;
+    }
+
+    .portada p {
+      animation-delay: 0.5s;
+    }
+
+    .portada .portada__boton {
+      animation-delay: 0.65s;
+    }
+  }
+
+  @keyframes brasa {
+    from {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes forjar {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-30deg);
+      filter: drop-shadow(0 0 0 transparent);
+    }
+
+    60% {
+      filter: drop-shadow(0 0 24px rgb(249 115 22 / 70%));
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+      filter: drop-shadow(0 0 8px rgb(249 115 22 / 30%));
+    }
+  }
+
+  @keyframes subir {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   .productos {
+    display: flex;
+    flex-direction: column;
     padding: 40px 32px;
   }
 
-  .productos h2 {
+  .productos h2,
+  .llamado h2 {
     margin: 0 0 24px;
     font-family: var(--fuente-titulos);
     font-size: 28px;
@@ -82,40 +243,40 @@ import Layout from '../layouts/Layout.astro';
     text-align: center;
   }
 
-  .fabrica {
-    margin: 0 32px 40px;
-    padding: 24px;
-    background: var(--ap-superficie);
-    border: 1px solid var(--ap-borde);
-    border-radius: 12px;
+  .productos__todos {
+    align-self: center;
+    margin-top: 16px;
   }
 
-  .fabrica h2 {
-    margin: 0 0 12px;
-    font-family: var(--fuente-titulos);
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 24px;
+  .seccion-clara {
+    padding-top: 40px;
   }
 
-  .fabrica p {
-    max-width: 576px;
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    letter-spacing: 0.25px;
-    color: var(--ap-texto-secundario);
+  .llamado {
+    gap: 0;
+    padding: 56px 32px;
+    background: var(--q-secondary);
+  }
+
+  .llamado h2 {
+    margin-bottom: 8px;
+    color: var(--ap-superficie);
+  }
+
+  .llamado .portada__boton {
+    margin-top: 24px;
   }
 
   @media (max-width: 599px) {
-    .portada h1 {
-      font-size: 40px;
-      line-height: 48px;
+    .portada__marca {
+      font-size: 36px;
+      line-height: 44px;
+      letter-spacing: 3px;
     }
 
-    .fabrica {
-      margin: 0 16px 40px;
+    .portada__marca img {
+      width: 80px;
+      height: 80px;
     }
   }
 </style>

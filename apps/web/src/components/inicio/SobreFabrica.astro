@@ -1,0 +1,111 @@
+---
+const sectores = [
+  'Refaccionarias de autopartes',
+  'Fabricantes de maquinaria agrícola',
+  'Talleres de la Comarca Lagunera',
+];
+---
+
+<section class="fabrica">
+  <div class="fabrica__info" data-revelar>
+    <h2>Sobre la fábrica</h2>
+    <p>
+      Fabricamos piezas de hierro gris y nodular para los sectores automotriz, agrícola e
+      industrial. Cada lote se registra y se puede rastrear en todas sus etapas.
+    </p>
+    <h3>A quién atendemos</h3>
+    <ul>
+      {sectores.map((sector) => (
+        <li>{sector}</li>
+      ))}
+    </ul>
+    <dl>
+      <dt>Ubicación</dt>
+      <dd>Torreón, Coahuila</dd>
+      <dt>Horario</dt>
+      <dd>Lunes a viernes, 07:00 a 17:00</dd>
+    </dl>
+  </div>
+  <iframe
+    class="fabrica__mapa"
+    data-revelar
+    style="--i: 1"
+    title="Ubicación de la planta en Torreón, Coahuila"
+    src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
+    loading="lazy"
+  ></iframe>
+</section>
+
+<style>
+  .fabrica {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    padding: 0 32px 40px;
+  }
+
+  .fabrica__info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--ap-superficie);
+    border: 1px solid var(--ap-borde);
+    border-radius: 12px;
+  }
+
+  h2,
+  h3 {
+    margin: 0;
+    font-family: var(--fuente-titulos);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  h3 {
+    margin-top: 8px;
+    font-size: 16px;
+  }
+
+  p,
+  ul,
+  dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    letter-spacing: 0.25px;
+    color: var(--ap-texto-secundario);
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    margin: 8px 0 0;
+  }
+
+  dt {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .fabrica__mapa {
+    width: 100%;
+    min-height: 320px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--ap-borde);
+  }
+
+  @media (max-width: 767px) {
+    .fabrica {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -48,6 +48,32 @@ useCatalogoEnVivo({
   gap: 24px;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .destacados > * {
+    animation: subir 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+
+  .destacados > :nth-child(2) {
+    animation-delay: 0.12s;
+  }
+
+  .destacados > :nth-child(3) {
+    animation-delay: 0.24s;
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (max-width: 1023px) {
   .destacados {
     grid-template-columns: repeat(2, minmax(0, 1fr));

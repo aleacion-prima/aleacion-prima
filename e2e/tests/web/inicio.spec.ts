@@ -8,7 +8,7 @@ test('el inicio presenta la empresa y lleva al catálogo', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Sobre la fábrica' })).toBeVisible();
   await expect(page.getByText('Welcome to Astro')).toHaveCount(0);
 
-  await page.getByRole('link', { name: 'Ver catálogo' }).click();
+  await page.getByRole('link', { name: 'Ver catálogo' }).first().click();
   await expect(page).toHaveURL(/\/catalogo$/);
 });
 

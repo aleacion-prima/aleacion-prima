@@ -1,0 +1,55 @@
+---
+const cifras = [
+  { valor: '750 kg', texto: 'por colada en horno de inducción' },
+  { valor: '6', texto: 'etapas de proceso por lote' },
+  { valor: '2', texto: 'tipos de hierro: gris y nodular' },
+  { valor: '100 %', texto: 'de los lotes con trazabilidad' },
+];
+---
+
+<section class="cifras">
+  {cifras.map(({ valor, texto }, i) => (
+    <div class="cifra" data-revelar style={`--i: ${i}`}>
+      <strong>{valor}</strong>
+      <span>{texto}</span>
+    </div>
+  ))}
+</section>
+
+<style>
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    padding: 32px;
+    background: var(--q-secondary);
+  }
+
+  .cifra {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+
+  strong {
+    font-family: var(--fuente-codigo);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 40px;
+    color: var(--q-accent);
+  }
+
+  span {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--ap-borde);
+  }
+
+  @media (max-width: 767px) {
+    .cifras {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
