@@ -1,5 +1,6 @@
 ---
-import CifrasPlanta from '../components/inicio/CifrasPlanta.astro';
+import DatosPlanta from '../components/inicio/DatosPlanta.astro';
+import EncabezadoBloque from '../components/inicio/EncabezadoBloque.astro';
 import FichaLote from '../components/inicio/FichaLote.astro';
 import MaterialesHierro from '../components/inicio/MaterialesHierro.astro';
 import ProcesoFundicion from '../components/inicio/ProcesoFundicion.astro';
@@ -14,8 +15,11 @@ import Layout from '../layouts/Layout.astro';
   </script>
   <section class="portada">
     <div class="portada__texto">
-      <img class="portada__logo" src="/logo.svg" width="64" height="64" alt="" />
-      <h1>Piezas de hierro gris y nodular, trazadas lote por lote</h1>
+      <h1>
+        <span>Piezas de hierro</span>
+        <span>gris y nodular,</span>
+        <span class="portada__acento">lote por lote</span>
+      </h1>
       <p>
         Fundimos en Torreón, Coahuila, piezas en bruto para refaccionarias, fabricantes de
         maquinaria agrícola y talleres. Cada colada queda registrada de la arena a la entrega.
@@ -24,7 +28,7 @@ import Layout from '../layouts/Layout.astro';
         <a class="boton portada__boton" href="/catalogo">
           Ver catálogo
         </a>
-        <a class="enlace portada__enlace" href="#proceso">
+        <a class="portada__enlace" href="#proceso">
           Cómo fabricamos
         </a>
       </div>
@@ -34,19 +38,18 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 
-  <CifrasPlanta />
+  <DatosPlanta />
 
   <section class="bloque">
-    <header class="bloque__encabezado" data-revelar>
-      <div>
-        <h2>Nuestros productos</h2>
-        <p>Primero los que tenemos en existencia.</p>
-      </div>
-      <a class="enlace" href="/catalogo">
-        Ver todo el catálogo
-      </a>
-    </header>
-    <ProductosDestacados client:load />
+    <EncabezadoBloque
+      numero="01"
+      titulo="Lo que fundimos"
+      texto="Primero las piezas que tenemos en existencia."
+      enlace={{ href: '/catalogo', texto: 'Ver todo el catálogo' }}
+    />
+    <div class="destacados">
+      <ProductosDestacados client:load />
+    </div>
   </section>
 
   <ProcesoFundicion />
@@ -57,39 +60,32 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="llamado">
     <div class="llamado__contenido" data-revelar>
-      <div>
-        <h2>¿Buscas una pieza de fundición?</h2>
-        <p>Revisa la disponibilidad de cada pieza en el catálogo.</p>
+      <h2>
+        ¿Una pieza, una serie,
+        <br />
+        <span>un plano?</span>
+      </h2>
+      <div class="llamado__acciones">
+        <p>Escríbele a ventas con la pieza, el material y la cantidad.</p>
+        <div>
+          <a class="boton llamado__boton" href="/cotizar">
+            Cotizar
+          </a>
+          <a class="boton llamado__secundario" href="/catalogo">
+            Ver catálogo
+          </a>
+        </div>
       </div>
-      <a class="boton llamado__boton" href="/catalogo">
-        Ver catálogo
-      </a>
     </div>
   </section>
 </Layout>
 
 <script>
-  const contar = (elemento: HTMLElement): void => {
-    const final = Number(elemento.dataset.contar);
-    const inicio = performance.now();
-    const paso = (ahora: number): void => {
-      const avance = Math.min((ahora - inicio) / 1200, 1);
-      elemento.textContent = String(Math.round(final * (1 - Math.pow(1 - avance, 3))));
-      if (avance < 1) requestAnimationFrame(paso);
-    };
-    requestAnimationFrame(paso);
-  };
-
-  const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   const observador = new IntersectionObserver(
     (entradas) => {
       for (const entrada of entradas) {
         if (!entrada.isIntersecting) continue;
         entrada.target.classList.add('revelado');
-        if (animar) {
-          entrada.target.querySelectorAll<HTMLElement>('[data-contar]').forEach(contar);
-        }
         observador.unobserve(entrada.target);
       }
     },
@@ -104,33 +100,8 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .bloque {
-    padding: 72px 32px;
-  }
-
-  .bloque__encabezado {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .bloque__encabezado h2 {
-    margin: 0;
-    padding-left: 14px;
-    border-left: 4px solid var(--q-primary);
-    font-family: var(--fuente-titulos);
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 36px;
-    text-transform: uppercase;
-  }
-
-  .bloque__encabezado p {
-    margin: 8px 0 0 18px;
-    font-size: 15px;
-    line-height: 22px;
-    color: var(--ap-texto-secundario);
+    padding: 80px 32px 0;
+    scroll-margin-top: 16px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -144,8 +115,8 @@ import Layout from '../layouts/Layout.astro';
       opacity: 0;
       translate: 0 20px;
       transition:
-        opacity 0.6s ease calc(var(--i, 0) * 80ms),
-        translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * 80ms);
+        opacity 0.6s ease calc(var(--i, 0) * 70ms),
+        translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * 70ms);
     }
 
     .con-animaciones [data-revelar].revelado {
@@ -156,17 +127,7 @@ import Layout from '../layouts/Layout.astro';
 
   @media (max-width: 599px) {
     .bloque {
-      padding: 56px 16px;
-    }
-
-    .bloque__encabezado {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .bloque__encabezado h2 {
-      font-size: 26px;
-      line-height: 30px;
+      padding: 56px 16px 0;
     }
   }
 </style>
@@ -174,10 +135,10 @@ import Layout from '../layouts/Layout.astro';
 <style>
   .portada {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
-    gap: 64px;
-    padding: 72px 32px 80px;
+    gap: 56px;
+    padding: 64px 32px 72px;
     background: var(--q-dark);
     color: var(--ap-superficie);
   }
@@ -186,22 +147,22 @@ import Layout from '../layouts/Layout.astro';
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 20px;
-    max-width: 600px;
-  }
-
-  .portada__logo {
-    width: 64px;
-    height: 64px;
+    gap: 24px;
   }
 
   h1 {
-    margin: 0;
-    font-family: var(--fuente-titulos);
-    font-size: clamp(38px, 5vw, 60px);
+    font-size: clamp(48px, 7vw, 104px);
     font-weight: 700;
-    line-height: 1.02;
+    line-height: 0.9;
     text-transform: uppercase;
+  }
+
+  h1 span {
+    display: block;
+  }
+
+  .portada__acento {
+    color: var(--q-accent);
   }
 
   .portada p {
@@ -216,8 +177,7 @@ import Layout from '../layouts/Layout.astro';
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 24px;
   }
 
   .portada__boton,
@@ -235,10 +195,12 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .portada__enlace {
+    font-size: 15px;
+    font-weight: 500;
     color: var(--ap-superficie);
     text-decoration: underline;
     text-decoration-color: rgb(248 250 252 / 35%);
-    text-underline-offset: 4px;
+    text-underline-offset: 5px;
     transition: text-decoration-color 0.2s ease;
   }
 
@@ -248,81 +210,112 @@ import Layout from '../layouts/Layout.astro';
 
   .portada__boton:focus-visible,
   .portada__enlace:focus-visible,
-  .llamado__boton:focus-visible {
+  .llamado__boton:focus-visible,
+  .llamado__secundario:focus-visible {
     outline: 2px solid var(--q-accent);
     outline-offset: 3px;
   }
 
   .portada__ficha {
-    max-width: 480px;
     width: 100%;
+    max-width: 460px;
     justify-self: end;
   }
 
+  .destacados {
+    padding-top: 32px;
+  }
+
   .llamado {
-    padding: 56px 32px;
-    background: var(--q-primary);
+    margin-top: 96px;
+    padding: 64px 32px;
+    background: var(--q-dark);
     color: var(--ap-superficie);
   }
 
   .llamado__contenido {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 40px;
   }
 
   .llamado h2 {
-    margin: 0;
-    font-family: var(--fuente-titulos);
-    font-size: 32px;
+    font-size: clamp(40px, 5.6vw, 80px);
     font-weight: 700;
-    line-height: 36px;
+    line-height: 0.92;
     text-transform: uppercase;
   }
 
-  .llamado p {
-    margin: 6px 0 0;
-    font-size: 16px;
-    line-height: 24px;
-    color: #ffedd5;
+  .llamado h2 span {
+    color: var(--q-accent);
   }
 
-  .llamado__boton {
-    flex-shrink: 0;
-    background: var(--q-dark);
+  .llamado__acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-left: 32px;
+    border-left: 1px solid #334155;
+  }
+
+  .llamado__acciones p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    color: #cbd5e1;
+  }
+
+  .llamado__acciones div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .llamado__boton:hover {
-    background: var(--q-secondary);
+    background: var(--q-accent);
+  }
+
+  .llamado__secundario {
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 15px;
+    border: 1px solid #475569;
+    color: var(--ap-superficie);
+    transition: border-color 0.2s ease;
+  }
+
+  .llamado__secundario:hover {
+    border-color: var(--ap-superficie);
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .portada__texto > * {
-      animation: entrar 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    h1 span {
+      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
     }
 
-    .portada__texto > :nth-child(2) {
+    h1 span:nth-child(2) {
       animation-delay: 0.08s;
     }
 
-    .portada__texto > :nth-child(3) {
+    h1 span:nth-child(3) {
       animation-delay: 0.16s;
     }
 
-    .portada__texto > :nth-child(4) {
-      animation-delay: 0.24s;
+    .portada p,
+    .portada__acciones {
+      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.26s backwards;
     }
 
     .portada__ficha {
-      animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s backwards;
+      animation: entrar 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s backwards;
     }
   }
 
   @keyframes entrar {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(20px);
     }
   }
 
@@ -335,6 +328,16 @@ import Layout from '../layouts/Layout.astro';
     .portada__ficha {
       justify-self: start;
     }
+
+    .llamado__contenido {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .llamado__acciones {
+      padding-left: 0;
+      border-left: 0;
+    }
   }
 
   @media (max-width: 599px) {
@@ -343,17 +346,8 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .llamado {
+      margin-top: 72px;
       padding: 48px 16px;
-    }
-
-    .llamado__contenido {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .llamado h2 {
-      font-size: 26px;
-      line-height: 30px;
     }
   }
 </style>

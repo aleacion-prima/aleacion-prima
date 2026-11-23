@@ -1,143 +1,81 @@
 ---
-const sectores = [
-  'Refaccionarias de autopartes',
-  'Fabricantes de maquinaria agrícola',
-  'Talleres de la Comarca Lagunera',
+import EncabezadoBloque from './EncabezadoBloque.astro';
+
+const datos = [
+  { clave: 'Clientes', valor: 'Refaccionarias de autopartes' },
+  { clave: '', valor: 'Fabricantes de maquinaria agrícola' },
+  { clave: '', valor: 'Talleres de la Comarca Lagunera' },
+  { clave: 'Equipo', valor: 'Unas 20 personas en un turno' },
+  { clave: 'Laboratorio', valor: 'Durómetro Brinell, espectrómetro y ultrasonido' },
+  { clave: 'Ubicación', valor: 'Torreón, Coahuila' },
+  { clave: 'Horario', valor: 'Lunes a viernes, 07:00 a 17:00' },
 ];
 ---
 
-<section class="bloque fabrica">
-  <div class="fabrica__info" data-revelar>
-    <h2>Sobre la fábrica</h2>
-    <p>
-      Fabricamos piezas de hierro gris y nodular para los sectores automotriz, agrícola e
-      industrial. Cada lote se registra y se puede rastrear en todas sus etapas.
-    </p>
-    <h3>A quién atendemos</h3>
-    <ul>
-      {sectores.map((sector) => (
-        <li>{sector}</li>
+<section class="bloque">
+  <EncabezadoBloque
+    numero="04"
+    titulo="La planta"
+    texto="Fundimos piezas en bruto, sin maquinar, para empresas. No vendemos al público en general."
+  />
+  <div class="planta">
+    <dl class="planta__datos" data-revelar>
+      {datos.map(({ clave, valor }) => (
+        <div>
+          <dt>{clave}</dt>
+          <dd>{valor}</dd>
+        </div>
       ))}
-    </ul>
-    <dl>
-      <div>
-        <dt>Ubicación</dt>
-        <dd>Torreón, Coahuila</dd>
-      </div>
-      <div>
-        <dt>Horario</dt>
-        <dd>Lunes a viernes, 07:00 a 17:00</dd>
-      </div>
     </dl>
-  </div>
-  <div class="fabrica__mapa" data-revelar style="--i: 1">
-    <iframe
-      title="Ubicación de la planta en Torreón, Coahuila"
-      src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
-      loading="lazy"
-    ></iframe>
+    <div class="planta__mapa" data-revelar style="--i: 1">
+      <iframe
+        title="Ubicación de la planta en Torreón, Coahuila"
+        src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
+        loading="lazy"
+      ></iframe>
+    </div>
   </div>
 </section>
 
 <style>
-  .fabrica {
+  .planta {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-    padding-top: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    border-bottom: 1px solid var(--q-dark);
   }
 
-  .fabrica__info {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 32px;
-    background: var(--ap-superficie);
-    border: 1px solid var(--ap-borde);
-    border-radius: 12px;
-  }
-
-  h2,
-  h3 {
+  .planta__datos {
     margin: 0;
-    font-family: var(--fuente-titulos);
-    font-weight: 600;
+    border-right: 1px solid var(--q-dark);
   }
 
-  h2 {
-    padding-left: 14px;
-    border-left: 4px solid var(--q-primary);
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 32px;
-    text-transform: uppercase;
-  }
-
-  h3 {
-    margin-top: 8px;
-    font-size: 16px;
-    line-height: 20px;
-  }
-
-  p {
-    margin: 0;
-    font-size: 15px;
-    line-height: 22px;
-    color: var(--ap-texto-secundario);
-  }
-
-  ul {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--ap-texto-secundario);
-  }
-
-  li::before {
-    content: '';
-    width: 3px;
-    height: 18px;
-    flex-shrink: 0;
-    background: var(--q-accent);
-  }
-
-  dl {
+  .planta__datos div {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 96px minmax(0, 1fr);
     gap: 16px;
-    margin: auto 0 0;
-    padding-top: 20px;
-    border-top: 1px solid var(--ap-borde);
+    padding: 14px 24px 14px 0;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .planta__datos div:last-child {
+    border-bottom: 0;
   }
 
   dt {
-    font-size: 12px;
-    font-weight: 500;
+    padding-left: 20px;
+    font-size: 13px;
     color: var(--ap-texto-secundario);
   }
 
   dd {
-    margin: 4px 0 0;
-    font-size: 14px;
+    margin: 0;
+    font-size: 15px;
     font-weight: 500;
+    line-height: 20px;
   }
 
-  .fabrica__mapa {
-    overflow: hidden;
-    min-height: 360px;
-    border: 1px solid var(--ap-borde);
-    border-radius: 12px;
+  .planta__mapa {
+    min-height: 380px;
     background: var(--ap-borde);
   }
 
@@ -145,17 +83,26 @@ const sectores = [
     display: block;
     width: 100%;
     height: 100%;
-    min-height: 360px;
+    min-height: 380px;
     border: 0;
   }
 
-  @media (max-width: 767px) {
-    .fabrica {
+  @media (max-width: 899px) {
+    .planta {
       grid-template-columns: 1fr;
     }
 
-    .fabrica__info {
-      padding: 24px;
+    .planta__datos {
+      border-right: 0;
+      border-bottom: 1px solid var(--q-dark);
+    }
+
+    .planta__datos div {
+      grid-template-columns: 88px minmax(0, 1fr);
+    }
+
+    dt {
+      padding-left: 12px;
     }
   }
 </style>

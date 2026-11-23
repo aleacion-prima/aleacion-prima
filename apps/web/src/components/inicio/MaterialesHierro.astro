@@ -1,46 +1,103 @@
 ---
+import EncabezadoBloque from './EncabezadoBloque.astro';
+
+let semilla = 7;
+const azar = (): number => {
+  semilla = (semilla * 9301 + 49297) % 233280;
+  return semilla / 233280;
+};
+
+const laminas = Array.from({ length: 46 }, () => {
+  const x = azar() * 400;
+  const y = azar() * 160;
+  const largo = 14 + azar() * 34;
+  const angulo = (azar() - 0.5) * 2.4;
+  const curva = (azar() - 0.5) * 10;
+  const x2 = x + Math.cos(angulo) * largo;
+  const y2 = y + Math.sin(angulo) * largo;
+  const cx = (x + x2) / 2 - Math.sin(angulo) * curva;
+  const cy = (y + y2) / 2 + Math.cos(angulo) * curva;
+  return `M${x.toFixed(1)} ${y.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+});
+
+const nodulos = Array.from({ length: 34 }, () => ({
+  x: (azar() * 400).toFixed(1),
+  y: (azar() * 160).toFixed(1),
+  r: (3 + azar() * 6).toFixed(1),
+}));
+
 const materiales = [
   {
     clave: 'gris',
     nombre: 'Hierro gris',
-    grado: 'Clase 30 · ASTM A48',
-    estructura: 'Grafito laminar',
-    texto: 'Buena absorción de vibraciones y disipación de calor.',
-    piezas: ['Discos de freno', 'Poleas industriales'],
+    grafito: 'Grafito laminar',
+    texto: 'Absorbe vibraciones y disipa calor. Lo usamos en piezas de fricción y transmisión.',
+    propiedades: [
+      { clave: 'Grado', valor: 'Clase 30 · ASTM A48' },
+      { clave: 'Carga', valor: '48 % chatarra de fundición · 48 % acero 1020' },
+      { clave: 'Piezas', valor: 'Discos de freno, poleas industriales' },
+    ],
   },
   {
     clave: 'nodular',
     nombre: 'Hierro nodular',
-    grado: '65-45-12 y 80-55-06 · ASTM A536',
-    estructura: 'Grafito esferoidal',
-    texto: 'Mayor resistencia y ductilidad para servicio pesado.',
-    piezas: ['Cajas de transmisión', 'Carcasas de precisión', 'Soportes de mangueta agrícola'],
+    grafito: 'Grafito esferoidal',
+    texto: 'Más resistente y dúctil. Lo usamos en piezas que trabajan con carga e impacto.',
+    propiedades: [
+      { clave: 'Grados', valor: '65-45-12 y 80-55-06 · ASTM A536' },
+      { clave: 'Nodulizante', valor: '2 % en la cuchara' },
+      { clave: 'Piezas', valor: 'Cajas de transmisión, carcasas, soportes de mangueta' },
+    ],
   },
 ];
 ---
 
 <section class="bloque">
-  <header class="bloque__encabezado" data-revelar>
-    <div>
-      <h2>Materiales</h2>
-      <p>Las dos familias de hierro que fundimos y en qué piezas las usamos.</p>
-    </div>
-  </header>
-  <div class="materiales__lista">
-    {materiales.map(({ clave, nombre, grado, estructura, texto, piezas }, i) => (
-      <article class="material" data-revelar style={`--i: ${i}`}>
-        <div class={`material__micro material__micro--${clave}`} aria-hidden="true">
-          <span class="material__lente">{estructura}</span>
+  <EncabezadoBloque
+    numero="03"
+    titulo="Materiales"
+    texto="Las dos familias de hierro que fundimos y lo que hacemos con cada una."
+  />
+  <div class="mitades">
+    {materiales.map(({ clave, nombre, grafito, texto, propiedades }) => (
+      <article class={`mitad mitad--${clave}`} data-revelar>
+        <svg
+          class="micrografia"
+          viewBox="0 0 400 160"
+          preserveAspectRatio="xMidYMid slice"
+          role="img"
+          aria-label={`${grafito} visto al microscopio`}
+        >
+          <rect width="400" height="160" />
+          {clave === 'gris' ? (
+            <g class="micrografia__laminas">
+              {laminas.map((d, i) => (
+                <path d={d} pathLength="1" style={`--i: ${i % 12}`} />
+              ))}
+            </g>
+          ) : (
+            <g class="micrografia__nodulos">
+              {nodulos.map(({ x, y, r }, i) => (
+                <circle cx={x} cy={y} r={r} style={`--i: ${i % 12}`} />
+              ))}
+            </g>
+          )}
+        </svg>
+        <div class="mitad__franja">
+          <span>{grafito}</span>
+          <span>100×</span>
         </div>
-        <div class="material__cuerpo">
+        <div class="mitad__cuerpo">
           <h3>{nombre}</h3>
-          <span class="material__grado">{grado}</span>
           <p>{texto}</p>
-          <ul>
-            {piezas.map((pieza) => (
-              <li>{pieza}</li>
+          <dl>
+            {propiedades.map((propiedad) => (
+              <div>
+                <dt>{propiedad.clave}</dt>
+                <dd>{propiedad.valor}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
         </div>
       </article>
     ))}
@@ -48,150 +105,162 @@ const materiales = [
 </section>
 
 <style>
-  .materiales__lista {
+  .mitades {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
+    border-bottom: 1px solid var(--q-dark);
   }
 
-  .material {
-    overflow: hidden;
+  .mitad--gris {
     background: var(--ap-superficie);
-    border: 1px solid var(--ap-borde);
-    border-radius: 12px;
-    transition: border-color 0.2s ease;
+    border-right: 1px solid var(--q-dark);
   }
 
-  .material:hover {
-    border-color: var(--q-secondary);
-  }
-
-  .material__micro {
-    position: relative;
-    height: 132px;
-    background-color: #d6dbe1;
-    transition: background-size 0.6s ease;
-  }
-
-  .material__micro--gris {
-    background-image:
-      repeating-linear-gradient(
-        28deg,
-        transparent 0 14px,
-        rgb(30 41 59 / 55%) 14px 16px,
-        transparent 16px 31px
-      ),
-      repeating-linear-gradient(
-        -36deg,
-        transparent 0 22px,
-        rgb(30 41 59 / 45%) 22px 24px,
-        transparent 24px 47px
-      ),
-      repeating-linear-gradient(
-        74deg,
-        transparent 0 30px,
-        rgb(30 41 59 / 35%) 30px 31px,
-        transparent 31px 58px
-      );
-    background-size:
-      100% 100%,
-      100% 100%,
-      100% 100%;
-  }
-
-  .material__micro--nodular {
-    background-image:
-      radial-gradient(circle, rgb(30 41 59 / 75%) 0 5px, transparent 6px),
-      radial-gradient(circle, rgb(30 41 59 / 60%) 0 3.5px, transparent 4.5px),
-      radial-gradient(circle, rgb(30 41 59 / 50%) 0 2.5px, transparent 3.5px);
-    background-size:
-      38px 34px,
-      26px 30px,
-      18px 22px;
-    background-position:
-      0 0,
-      11px 9px,
-      5px 15px;
-  }
-
-  .material__micro::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 50%, transparent 40%, rgb(15 23 42 / 35%) 100%);
-  }
-
-  .material:hover .material__micro--nodular {
-    background-size:
-      42px 38px,
-      29px 33px,
-      20px 24px;
-  }
-
-  .material__lente {
-    position: absolute;
-    right: 12px;
-    bottom: 10px;
-    z-index: 1;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: rgb(15 23 42 / 80%);
-    font-size: 12px;
-    font-weight: 500;
+  .mitad--nodular {
+    background: var(--q-dark);
     color: var(--ap-superficie);
   }
 
-  .material__cuerpo {
+  .micrografia {
+    display: block;
+    width: 100%;
+    height: 180px;
+  }
+
+  .mitad--gris rect {
+    fill: #e2e8f0;
+  }
+
+  .mitad--nodular rect {
+    fill: #1e293b;
+  }
+
+  .micrografia__laminas path {
+    fill: none;
+    stroke: #334155;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+  }
+
+  .micrografia__nodulos circle {
+    fill: #0b1120;
+    stroke: #64748b;
+    stroke-width: 1.2;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .mitad__franja {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 24px;
-  }
-
-  h3 {
-    margin: 0;
-    font-family: var(--fuente-titulos);
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 28px;
-  }
-
-  .material__grado {
-    font-family: var(--fuente-codigo);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--q-primary);
-  }
-
-  p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
+    justify-content: space-between;
+    padding: 10px 28px;
+    border-top: 1px solid #cbd5e1;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 12px;
+    font-weight: 500;
     color: var(--ap-texto-secundario);
   }
 
-  ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 8px 0 0;
-    padding: 0;
-    list-style: none;
+  .mitad--nodular .mitad__franja {
+    border-color: #334155;
+    color: #94a3b8;
   }
 
-  li {
-    padding: 4px 10px;
-    border: 1px solid var(--ap-borde);
-    border-radius: 999px;
-    background: var(--ap-fondo);
-    font-size: 12px;
+  .mitad__cuerpo {
+    padding: 28px 28px 32px;
+  }
+
+  h3 {
+    font-size: clamp(30px, 3.4vw, 44px);
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  p {
+    max-width: 440px;
+    margin: 12px 0 0;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--ap-texto-secundario);
+  }
+
+  .mitad--nodular p {
+    color: #cbd5e1;
+  }
+
+  dl {
+    margin: 24px 0 0;
+    border-top: 1px solid #cbd5e1;
+  }
+
+  .mitad--nodular dl,
+  .mitad--nodular dl div {
+    border-color: #334155;
+  }
+
+  dl div {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  dt {
+    font-size: 13px;
+    color: var(--ap-texto-secundario);
+  }
+
+  .mitad--nodular dt {
+    color: #94a3b8;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 14px;
     font-weight: 500;
-    line-height: 16px;
   }
 
-  @media (max-width: 767px) {
-    .materiales__lista {
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.con-animaciones) .micrografia__laminas path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+
+    :global(.con-animaciones) .micrografia__nodulos circle {
+      transform: scale(0);
+    }
+
+    .mitad:global(.revelado) .micrografia__laminas path {
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.7s ease calc(0.2s + var(--i) * 70ms);
+    }
+
+    .mitad:global(.revelado) .micrografia__nodulos circle {
+      transform: none;
+      transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1.3) calc(0.2s + var(--i) * 70ms);
+    }
+  }
+
+  @media (max-width: 899px) {
+    .mitades {
       grid-template-columns: 1fr;
+    }
+
+    .mitad--gris {
+      border-right: 0;
+      border-bottom: 1px solid var(--q-dark);
+    }
+
+    .mitad__cuerpo,
+    .mitad__franja {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    dl div {
+      grid-template-columns: 96px minmax(0, 1fr);
     }
   }
 </style>

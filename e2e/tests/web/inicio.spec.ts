@@ -3,11 +3,9 @@ import { expect, test } from '@playwright/test';
 test('el inicio presenta la empresa y lleva al catálogo', async ({ page }) => {
   await page.goto('/');
 
-  await expect(
-    page.getByRole('heading', { level: 1, name: /trazadas lote por lote/ }),
-  ).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Nuestros productos' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Sobre la fábrica' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /lote por lote/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Lo que fundimos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'La planta' })).toBeVisible();
   await expect(page.getByText('Welcome to Astro')).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Ver catálogo' }).first().click();
@@ -17,7 +15,7 @@ test('el inicio presenta la empresa y lleva al catálogo', async ({ page }) => {
 test('los destacados salen de la API, como máximo tres y sin precios', async ({ page }) => {
   await page.goto('/');
 
-  const productos = page.locator('.productos');
+  const productos = page.locator('.destacados');
   await expect(productos.getByText('Cargando productos…')).toHaveCount(0);
   const tarjetas = productos.locator('article');
   expect(await tarjetas.count()).toBeLessThanOrEqual(3);

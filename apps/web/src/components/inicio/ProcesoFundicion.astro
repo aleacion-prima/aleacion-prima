@@ -1,32 +1,53 @@
 ---
+import EncabezadoBloque from './EncabezadoBloque.astro';
+
 const etapas = [
-  { codigo: 'MOL', nombre: 'Moldeo', detalle: 'Moldes en arena verde, 80 % reciclada.' },
+  {
+    codigo: 'MOL',
+    nombre: 'Moldeo',
+    detalle: 'Mezcla de arena verde, 80 % reciclada, y un molde por pieza en la línea de cajas.',
+  },
   {
     codigo: 'FUS',
     nombre: 'Fusión',
-    detalle: 'Horno de inducción de 750 kg y ajuste metalúrgico.',
+    detalle:
+      'Horno de inducción de 750 kg. Carga de chatarra de fundición, acero 1020 y ferroaleaciones.',
   },
-  { codigo: 'COL', nombre: 'Colada', detalle: 'Inoculación en cuchara y enfriamiento en caja.' },
-  { codigo: 'DES', nombre: 'Desmolde', detalle: 'Separación de piezas, canales y mazarotas.' },
-  { codigo: 'GRA', nombre: 'Granallado', detalle: 'Limpieza con granalla de acero y rebabeo.' },
-  { codigo: 'CAL', nombre: 'Calidad', detalle: 'Dureza Brinell, espectrometría y ultrasonido.' },
+  {
+    codigo: 'COL',
+    nombre: 'Colada',
+    detalle: 'Inoculación en cuchara, vaciado y enfriamiento en caja.',
+  },
+  {
+    codigo: 'DES',
+    nombre: 'Desmolde',
+    detalle: 'Separación de piezas. Canales y mazarotas regresan al horno como retorno.',
+  },
+  {
+    codigo: 'GRA',
+    nombre: 'Granallado',
+    detalle: 'Limpieza con granalla de acero y rebabeo con esmeril.',
+  },
+  {
+    codigo: 'CAL',
+    nombre: 'Calidad',
+    detalle: 'Dureza Brinell, espectrometría y ultrasonido antes de liberar el lote.',
+  },
 ];
 ---
 
-<section id="proceso" class="bloque proceso">
-  <header class="bloque__encabezado" data-revelar>
-    <div>
-      <h2>Cómo fabricamos</h2>
-      <p>Cada lote es una colada. En cada etapa se registran piezas, mermas e imprevistos.</p>
-    </div>
-  </header>
-  <ol class="etapas" data-revelar>
+<section id="proceso" class="bloque">
+  <EncabezadoBloque
+    numero="02"
+    titulo="De la arena a la entrega"
+    texto="Cada lote es una colada. En cada etapa se registran piezas recibidas, entregadas y mermas."
+  />
+  <ol class="operaciones">
     {etapas.map(({ codigo, nombre, detalle }, i) => (
-      <li class="etapa" style={`--i: ${i}`}>
-        <span class="etapa__numero">{String(i + 1).padStart(2, '0')}</span>
-        <h3>
-          {nombre} <span>{codigo}</span>
-        </h3>
+      <li class="operacion" data-revelar style={`--i: ${i}`}>
+        <span class="operacion__numero">{String(i + 1).padStart(2, '0')}</span>
+        <h3>{nombre}</h3>
+        <span class="operacion__codigo">{codigo}</span>
         <p>{detalle}</p>
       </li>
     ))}
@@ -34,109 +55,110 @@ const etapas = [
 </section>
 
 <style>
-  .proceso {
-    background: var(--ap-superficie);
-    border-top: 1px solid var(--ap-borde);
-    border-bottom: 1px solid var(--ap-borde);
-    scroll-margin-top: 0;
-  }
-
-  .etapas {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0;
+  .operaciones {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .etapa {
+  .operacion {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 20px 20px 4px 0;
-    border-top: 2px solid var(--ap-borde);
+    display: grid;
+    grid-template-columns: 96px 220px 64px minmax(0, 1fr);
+    align-items: center;
+    min-height: 72px;
+    border-bottom: 1px solid #cbd5e1;
+    transition: background 0.2s ease;
   }
 
-  .etapa::before {
+  .operacion::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
+    inset: -1px auto -1px 0;
+    width: 4px;
     background: var(--q-primary);
-    transform-origin: left;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.25s ease;
   }
 
-  .etapa__numero {
+  .operacion:hover {
+    background: var(--ap-superficie);
+  }
+
+  .operacion:hover::before {
+    transform: none;
+  }
+
+  .operacion__numero {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid #cbd5e1;
     font-family: var(--fuente-titulos);
-    font-size: 40px;
+    font-size: 34px;
     font-weight: 700;
-    line-height: 1;
-    color: var(--ap-borde);
-    transition: color 0.3s ease;
+    color: #94a3b8;
+    padding-left: 20px;
+    transition: color 0.2s ease;
   }
 
-  .etapa:hover .etapa__numero {
+  .operacion:hover .operacion__numero {
     color: var(--q-primary);
   }
 
   h3 {
-    margin: 0;
-    font-family: var(--fuente-titulos);
-    font-size: 22px;
-    font-weight: 600;
-    line-height: 26px;
+    padding: 0 24px;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 28px;
+    text-transform: uppercase;
   }
 
-  h3 span {
+  .operacion__codigo {
     font-family: var(--fuente-codigo);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--ap-texto-secundario);
+    color: var(--q-primary);
   }
 
   p {
     margin: 0;
-    font-size: 14px;
-    line-height: 20px;
+    padding: 16px 24px 16px 0;
+    font-size: 15px;
+    line-height: 22px;
     color: var(--ap-texto-secundario);
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    :global(.con-animaciones) .etapa::before {
-      transform: scaleX(0);
+  @media (max-width: 899px) {
+    .operacion {
+      grid-template-columns: 64px minmax(0, 1fr) auto;
+      grid-template-areas:
+        'numero nombre codigo'
+        'numero detalle detalle';
+      padding: 16px 0;
     }
 
-    .etapas:global(.revelado) .etapa::before {
-      transform: none;
-      transition: transform 0.45s ease-out calc(var(--i) * 0.35s);
+    .operacion__numero {
+      grid-area: numero;
+      padding-left: 12px;
+      font-size: 26px;
     }
 
-    .etapas:global(.revelado) .etapa__numero {
-      animation: marcar 0.9s ease calc(var(--i) * 0.35s + 0.2s);
+    h3 {
+      grid-area: nombre;
+      padding: 0 16px;
+      font-size: 22px;
     }
-  }
 
-  @keyframes marcar {
-    40% {
-      color: var(--q-primary);
+    .operacion__codigo {
+      grid-area: codigo;
+      padding-right: 16px;
     }
-  }
 
-  @media (max-width: 1023px) {
-    .etapas {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      row-gap: 32px;
-    }
-  }
-
-  @media (max-width: 599px) {
-    .etapas {
-      grid-template-columns: 1fr;
-      row-gap: 24px;
+    p {
+      grid-area: detalle;
+      padding: 6px 16px 0;
     }
   }
 </style>

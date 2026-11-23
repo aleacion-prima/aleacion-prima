@@ -1,0 +1,92 @@
+---
+interface Props {
+  numero: string;
+  titulo: string;
+  texto?: string;
+  enlace?: { href: string; texto: string };
+}
+
+const { numero, titulo, texto, enlace } = Astro.props;
+---
+
+<header class="encabezado" data-revelar>
+  <span class="encabezado__numero">{numero}</span>
+  <div class="encabezado__titulo">
+    <h2>{titulo}</h2>
+    {texto && <p>{texto}</p>}
+  </div>
+  {enlace && (
+    <a class="encabezado__enlace" href={enlace.href}>
+      {enlace.texto} →
+    </a>
+  )}
+</header>
+
+<style>
+  .encabezado {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    align-items: end;
+    border-bottom: 1px solid var(--q-dark);
+  }
+
+  .encabezado__numero {
+    align-self: stretch;
+    display: flex;
+    align-items: flex-start;
+    padding: 4px 0 16px;
+    border-right: 1px solid #cbd5e1;
+    font-family: var(--fuente-titulos);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 24px;
+    color: var(--q-primary);
+  }
+
+  .encabezado__titulo {
+    padding: 0 24px 16px;
+  }
+
+  h2 {
+    font-size: clamp(32px, 4.4vw, 56px);
+    font-weight: 700;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  p {
+    max-width: 560px;
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--ap-texto-secundario);
+  }
+
+  .encabezado__enlace {
+    padding: 0 0 18px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .encabezado__enlace:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  @media (max-width: 599px) {
+    .encabezado {
+      grid-template-columns: 48px minmax(0, 1fr);
+    }
+
+    .encabezado__titulo {
+      padding: 0 0 16px 16px;
+    }
+
+    .encabezado__enlace {
+      grid-column: 2;
+      padding: 12px 0 16px 16px;
+    }
+  }
+</style>
