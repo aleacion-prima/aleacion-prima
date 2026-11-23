@@ -67,6 +67,7 @@ jobs:
           push: true
           build-args: |
             PUBLIC_API_URL=https://api.${{ vars.DOMAIN }}
+            PUBLIC_PANEL_URL=https://panel.${{ vars.DOMAIN }}
             PUBLIC_REVERB_HOST=api.${{ vars.DOMAIN }}
             PUBLIC_REVERB_KEY=${{ vars.REVERB_APP_KEY }}
           tags: |

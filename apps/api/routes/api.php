@@ -6,6 +6,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\BitacoraLoteController;
 use App\Http\Controllers\CatalogoPublicoController;
 use App\Http\Controllers\CierreLoteController;
+use App\Http\Controllers\ContactoPublicoController;
 use App\Http\Controllers\CostoLoteController;
 use App\Http\Controllers\EntradaInsumoController;
 use App\Http\Controllers\HistorialLoteController;
@@ -31,6 +32,7 @@ use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 Route::post('/movil/login', [SesionMovilController::class, 'iniciar'])->middleware('throttle:login');
 
 Route::prefix('publico')->middleware('throttle:60,1')->group(function () {
+    Route::get('/contacto', ContactoPublicoController::class);
     Route::get('/productos', [CatalogoPublicoController::class, 'index']);
     Route::get('/productos/{producto}', [CatalogoPublicoController::class, 'show'])->whereNumber('producto');
 });

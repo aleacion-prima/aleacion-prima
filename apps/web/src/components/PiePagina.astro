@@ -1,0 +1,60 @@
+---
+const anio = 2026;
+// En la propia página del aviso no se enlaza a sí misma, para no recargarla sin necesidad.
+const enAviso = Astro.url.pathname.replace(/\/$/, '') === '/aviso-privacidad';
+---
+
+<footer class="pie">
+  <div class="pie__contenido">
+    <span>© {anio} Aleación Prima. Todos los derechos reservados.</span>
+    {enAviso ? (
+      <span class="pie__actual" aria-current="page">
+        Aviso de privacidad
+      </span>
+    ) : (
+      <a href="/aviso-privacidad">Aviso de privacidad</a>
+    )}
+  </div>
+</footer>
+
+<style>
+  .pie {
+    border-top: 1px solid var(--ap-borde);
+    margin-top: 64px;
+  }
+
+  .pie__contenido {
+    align-items: center;
+    color: var(--ap-texto-secundario);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 16px;
+    justify-content: center;
+    line-height: 16px;
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: 24px 32px;
+    text-align: center;
+  }
+
+  .pie a {
+    color: var(--q-primary);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .pie a:hover {
+    text-decoration: underline;
+  }
+
+  .pie__actual {
+    font-weight: 500;
+  }
+
+  @media (max-width: 720px) {
+    .pie__contenido {
+      padding: 24px 16px;
+    }
+  }
+</style>
