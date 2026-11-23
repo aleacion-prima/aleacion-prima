@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { ProductoPublico } from '@aleacion-prima/types';
 import { listarProductos } from '../../services/api';
 import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
+import CuadriculaTarjetas from '../catalogo/CuadriculaTarjetas.vue';
 import TarjetaProducto from '../catalogo/TarjetaProducto.vue';
 
 const productos = ref<ProductoPublico[]>([]);
@@ -36,53 +37,12 @@ useCatalogoEnVivo({
   <p v-if="estado === 'cargando'" class="aviso">Cargando productos…</p>
   <p v-else-if="estado === 'error'" class="aviso">No se pudo cargar el catálogo.</p>
   <p v-else-if="!destacados.length" class="aviso">Aún no hay productos publicados.</p>
-  <div v-else class="destacados">
-    <TarjetaProducto v-for="producto in destacados" :key="producto.id" :producto="producto" />
-  </div>
+  <CuadriculaTarjetas v-else>
+    <TarjetaProducto
+      v-for="(producto, i) in destacados"
+      :key="producto.id"
+      :producto="producto"
+      :style="{ '--i': i }"
+    />
+  </CuadriculaTarjetas>
 </template>
-
-<style scoped>
-.destacados {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .destacados > * {
-    animation: subir 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-  }
-
-  .destacados > :nth-child(2) {
-    animation-delay: 0.12s;
-  }
-
-  .destacados > :nth-child(3) {
-    animation-delay: 0.24s;
-  }
-}
-
-@keyframes subir {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  .destacados {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 599px) {
-  .destacados {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

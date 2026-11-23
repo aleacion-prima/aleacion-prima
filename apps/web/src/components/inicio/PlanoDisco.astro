@@ -15,6 +15,13 @@ const cara = [
   ...pernos.map(({ x, y }) => circulo(x, y, 6)),
 ].join('');
 
+const pista = circulo(cx, cy, 130) + circulo(cx, cy, 78);
+const campana = [
+  circulo(cx, cy, 62),
+  circulo(cx, cy, 24),
+  ...pernos.map(({ x, y }) => circulo(x, y, 6)),
+].join('');
+
 const corteSuperior = 'M400 60H424V104H468V166H456V116H424V112H400Z';
 const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
 ---
@@ -44,32 +51,64 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
       <circle cx={cx} cy={cy} r="42" fill="none"></circle>
     </g>
 
-    <path class="plano__colada" d={cara} fill-rule="evenodd"></path>
+    <g class="plano__disco" data-disco>
+      <path class="plano__colada" d={cara} fill-rule="evenodd"></path>
+      <path class="plano__calor" d={pista} fill-rule="evenodd"></path>
+      <path class="plano__resalte plano__resalte--campana" d={campana} fill-rule="evenodd"></path>
+      <circle class="plano__resalte plano__resalte--barreno" cx={cx} cy={cy} r="24"></circle>
+      {pernos.map(({ x, y }, i) => (
+        <circle
+          class="plano__resalte plano__resalte--perno"
+          cx={x}
+          cy={y}
+          r="6"
+          style={`--i: ${i}`}
+        />
+      ))}
+      <g class="plano__trazos">
+        <path d={circulo(cx, cy, 130)} pathLength="1" style="--i: 0"></path>
+        <path d={circulo(cx, cy, 78)} pathLength="1" style="--i: 1"></path>
+        <path d={circulo(cx, cy, 62)} pathLength="1" style="--i: 2"></path>
+        <path d={circulo(cx, cy, 24)} pathLength="1" style="--i: 3"></path>
+        {pernos.map(({ x, y }, i) => (
+          <path d={circulo(x, y, 6)} pathLength="1" style={`--i: ${4 + i * 0.3}`} />
+        ))}
+      </g>
+      <path class="plano__zona" data-zona="pista" d={pista} fill-rule="evenodd"></path>
+      <path
+        class="plano__zona"
+        data-zona="campana"
+        d={circulo(cx, cy, 78) + circulo(cx, cy, 24)}
+        fill-rule="evenodd"
+      ></path>
+      {pernos.map(({ x, y }) => (
+        <circle class="plano__zona" data-zona="pernos" cx={x} cy={y} r="10" />
+      ))}
+      <circle class="plano__zona" data-zona="barreno" cx={cx} cy={cy} r="22"></circle>
+    </g>
+
     <path class="plano__corte" d={corteSuperior}></path>
     <path class="plano__corte" d={corteInferior}></path>
     <path class="plano__colada" d={corteSuperior}></path>
     <path class="plano__colada" d={corteInferior}></path>
+    <rect class="plano__calor" x="400" y="60" width="24" height="52"></rect>
+    <rect class="plano__calor" x="400" y="268" width="24" height="52"></rect>
 
     <g class="plano__trazos">
-      <path d={circulo(cx, cy, 130)} pathLength="1" style="--i: 0"></path>
-      <path d={circulo(cx, cy, 78)} pathLength="1" style="--i: 1"></path>
-      <path d={circulo(cx, cy, 62)} pathLength="1" style="--i: 2"></path>
-      <path d={circulo(cx, cy, 24)} pathLength="1" style="--i: 3"></path>
-      {pernos.map(({ x, y }, i) => (
-        <path d={circulo(x, y, 6)} pathLength="1" style={`--i: ${4 + i * 0.3}`} />
-      ))}
-      <path d={corteSuperior} pathLength="1" style="--i: 5"></path>
-      <path d={corteInferior} pathLength="1" style="--i: 5.4"></path>
+      <path class="plano__trazo-corte" d={corteSuperior} pathLength="1" style="--i: 5"></path>
+      <path class="plano__trazo-corte" d={corteInferior} pathLength="1" style="--i: 5.4"></path>
     </g>
 
     <g class="plano__cotas">
-      <line x1="60" y1={cy + 8} x2="60" y2="372"></line>
-      <line x1="320" y1={cy + 8} x2="320" y2="372"></line>
-      <line x1="60" y1="362" x2="320" y2="362"></line>
-      <path d="M60 362l10-4v8Z M320 362l-10-4v8Z"></path>
-      <text x={cx} y="354" text-anchor="middle">
-        Ø 300
-      </text>
+      <g class="plano__cota">
+        <line x1="60" y1={cy + 8} x2="60" y2="372"></line>
+        <line x1="320" y1={cy + 8} x2="320" y2="372"></line>
+        <line x1="60" y1="362" x2="320" y2="362"></line>
+        <path d="M60 362l10-4v8Z M320 362l-10-4v8Z"></path>
+        <text x={cx} y="354" text-anchor="middle">
+          Ø 300
+        </text>
+      </g>
       <text x="430" y="350" text-anchor="middle" class="plano__vista">
         CORTE A-A
       </text>
@@ -81,7 +120,7 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
       <text x="337" y="384" class="plano__rotulo-nombre">
         DISCO DE FRENO
       </text>
-      <text x="337" y="398">
+      <text x="337" y="398" textLength="134" lengthAdjust="spacingAndGlyphs">
         Hierro gris clase 30
       </text>
       <text x="489" y="384">
@@ -91,12 +130,17 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
         8.5 kg
       </text>
     </g>
+
+    <path class="plano__zona" data-zona="corte" d={corteSuperior + corteInferior}></path>
+    <rect class="plano__zona" data-zona="cota" x="50" y="338" width="280" height="36"></rect>
+    <rect class="plano__zona" data-zona="rotulo" x="328" y="370" width="228" height="34"></rect>
   </svg>
 
   <figcaption>
     <span class="plano__estado plano__estado--1">Plano</span>
     <span class="plano__estado plano__estado--2">Colada · 1,450 °C</span>
     <span class="plano__estado plano__estado--3">Pieza en bruto</span>
+    <span class="plano__detalle" data-detalle></span>
     <button type="button" class="plano__repetir" data-repetir>
       Repetir
     </button>
@@ -104,7 +148,46 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
 </figure>
 
 <script>
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const PARTES: Record<string, string> = {
+    pista: 'Pista de fricción · donde trabaja la balata',
+    campana: 'Campana · une la pista con el cubo',
+    pernos: '5 barrenos de sujeción',
+    barreno: 'Barreno central · centra el disco',
+    corte: 'Corte A-A · el perfil de la pieza',
+    cota: 'Diámetro exterior · 300 mm',
+    rotulo: 'Hierro gris clase 30 · ASTM A48 · 8.5 kg',
+  };
+
   document.querySelectorAll<HTMLElement>('[data-plano]').forEach((plano) => {
+    const disco = plano.querySelector<SVGGElement>('[data-disco]');
+    const detalle = plano.querySelector<HTMLElement>('[data-detalle]');
+    const svg = plano.querySelector('svg');
+    let giro = 0;
+    let enfriar = 0;
+
+    const frenar = (): void => {
+      if (!disco || sinMovimiento.matches) return;
+      giro += 720;
+      disco.style.rotate = `${giro}deg`;
+      plano.classList.add('frenando');
+      window.clearTimeout(enfriar);
+      enfriar = window.setTimeout(() => plano.classList.remove('frenando'), 1500);
+    };
+
+    svg?.addEventListener('pointerover', (evento) => {
+      const zona = (evento.target as Element).closest<SVGElement>('[data-zona]')?.dataset.zona;
+      if (!zona || zona === plano.dataset.parte) return;
+      plano.dataset.parte = zona;
+      if (detalle) detalle.textContent = PARTES[zona] ?? '';
+      if (zona === 'pista') frenar();
+    });
+
+    svg?.addEventListener('pointerleave', () => {
+      delete plano.dataset.parte;
+    });
+
     plano.querySelector('[data-repetir]')?.addEventListener('click', () => {
       plano.classList.remove('animando');
       void plano.offsetWidth;
@@ -124,6 +207,98 @@ const corteInferior = 'M400 320H424V276H468V214H456V264H424V268H400Z';
     width: 100%;
     height: auto;
     overflow: visible;
+  }
+
+  .plano__disco {
+    transform-box: view-box;
+    transform-origin: 190px 190px;
+    transition: rotate 2.2s cubic-bezier(0.1, 0.7, 0.25, 1);
+  }
+
+  .plano__zona {
+    fill: transparent;
+    cursor: crosshair;
+  }
+
+  .plano__resalte {
+    fill: var(--q-accent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  [data-parte='campana'] .plano__resalte--campana {
+    opacity: 0.4;
+  }
+
+  [data-parte='barreno'] .plano__resalte--barreno {
+    opacity: 0.55;
+  }
+
+  [data-parte='pernos'] .plano__resalte--perno {
+    opacity: 1;
+    transition-delay: calc(var(--i) * 90ms);
+  }
+
+  .plano__rayado,
+  .plano__trazo-corte,
+  .plano__vista,
+  .plano__cota line,
+  .plano__cota text,
+  .plano__rotulo rect,
+  .plano__rotulo line {
+    transition:
+      stroke 0.25s ease,
+      fill 0.25s ease;
+  }
+
+  [data-parte='corte'] .plano__rayado,
+  [data-parte='corte'] .plano__trazos .plano__trazo-corte {
+    stroke: var(--q-accent);
+  }
+
+  [data-parte='corte'] .plano__vista,
+  [data-parte='cota'] .plano__cota text {
+    fill: var(--q-accent);
+  }
+
+  [data-parte='cota'] .plano__cota line,
+  [data-parte='rotulo'] .plano__rotulo rect,
+  [data-parte='rotulo'] .plano__rotulo line {
+    stroke: var(--q-accent);
+  }
+
+  [data-parte='cota'] .plano__cota path {
+    fill: var(--q-accent);
+  }
+
+  .plano__detalle {
+    grid-area: 1 / 1;
+    font-family: var(--fuente-titulos);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--q-accent);
+    visibility: hidden;
+  }
+
+  [data-parte] .plano__estado {
+    visibility: hidden;
+  }
+
+  [data-parte] .plano__detalle {
+    visibility: visible;
+  }
+
+  .plano__calor {
+    fill: #ea580c;
+    opacity: 0;
+    transition: opacity 3s ease-out;
+    pointer-events: none;
+  }
+
+  .frenando .plano__calor {
+    opacity: 0.65;
+    transition: opacity 0.5s ease-in;
   }
 
   .plano__ejes line,

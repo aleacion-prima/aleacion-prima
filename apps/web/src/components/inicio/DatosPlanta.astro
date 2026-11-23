@@ -21,8 +21,8 @@ const datos = [
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 0;
-    background: var(--ap-superficie);
-    border-bottom: 1px solid #cbd5e1;
+    border-image: linear-gradient(to top, #cbd5e1 1px, var(--ap-superficie) 1px) fill 0 // 0
+      100vmax;
   }
 
   .dato {

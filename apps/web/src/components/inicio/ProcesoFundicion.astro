@@ -87,12 +87,13 @@ const etapas = [
       if (piezas) piezas.textContent = filas[actual]?.dataset.entregadas ?? '';
     };
 
-    mostrar(0);
+    const fija = window.matchMedia('(min-width: 1024px)');
+    mostrar(fija.matches ? 0 : filas.length - 1);
 
     const observador = new IntersectionObserver(
       (entradas) => {
         for (const entrada of entradas) {
-          if (entrada.isIntersecting) {
+          if (entrada.isIntersecting && fija.matches) {
             mostrar(Number((entrada.target as HTMLElement).dataset.operacion));
           }
         }
@@ -210,9 +211,8 @@ const etapas = [
     }
 
     .proceso__ficha {
+      position: static;
       order: -1;
-      top: 8px;
-      z-index: 1;
       padding: 24px 8px 0 0;
     }
 

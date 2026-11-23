@@ -11,6 +11,7 @@ const { seccion } = Astro.props;
 <header class="barra">
   <div class="barra__contenido">
     <a class="barra__logo" href="/">
+      <img src="/logo.svg" width="28" height="28" alt="" />
       ALEACIÓN PRIMA
     </a>
 
@@ -58,12 +59,16 @@ const { seccion } = Astro.props;
   }
 
   .barra__logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     color: var(--ap-superficie);
     font-family: var(--fuente-titulos);
     font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-decoration: none;
+    white-space: nowrap;
   }
 
   .barra__nav {
@@ -107,6 +112,13 @@ const { seccion } = Astro.props;
 
   .barra__acceso:hover {
     color: var(--ap-superficie);
+  }
+
+  @media (max-width: 420px) {
+    .barra__logo {
+      gap: 8px;
+      font-size: 16px;
+    }
   }
 
   @media (max-width: 720px) {

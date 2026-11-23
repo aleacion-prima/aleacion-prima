@@ -124,6 +124,8 @@ import Layout from '../layouts/Layout.astro';
 
 <style>
   .portada {
+    box-shadow: 0 0 0 100vmax var(--q-dark);
+    clip-path: inset(0 -100vmax);
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
@@ -141,7 +143,7 @@ import Layout from '../layouts/Layout.astro';
   }
 
   h1 {
-    font-size: clamp(48px, 7vw, 104px);
+    font-size: clamp(36px, 5.4vw, 84px);
     font-weight: 700;
     line-height: 0.9;
     text-transform: uppercase;
@@ -217,6 +219,8 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .llamado {
+    box-shadow: 0 0 0 100vmax var(--q-dark);
+    clip-path: inset(0 -100vmax);
     margin-top: 96px;
     padding: 64px 32px;
     background: var(--q-dark);
@@ -225,13 +229,13 @@ import Layout from '../layouts/Layout.astro';
 
   .llamado__contenido {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
     align-items: end;
     gap: 40px;
   }
 
   .llamado h2 {
-    font-size: clamp(40px, 5.6vw, 80px);
+    font-size: clamp(36px, 4.6vw, 72px);
     font-weight: 700;
     line-height: 0.92;
     text-transform: uppercase;

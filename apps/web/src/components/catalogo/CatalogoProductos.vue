@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { ProductoPublico } from '@aleacion-prima/types';
 import { listarProductos } from '../../services/api';
 import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
+import CuadriculaTarjetas from './CuadriculaTarjetas.vue';
 import TarjetaProducto from './TarjetaProducto.vue';
 
 const productos = ref<ProductoPublico[]>([]);
@@ -47,27 +48,27 @@ useCatalogoEnVivo({
       <h2 class="grupo__titulo">
         Disponibles <span>{{ disponibles.length }}</span>
       </h2>
-      <div class="cuadricula">
+      <CuadriculaTarjetas>
         <TarjetaProducto
           v-for="(producto, i) in disponibles"
           :key="producto.id"
           :producto="producto"
           :style="{ '--i': i }"
         />
-      </div>
+      </CuadriculaTarjetas>
     </section>
     <section v-if="sobrePedido.length" class="grupo">
       <h2 class="grupo__titulo">
         Sobre pedido <span>{{ sobrePedido.length }}</span>
       </h2>
-      <div class="cuadricula">
+      <CuadriculaTarjetas>
         <TarjetaProducto
           v-for="(producto, i) in sobrePedido"
           :key="producto.id"
           :producto="producto"
           :style="{ '--i': i + disponibles.length }"
         />
-      </div>
+      </CuadriculaTarjetas>
     </section>
   </template>
 </template>
@@ -101,37 +102,5 @@ useCatalogoEnVivo({
   font-weight: 500;
   line-height: 22px;
   color: var(--ap-texto-secundario);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .cuadricula > * {
-    animation: subir 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-    animation-delay: calc(var(--i, 0) * 80ms + 0.15s);
-  }
-}
-
-@keyframes subir {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-}
-
-.cuadricula {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-}
-
-@media (max-width: 1023px) {
-  .cuadricula {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 599px) {
-  .cuadricula {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
