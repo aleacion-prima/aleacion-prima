@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { QBtn, Quasar } from 'quasar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Imprevisto, Lote, LoteParada } from '@aleacion-prima/types';
+import type { HistorialLote, Imprevisto, Lote, LoteParada } from '@aleacion-prima/types';
 import LoteMovilPage from './LoteMovilPage.vue';
 
 const respuesta = vi.hoisted(
@@ -12,11 +12,17 @@ const respuesta = vi.hoisted(
   }),
 );
 const imprevistosRespuesta = vi.hoisted(() => ({ data: [] as Imprevisto[] }));
+const historialRespuesta = vi.hoisted(() => ({ data: null as HistorialLote | null }));
+const datosDe = (url: string): unknown => {
+  if (url.endsWith('/imprevistos')) return imprevistosRespuesta.data;
+  if (url.endsWith('/historial')) return historialRespuesta.data;
+  return respuesta.data;
+};
 const useApi = vi.fn((url: string) => ({
   json: () =>
     Promise.resolve({
       url,
-      data: { value: url.endsWith('/imprevistos') ? imprevistosRespuesta.data : respuesta.data },
+      data: { value: datosDe(url) },
       error: { value: respuesta.error },
       statusCode: { value: respuesta.statusCode },
     }),
@@ -103,6 +109,7 @@ beforeEach(() => {
   respuesta.error = null;
   respuesta.statusCode = null;
   imprevistosRespuesta.data = [];
+  historialRespuesta.data = null;
 });
 
 describe('LoteMovilPage', () => {
@@ -181,6 +188,32 @@ describe('LoteMovilPage', () => {
     expect(wrapper.text()).toContain('Se trabó el horno');
     expect(wrapper.text()).toContain('Abierto');
     expect(wrapper.findAll('button')).toHaveLength(0);
+  });
+
+  it('muestra el historial de las paradas con quién capturó y lo recarga en vivo', async () => {
+    respuesta.data = lote;
+    respuesta.statusCode = 200;
+    historialRespuesta.data = {
+      codigo: lote.codigo,
+      estado: lote.estado,
+      paradas: lote.paradas.map((p, i) => ({
+        ...p,
+        entrada_por: i === 0 ? 'Juan Pérez' : null,
+        salida_por: null,
+      })),
+    };
+
+    const wrapper = await montar();
+
+    expect(useApi).toHaveBeenCalledWith('/lotes/LOT-20261102-01/historial');
+    expect(wrapper.text()).toContain('Historial');
+    expect(wrapper.text()).toContain('Juan Pérez');
+    expect(wrapper.find('table').exists()).toBe(false);
+
+    useApi.mockClear();
+    enVivo.alCambiar?.({ codigo: 'LOT-20261102-01' });
+    await flushPromises();
+    expect(useApi).toHaveBeenCalledWith('/lotes/LOT-20261102-01/historial');
   });
 
   it('si el lote no existe, ofrece escanear otro', async () => {

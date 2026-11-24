@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import type { HistorialLote, HistorialParada } from '@aleacion-prima/types';
 import { formatearCantidad, pzas } from '@/composables/formato';
 import { useApi } from '@/services/api';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 
-const props = defineProps<{ codigo: string; version: number }>();
+const props = defineProps<{ codigo: string; version: number; compacto?: boolean }>();
+
+const $q = useQuasar();
+const lista = computed(() => props.compacto || $q.screen.lt.sm);
 
 const historial = ref<HistorialLote | null>(null);
 const cargando = ref(true);
@@ -40,10 +44,17 @@ const merma = (parada: HistorialParada): string => {
   return partes.length ? partes.join(' · ') : '—';
 };
 
-const diferencia = (parada: HistorialParada): string =>
-  parada.discrepancia === null
-    ? ''
-    : `Diferencia ${parada.discrepancia > 0 ? '+' : ''}${pzas(parada.discrepancia)}`;
+const marcas = (parada: HistorialParada): string[] => {
+  const etiquetas: string[] = [];
+  if (parada.entrada_tardia || parada.salida_tardia) etiquetas.push('Captura tardía');
+  if (parada.discrepancia !== null) {
+    etiquetas.push(`Diferencia ${parada.discrepancia > 0 ? '+' : ''}${pzas(parada.discrepancia)}`);
+  }
+  return etiquetas;
+};
+
+const momento = (iso: string | null, detalle: string): string =>
+  iso ? `${cuando(iso)} · ${detalle}` : detalle;
 
 let solicitud = 0;
 
@@ -72,9 +83,9 @@ watch(
 </script>
 
 <template>
-  <q-card flat bordered>
-    <q-card-section>
-      <h2 class="text-h6 q-mt-none q-mb-md">Historial del recorrido</h2>
+  <q-card flat :bordered="!compacto" :class="{ 'historial--compacto': compacto }">
+    <q-card-section :class="{ 'q-pa-none': compacto }">
+      <h2 v-if="!compacto" class="text-h6 q-mt-none q-mb-md">Historial del recorrido</h2>
 
       <div v-if="cargando" class="q-pa-lg flex flex-center">
         <q-spinner color="primary" size="32px" />
@@ -83,6 +94,39 @@ watch(
       <EstadoVacio v-else-if="fallo" icono="cloud_off" titulo="No se pudo cargar el historial">
         <q-btn flat color="primary" label="Reintentar" @click="cargar" />
       </EstadoVacio>
+
+      <ol v-else-if="historial && lista" class="historial-lista">
+        <li v-for="parada in historial.paradas" :key="parada.id" class="historial-parada">
+          <div class="row items-center q-gutter-x-sm">
+            <span class="codigo">{{ parada.orden }} · {{ parada.area.codigo }}</span>
+            <span class="text-secundario">{{ parada.area.nombre }}</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Entrada</dt>
+              <dd>{{ momento(parada.entrada_ocurrido_en, detalleEntrada(parada)) }}</dd>
+            </div>
+            <div>
+              <dt>Salida</dt>
+              <dd>{{ momento(parada.salida_ocurrido_en, detalleSalida(parada)) }}</dd>
+            </div>
+            <div>
+              <dt>Merma</dt>
+              <dd>{{ merma(parada) }}</dd>
+            </div>
+          </dl>
+          <div v-if="marcas(parada).length" class="q-mt-xs">
+            <q-chip
+              v-for="marca in marcas(parada)"
+              :key="marca"
+              dense
+              color="warning"
+              text-color="white"
+              :label="marca"
+            />
+          </div>
+        </li>
+      </ol>
 
       <q-markup-table v-else-if="historial" flat separator="horizontal">
         <thead>
@@ -111,27 +155,14 @@ watch(
             <td>{{ merma(parada) }}</td>
             <td>
               <q-chip
-                v-if="parada.entrada_tardia || parada.salida_tardia"
+                v-for="marca in marcas(parada)"
+                :key="marca"
                 dense
                 color="warning"
                 text-color="white"
-                label="Captura tardía"
+                :label="marca"
               />
-              <q-chip
-                v-if="parada.discrepancia !== null"
-                dense
-                color="warning"
-                text-color="white"
-                :label="diferencia(parada)"
-              />
-              <span
-                v-if="
-                  !(parada.entrada_tardia || parada.salida_tardia) && parada.discrepancia === null
-                "
-                class="text-secundario"
-              >
-                —
-              </span>
+              <span v-if="!marcas(parada).length" class="text-secundario">—</span>
             </td>
           </tr>
         </tbody>
@@ -139,3 +170,43 @@ watch(
     </q-card-section>
   </q-card>
 </template>
+
+<style scoped lang="scss">
+.historial--compacto {
+  background: transparent;
+}
+
+.historial-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historial-parada {
+  padding: 12px 0;
+  border-bottom: 1px solid $separator-color;
+}
+
+.historial-parada:last-child {
+  border-bottom: 0;
+}
+
+dl {
+  margin: 6px 0 0;
+}
+
+dl div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  padding: 2px 0;
+}
+
+dt {
+  color: $grey-7;
+}
+
+dd {
+  margin: 0;
+}
+</style>

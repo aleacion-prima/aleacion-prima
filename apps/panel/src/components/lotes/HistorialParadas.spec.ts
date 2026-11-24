@@ -73,9 +73,9 @@ const historial: HistorialLote = {
   ],
 };
 
-const montar = async () => {
+const montar = async (compacto = false) => {
   const wrapper = mount(HistorialParadas, {
-    props: { codigo: 'LOT-20260928-01', version: 0 },
+    props: { codigo: 'LOT-20260928-01', version: 0, compacto },
     global: { plugins: [Quasar] },
   });
   await flushPromises();
@@ -108,6 +108,23 @@ describe('HistorialParadas', () => {
     const filas = (await montar()).findAll('tbody tr');
 
     expect(filas[2]?.text()).toContain('Pendiente');
+  });
+
+  it('en modo compacto muestra cada parada como lista, sin tabla ni título', async () => {
+    simulado.falla = false;
+    simulado.respuesta = historial;
+
+    const wrapper = await montar(true);
+    const paradas = wrapper.findAll('.historial-parada');
+
+    expect(wrapper.find('table').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Historial del recorrido');
+    expect(paradas).toHaveLength(3);
+    expect(paradas[0]?.text()).toContain('1 · MOL');
+    expect(paradas[0]?.text()).toContain('20 pzas recibidas · Ana Pérez');
+    expect(paradas[0]?.text()).toContain('Captura tardía');
+    expect(paradas[1]?.text()).toContain('Diferencia -2 pzas');
+    expect(paradas[2]?.text()).toContain('Pendiente');
   });
 
   it('avisa cuando no se pudo cargar el historial', async () => {
