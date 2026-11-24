@@ -5,7 +5,6 @@ import { listarProductos, obtenerProducto } from '../../services/api';
 import { datosTecnicos, existencia, material } from '../../composables/especificaciones';
 import { useCatalogoEnVivo } from '../../composables/catalogoEnVivo';
 import CuadriculaTarjetas from './CuadriculaTarjetas.vue';
-import PlanoProducto from './PlanoProducto.vue';
 import TarjetaProducto from './TarjetaProducto.vue';
 
 const producto = ref<ProductoPublico | null>(null);
@@ -78,7 +77,9 @@ useCatalogoEnVivo({
     </section>
 
     <section class="detalle">
-      <PlanoProducto :producto="producto" class="detalle__plano" />
+      <div class="detalle__imagen">
+        <img src="/logo.svg" width="72" height="72" alt="" />
+      </div>
 
       <div class="detalle__ficha">
         <h2>Especificaciones</h2>
@@ -191,6 +192,18 @@ h1 {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   gap: 48px;
   padding: 48px 32px 72px;
+}
+
+.detalle__imagen {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  background: #1e293b;
+  border-radius: 12px;
+}
+
+.detalle__imagen img {
+  opacity: 0.5;
 }
 
 .detalle__ficha {
@@ -308,7 +321,7 @@ dd.positivo {
     animation: entrar 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.35s backwards;
   }
 
-  .detalle__plano {
+  .detalle__imagen {
     animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s backwards;
   }
 
