@@ -16,6 +16,7 @@ test('los destacados salen de la API, como máximo tres y sin precios', async ({
   await page.goto('/');
 
   const productos = page.locator('.destacados');
+  await productos.scrollIntoViewIfNeeded();
   await expect(productos.getByText('Cargando productos…')).toHaveCount(0);
   const tarjetas = productos.locator('article');
   expect(await tarjetas.count()).toBeLessThanOrEqual(3);

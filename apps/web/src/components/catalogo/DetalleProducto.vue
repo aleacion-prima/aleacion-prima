@@ -55,8 +55,8 @@ useCatalogoEnVivo({
   </div>
 
   <template v-else>
-    <section class="banda">
-      <a class="banda__volver" href="/catalogo">
+    <section class="banda banda-oscura">
+      <a class="volver" href="/catalogo">
         <img src="/iconos/chevron-left.svg" width="20" height="20" alt="" />
         Catálogo
       </a>
@@ -97,7 +97,7 @@ useCatalogoEnVivo({
         </dl>
 
         <div class="detalle__acciones">
-          <a class="boton detalle__cotizar" href="/cotizar">Cotizar esta pieza</a>
+          <a class="boton boton--primario boton--grande" href="/cotizar">Cotizar esta pieza</a>
           <a class="detalle__volver" href="/catalogo">Volver al catálogo</a>
         </div>
       </div>
@@ -124,25 +124,6 @@ useCatalogoEnVivo({
   align-items: flex-start;
   gap: 12px;
   padding: 32px 32px 40px;
-  background: var(--q-dark);
-  box-shadow: 0 0 0 100vmax var(--q-dark);
-  clip-path: inset(0 -100vmax);
-  color: var(--ap-superficie);
-}
-
-.banda__volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: -6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #cbd5e1;
-  text-decoration: none;
-}
-
-.banda__volver:hover {
-  color: var(--ap-superficie);
 }
 
 h1 {
@@ -151,16 +132,6 @@ h1 {
   font-weight: 700;
   line-height: 0.95;
   text-transform: uppercase;
-}
-
-.mascara {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.06em;
-}
-
-.mascara > span {
-  display: block;
 }
 
 .banda__datos {
@@ -264,19 +235,6 @@ dd.positivo {
   margin-top: 32px;
 }
 
-.detalle__cotizar {
-  min-height: 48px;
-  padding: 12px 28px;
-  font-size: 15px;
-  background: var(--q-primary);
-  color: var(--ap-superficie);
-  transition: background 0.2s ease;
-}
-
-.detalle__cotizar:hover {
-  background: var(--q-accent);
-}
-
 .detalle__volver {
   font-size: 15px;
   font-weight: 500;
@@ -290,9 +248,7 @@ dd.positivo {
   text-decoration-color: var(--q-primary);
 }
 
-.detalle__cotizar:focus-visible,
-.detalle__volver:focus-visible,
-.banda__volver:focus-visible {
+.detalle__volver:focus-visible {
   outline: 2px solid var(--q-accent);
   outline-offset: 3px;
 }
@@ -312,11 +268,7 @@ dd.positivo {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .mascara > span {
-    animation: subir-mascara 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
-  }
-
-  .banda__volver,
+  .volver,
   .banda__datos {
     animation: entrar 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.35s backwards;
   }
@@ -328,19 +280,6 @@ dd.positivo {
   dl div {
     animation: entrar 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
     animation-delay: calc(0.4s + var(--i) * 80ms);
-  }
-}
-
-@keyframes subir-mascara {
-  from {
-    transform: translateY(105%);
-  }
-}
-
-@keyframes entrar {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
   }
 }
 

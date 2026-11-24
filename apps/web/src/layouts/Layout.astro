@@ -4,10 +4,17 @@ import PiePagina from '../components/PiePagina.astro';
 
 interface Props {
   titulo?: string;
+  descripcion?: string;
   seccion?: 'inicio' | 'catalogo';
 }
 
-const { titulo = 'Aleación Prima', seccion } = Astro.props;
+const {
+  titulo = 'Aleación Prima',
+  descripcion = 'Fundición de piezas de hierro gris y nodular en Torreón, Coahuila.',
+  seccion,
+} = Astro.props;
+const fuentes =
+  'https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto:wght@400;500;600&display=swap';
 ---
 
 <!doctype html>
@@ -19,11 +26,13 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
     <link rel="icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" as="style" href={fuentes} />
+    <link rel="stylesheet" href={fuentes} media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href={fuentes} />
+    </noscript>
     <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={descripcion} />
     <title>{titulo}</title>
   </head>
   <body>
@@ -78,6 +87,7 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
 
   main {
     flex: 1;
+    min-height: 100svh;
     margin: 0 auto;
     max-width: 1440px;
     width: 100%;
@@ -119,6 +129,13 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
   .boton--primario {
     background: var(--q-primary);
     color: var(--ap-superficie);
+    transition: background 0.2s ease;
+  }
+
+  .boton--grande {
+    min-height: 48px;
+    padding: 12px 28px;
+    font-size: 15px;
   }
 
   .boton--primario:hover {
@@ -133,6 +150,63 @@ const { titulo = 'Aleación Prima', seccion } = Astro.props;
 
   .boton--alto {
     height: 48px;
+  }
+
+  .boton:focus-visible,
+  .volver:focus-visible {
+    outline: 2px solid var(--q-accent);
+    outline-offset: 3px;
+  }
+
+  .banda-oscura {
+    box-shadow: 0 0 0 100vmax var(--q-dark);
+    clip-path: inset(0 -100vmax);
+    background: var(--q-dark);
+    color: var(--ap-superficie);
+  }
+
+  .volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: -6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #cbd5e1;
+    text-decoration: none;
+  }
+
+  .volver:hover {
+    color: var(--ap-superficie);
+  }
+
+  .mascara {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+  }
+
+  .mascara > span {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mascara > span {
+      animation: subir-mascara 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+    }
+  }
+
+  @keyframes subir-mascara {
+    from {
+      transform: translateY(105%);
+    }
+  }
+
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
   }
 
   .enlace {

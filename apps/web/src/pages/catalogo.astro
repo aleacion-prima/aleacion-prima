@@ -4,8 +4,8 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout titulo="Catálogo · Aleación Prima" seccion="catalogo">
-  <section class="encabezado">
-    <a class="encabezado__volver" href="/">
+  <section class="encabezado banda-oscura">
+    <a class="volver" href="/">
       <img src="/iconos/chevron-left.svg" width="20" height="20" alt="" />
       Inicio
     </a>
@@ -26,30 +26,11 @@ import Layout from '../layouts/Layout.astro';
 
 <style>
   .encabezado {
-    box-shadow: 0 0 0 100vmax var(--q-dark);
-    clip-path: inset(0 -100vmax);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
     padding: 40px 32px 48px;
-    background: var(--q-dark);
-    color: var(--ap-superficie);
-  }
-
-  .encabezado__volver {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: -6px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #cbd5e1;
-    text-decoration: none;
-  }
-
-  .encabezado__volver:hover {
-    color: var(--ap-superficie);
   }
 
   h1 {
@@ -73,22 +54,8 @@ import Layout from '../layouts/Layout.astro';
     padding: 40px 32px 72px;
   }
 
-  .mascara {
-    display: block;
-    overflow: hidden;
-    padding-bottom: 0.06em;
-  }
-
-  .mascara > span {
-    display: block;
-  }
-
   @media (prefers-reduced-motion: no-preference) {
-    .mascara > span {
-      animation: subir-mascara 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
-    }
-
-    .encabezado__volver,
+    .volver,
     .encabezado p {
       animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s backwards;
     }
@@ -99,19 +66,6 @@ import Layout from '../layouts/Layout.astro';
         animation-timeline: view();
         animation-range: exit 0% exit 100%;
       }
-    }
-  }
-
-  @keyframes subir-mascara {
-    from {
-      transform: translateY(105%);
-    }
-  }
-
-  @keyframes entrar {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
     }
   }
 

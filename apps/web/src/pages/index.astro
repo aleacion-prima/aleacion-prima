@@ -13,7 +13,7 @@ import Layout from '../layouts/Layout.astro';
   <script is:inline>
     document.documentElement.classList.add('con-animaciones');
   </script>
-  <section class="portada">
+  <section class="portada banda-oscura">
     <div class="portada__texto">
       <h1>
         <span>Piezas de hierro</span>
@@ -25,7 +25,7 @@ import Layout from '../layouts/Layout.astro';
         maquinaria agrícola y talleres. Cada colada queda registrada de la arena a la entrega.
       </p>
       <div class="portada__acciones">
-        <a class="boton portada__boton" href="/catalogo">
+        <a class="boton boton--primario boton--grande" href="/catalogo">
           Ver catálogo
         </a>
         <a class="portada__enlace" href="#proceso">
@@ -48,7 +48,7 @@ import Layout from '../layouts/Layout.astro';
       enlace={{ href: '/catalogo', texto: 'Ver todo el catálogo' }}
     />
     <div class="destacados">
-      <ProductosDestacados client:load />
+      <ProductosDestacados client:visible />
     </div>
   </section>
 
@@ -58,7 +58,7 @@ import Layout from '../layouts/Layout.astro';
 
   <SobreFabrica />
 
-  <section class="llamado">
+  <section class="llamado banda-oscura">
     <div class="llamado__contenido" data-revelar>
       <h2>
         ¿Una pieza, una serie,
@@ -68,7 +68,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="llamado__acciones">
         <p>Escríbele a ventas con la pieza, el material y la cantidad.</p>
         <div>
-          <a class="boton llamado__boton" href="/cotizar">
+          <a class="boton boton--primario boton--grande" href="/cotizar">
             Cotizar
           </a>
           <a class="boton llamado__secundario" href="/catalogo">
@@ -124,15 +124,11 @@ import Layout from '../layouts/Layout.astro';
 
 <style>
   .portada {
-    box-shadow: 0 0 0 100vmax var(--q-dark);
-    clip-path: inset(0 -100vmax);
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
     gap: 56px;
     padding: 64px 32px 72px;
-    background: var(--q-dark);
-    color: var(--ap-superficie);
   }
 
   .portada__texto {
@@ -172,20 +168,6 @@ import Layout from '../layouts/Layout.astro';
     gap: 24px;
   }
 
-  .portada__boton,
-  .llamado__boton {
-    min-height: 48px;
-    padding: 12px 28px;
-    font-size: 15px;
-    background: var(--q-primary);
-    color: var(--ap-superficie);
-    transition: background 0.2s ease;
-  }
-
-  .portada__boton:hover {
-    background: var(--q-accent);
-  }
-
   .portada__enlace {
     font-size: 15px;
     font-weight: 500;
@@ -200,10 +182,7 @@ import Layout from '../layouts/Layout.astro';
     text-decoration-color: var(--q-accent);
   }
 
-  .portada__boton:focus-visible,
-  .portada__enlace:focus-visible,
-  .llamado__boton:focus-visible,
-  .llamado__secundario:focus-visible {
+  .portada__enlace:focus-visible {
     outline: 2px solid var(--q-accent);
     outline-offset: 3px;
   }
@@ -219,12 +198,8 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .llamado {
-    box-shadow: 0 0 0 100vmax var(--q-dark);
-    clip-path: inset(0 -100vmax);
     margin: 96px 0 -64px;
     padding: 64px 32px;
-    background: var(--q-dark);
-    color: var(--ap-superficie);
   }
 
   .llamado__contenido {
@@ -266,10 +241,6 @@ import Layout from '../layouts/Layout.astro';
     gap: 12px;
   }
 
-  .llamado__boton:hover {
-    background: var(--q-accent);
-  }
-
   .llamado__secundario {
     min-height: 48px;
     padding: 12px 24px;
@@ -296,7 +267,10 @@ import Layout from '../layouts/Layout.astro';
       animation-delay: 0.16s;
     }
 
-    .portada p,
+    .portada p {
+      animation: subir 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    }
+
     .portada__acciones {
       animation: entrar 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.26s backwards;
     }
@@ -347,9 +321,8 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  @keyframes entrar {
+  @keyframes subir {
     from {
-      opacity: 0;
       transform: translateY(20px);
     }
   }
