@@ -9,6 +9,7 @@ import { useCanalesDeLotes, useLotesEnVivo } from '@/composables/lotesEnVivo';
 import ChipEstado from '@/components/lotes/ChipEstado.vue';
 import RecorridoLote from '@/components/lotes/RecorridoLote.vue';
 import ImprevistosMovil from '@/components/lotes/ImprevistosMovil.vue';
+import HistorialParadas from '@/components/lotes/HistorialParadas.vue';
 import EstadoVacio from '@/components/comunes/EstadoVacio.vue';
 
 const route = useRoute();
@@ -17,6 +18,7 @@ const lote = ref<Lote | null>(null);
 const imprevistos = ref<Imprevisto[]>([]);
 const cargando = ref(true);
 const noEncontrado = ref(false);
+const version = ref(0);
 
 const fecha = new Intl.DateTimeFormat('es-MX', {
   day: 'numeric',
@@ -66,7 +68,9 @@ watch(
 );
 
 useLotesEnVivo(useCanalesDeLotes(), (evento) => {
-  if (evento.codigo === lote.value?.codigo) void cargar(false);
+  if (evento.codigo !== lote.value?.codigo) return;
+  version.value += 1;
+  void cargar(false);
 });
 </script>
 
@@ -116,6 +120,9 @@ useLotesEnVivo(useCanalesDeLotes(), (evento) => {
 
       <div class="lote-movil__titulo">Recorrido</div>
       <RecorridoLote :paradas="paradasDeLote(lote)" vertical />
+
+      <div class="lote-movil__titulo">Historial</div>
+      <HistorialParadas :codigo="lote.codigo" :version="version" compacto />
     </template>
   </q-page>
 </template>
