@@ -1,0 +1,107 @@
+name: APK
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - 'apps/panel/src-capacitor/**'
+      - '.github/workflows/apk.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a publicar (p. ej. 1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Compilar y publicar el APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: apps/panel/src-capacitor
+
+      - name: Versión
+        id: version
+        env:
+          ENTRADA: ${{ inputs.version || (github.ref_type == 'tag' && github.ref_name) || '0.0.1' }}
+        run: |
+          nombre="${ENTRADA#v}"
+          if ! [[ "$nombre" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "La versión debe tener la forma 1.2.3 y llegó '$ENTRADA'" >&2
+            exit 1
+          fi
+          IFS=. read -r mayor menor parche <<< "$nombre"
+          echo "nombre=$nombre" >> "$GITHUB_OUTPUT"
+          echo "codigo=$((mayor * 10000 + menor * 100 + parche))" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar la web y sincronizar Capacitor
+        env:
+          PUBLIC_API_URL: https://api.${{ vars.DOMAIN }}
+          PUBLIC_REVERB_HOST: api.${{ vars.DOMAIN }}
+          PUBLIC_REVERB_PORT: '443'
+          PUBLIC_REVERB_SCHEME: https
+          PUBLIC_REVERB_KEY: ${{ vars.REVERB_APP_KEY }}
+        run: pnpm --filter panel exec quasar build -m capacitor -T android --skip-pkg
+
+      - name: Keystore
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Compilar el APK firmado
+        working-directory: apps/panel/src-capacitor/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_NAME: ${{ steps.version.outputs.nombre }}
+          VERSION_CODE: ${{ steps.version.outputs.codigo }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Nombrar el APK
+        id: apk
+        run: |
+          ruta="aleacion-prima-v${{ steps.version.outputs.nombre }}.apk"
+          cp apps/panel/src-capacitor/android/app/build/outputs/apk/release/app-release.apk "$ruta"
+          echo "ruta=$ruta" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: ${{ steps.apk.outputs.ruta }}
+
+      - name: Publicar el release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: v${{ steps.version.outputs.nombre }}
+        run: >-
+          gh release create "$VERSION" "${{ steps.apk.outputs.ruta }}"
+          --title "$VERSION" --generate-notes --target "$GITHUB_SHA"

@@ -467,11 +467,22 @@ Si la app no conecta a la API por `http://`, Android está bloqueando el tráfic
    - Con el celular conectado por USB: `adb install -r app-debug.apk`.
    - Copiar el archivo al celular y abrirlo. Android pide permitir la instalación de apps de origen desconocido.
 
-Es un APK de **debug**, firmado con la llave de depuración de Android Studio; basta para instalarlo y probarlo. Un APK de release necesita un keystore propio, que nunca va en el repo.
+Es un APK de **debug**, firmado con la llave de depuración de Android Studio; basta para instalarlo y probarlo. El APK que se reparte es el de release (ver 6.4).
 
 Compila desde Android Studio y no con `gradlew` en la terminal: Gradle pide JDK 21 y la ruta del SDK, y Android Studio ya trae las dos.
 
-#### 6.4 Qué hace y qué no
+#### 6.4 Publicar una versión
+
+El workflow `APK` (`.github/workflows/apk.yml`) compila el APK de release contra producción, lo firma y lo sube a un [Release](https://github.com/aleacion-prima/aleacion-prima/releases) con las notas de los PRs. Se lanza de dos formas:
+
+- Desde **Actions → APK → Run workflow**, escribiendo la versión (`1.0.0`). Crea el tag `v1.0.0` sobre `main`.
+- Publicando un tag `v1.0.0` desde `main`.
+
+La versión sigue la forma `mayor.menor.parche` y siempre sube: Android solo instala una versión encima de otra si su número es mayor. En los PRs que tocan `src-capacitor/` o el workflow, el APK se compila sin publicarse y queda como artefacto de la ejecución.
+
+La firma usa un keystore que **nunca va en el repo**. Vive en cuatro secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`. Si se pierde el keystore, las versiones nuevas ya no se instalan encima de la anterior y hay que desinstalar la app.
+
+#### 6.5 Qué hace y qué no
 
 La app es **de solo lectura**: escanea el QR de un lote y muestra su estado, área actual e historial. Se autentica con tokens de Sanctum de solo lectura, no con la cookie del panel. El código exclusivo del panel no entra al APK porque las rutas se separan con `import.meta.env.QUASAR_MODE === 'capacitor'`.
 
