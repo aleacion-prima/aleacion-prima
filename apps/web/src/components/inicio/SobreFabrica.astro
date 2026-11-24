@@ -30,12 +30,27 @@ const datos = [
     <div class="planta__mapa" data-revelar style="--i: 1">
       <iframe
         title="Ubicación de la planta en Torreón, Coahuila"
-        src="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
-        loading="lazy"
+        data-mapa="https://www.openstreetmap.org/export/embed.html?bbox=-103.47%2C25.50%2C-103.36%2C25.58&layer=mapnik&marker=25.5428%2C-103.4068"
       ></iframe>
     </div>
   </div>
 </section>
+
+<script>
+  const mapa = document.querySelector<HTMLIFrameElement>('[data-mapa]');
+
+  if (mapa) {
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (!entrada?.isIntersecting) return;
+        mapa.src = mapa.dataset.mapa ?? '';
+        observador.disconnect();
+      },
+      { rootMargin: '400px 0px' },
+    );
+    observador.observe(mapa);
+  }
+</script>
 
 <style>
   .planta {

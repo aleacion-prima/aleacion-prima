@@ -193,4 +193,5 @@ RF-01 a RF-03, RF-05 a RF-09 son de soporte (acceso y catálogos) y sirven a tod
 - Decidir si entra el RF-53: "El sistema debe permitir al administrador corregir las capturas de un lote por confirmar antes de confirmar su cierre" (ADR-0010; falta la validación del equipo). Si entra, va al final de "Gestión de lotes" y como caso de uso del Administrador en el diagrama de lotes.
 - RNF-14: confirmar la versión mínima de Android contra `minSdkVersion` en `apps/panel/src-capacitor/android/variables.gradle`.
 - RNF-08 a RNF-11: los umbrales (2 s, 1 s, 90 puntos, 7 respaldos) son una propuesta; ajustarlos cuando haya mediciones del primer despliegue.
+- RNF-10, medición del 24 nov 2026 con Lighthouse 12 en móvil (mediana de 5 corridas sobre el build): inicio 98, catálogo 96 y ficha de producto 98. En producción, antes de T-58, daban 65, 90 y 80. Falta repetir la medición en producción después del despliegue.
 - [autenticacion.md](./autenticacion.md): la fila del rol `ventas` no menciona la consulta de existencias (RF-13) ni el historial y costo del lote (RF-35).
