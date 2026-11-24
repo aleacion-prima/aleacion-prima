@@ -15,7 +15,7 @@ const $q = useQuasar();
 const productos = ref<ProductoInventario[]>([]);
 const cargando = ref(true);
 const filtroTab = ref<FiltroTab>('todos');
-const busqueda = ref('');
+const busqueda = ref<string | null>('');
 const material = ref<string | null>(null);
 const paginacion = ref({ page: 1, rowsPerPage: 10 });
 
@@ -57,7 +57,7 @@ const materiales = computed(() =>
 );
 
 const filas = computed(() => {
-  const termino = busqueda.value.trim().toLowerCase();
+  const termino = (busqueda.value ?? '').trim().toLowerCase();
 
   return productos.value.filter((producto) => {
     if (filtroTab.value !== 'todos' && estadoProducto(producto) !== filtroTab.value) return false;
