@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { campo, entrarComoAdmin } from './apoyo';
 
 /**
  * Hito del sprint (T-33 / #50): recorre el lote de referencia de `docs/empresa.md`
@@ -17,8 +18,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  * Correr el test varias veces acumula lotes (sin cleanup); es inocuo con los seeders
  * actuales, pero conviene partir de una BD recién sembrada.
  */
-
-const ADMIN = { correo: 'admin@aleacionprima.test', password: 'password' };
 
 // Datos del lote de referencia (docs/empresa.md · Lote 1 · LOT-20260924-01).
 type Captura = {
@@ -44,27 +43,12 @@ const PASOS: Captura[] = [
   { tipo: 'salida', area: 'CAL', piezas: 46, hora: '2026-09-25T12:00' },
 ];
 
-// Localiza el input/textarea del q-field cuya etiqueta contiene `etiqueta`.
-// El panel no tiene atributos data-test; si algún selector falla, es el primer
-// lugar a ajustar contra la app viva.
-const campo = (ambito: Page | Locator, etiqueta: string): Locator =>
-  ambito.locator('.q-field', { hasText: etiqueta }).locator('input, textarea').first();
-
 test('recorre el lote de referencia y cierra en $226.11 por pieza', async ({ page }) => {
   // 12 capturas + navegación: necesita más que el timeout por defecto.
   test.setTimeout(120_000);
 
   // 1. Entrar como admin.
-  await page.goto('/#/login');
-  await campo(page, 'Correo electrónico').fill(ADMIN.correo);
-  await campo(page, 'Contraseña').fill(ADMIN.password);
-  await Promise.all([
-    page.waitForResponse(
-      (r) => r.url().includes('/login') && r.request().method() === 'POST' && r.ok(),
-    ),
-    page.getByRole('button', { name: 'Ingresar' }).click(),
-  ]);
-  await expect(page).not.toHaveURL(/#\/login/);
+  await entrarComoAdmin(page);
 
   // 2. Crear el lote del producto de referencia (DIS-FRE-G, 50 piezas).
   //    El recorrido se auto-rellena desde el producto; no hay que tocarlo.

@@ -50,3 +50,94 @@ jobs:
       - run: vendor/bin/phpstan analyse --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - run: php artisan test
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aleacion_prima
+          POSTGRES_USER: aleacion
+          POSTGRES_PASSWORD: aleacion
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aleacion"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      DB_HOST: 127.0.0.1
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      BROADCAST_CONNECTION: log
+      QUEUE_CONNECTION: sync
+      SEGUNDO_FACTOR_ADMINISTRADOR: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mongodb, pdo_pgsql
+          coverage: none
+
+      - name: API
+        working-directory: apps/api
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --seed --force
+          php artisan migrate --path=database/migrations/mongodb --force
+          php artisan serve --host=127.0.0.1 --port=8000 > "$RUNNER_TEMP/api.log" 2>&1 &
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: apps/panel/src-capacitor
+
+      - run: pnpm --filter e2e exec playwright install --with-deps chromium
+
+      - name: Panel y sitio
+        run: |
+          pnpm --filter panel exec quasar build
+          pnpm --filter web exec astro build
+          python3 -m http.server 9000 --directory apps/panel/dist/spa > "$RUNNER_TEMP/panel.log" 2>&1 &
+          pnpm --filter web exec astro preview --port 4321 > "$RUNNER_TEMP/web.log" 2>&1 &
+
+      - name: Esperar a que todo responda
+        run: |
+          for url in http://127.0.0.1:8000/up http://localhost:9000 http://localhost:4321; do
+            for _ in $(seq 60); do
+              curl -sf "$url" > /dev/null && break
+              sleep 2
+            done
+            curl -sf "$url" > /dev/null || { echo "No respondió $url" >&2; exit 1; }
+          done
+
+      - run: pnpm test:e2e
+
+      - if: failure()
+        run: cat "$RUNNER_TEMP"/*.log
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

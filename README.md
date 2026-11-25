@@ -74,7 +74,7 @@ Los hooks se instalan solos con `pnpm install` y hacen cumplir lo anterior en ca
 | ------------ | -------------------------------------------------------------------------- |
 | `pre-commit` | Formatea y revisa con ESLint, Prettier y Pint solo los archivos del commit |
 | `commit-msg` | Rechaza el commit si el mensaje no sigue Conventional Commits              |
-| `pre-push`   | Corre `pnpm check`, lo mismo que el CI                                     |
+| `pre-push`   | Corre `pnpm check`, lo mismo que el CI salvo E2E                           |
 
 ### Configuración y parámetros del entorno de versiones
 
@@ -385,8 +385,8 @@ La documentación de la API la genera **Scramble** a partir de los Form Requests
 | `pnpm test`                     | Tests del panel (Vitest)                                                                                              |
 | `pnpm test:api`                 | Tests del backend (Pest)                                                                                              |
 | `pnpm analyse:api`              | Análisis estático del backend (Larastan)                                                                              |
-| `pnpm test:e2e`                 | Tests E2E (Playwright; requiere la app levantada)                                                                     |
-| `pnpm check`                    | Todo lo anterior salvo E2E (lo mismo que el CI)                                                                       |
+| `pnpm test:e2e`                 | Tests E2E (Playwright; requiere la API, el panel en :9000 y el sitio en :4321). El CI los corre en el job E2E         |
+| `pnpm check`                    | Todo lo anterior salvo E2E (lo mismo que los jobs Frontend y API del CI)                                              |
 | `pnpm diagramas`                | Exporta `docs/diagramas/` a SVG en `docs/diagramas/img/` (PlantUML en Docker; `--borrar-imagen` la quita al terminar) |
 
 Para un solo proyecto se usa `--filter` con su nombre: `panel`, `web`, `e2e`, `@aleacion-prima/types`, `@aleacion-prima/config`.
