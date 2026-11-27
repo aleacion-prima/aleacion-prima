@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Observers\AreaObserver;
 use Database\Factories\AreaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['codigo', 'nombre', 'descripcion', 'tarifa_mano_obra_hora', 'costo_maquina_hora', 'obligatoria', 'orden_catalogo', 'activo'])]
+#[ObservedBy([AreaObserver::class])]
 class Area extends Model
 {
     /** @use HasFactory<AreaFactory> */

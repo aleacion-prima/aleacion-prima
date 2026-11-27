@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Bitacora\Bitacora;
+use App\Enums\AccionBitacora;
+use App\Enums\EntidadBitacora;
+use App\Enums\ResultadoBitacora;
 use App\Enums\Rol;
 use App\Events\UsuarioActualizado;
 use App\Http\Requests\GuardarUsuarioRequest;
@@ -37,9 +41,11 @@ class UsuarioController extends Controller
     {
         return DB::transaction(function () use ($request): JsonResponse {
             $datos = $request->validated();
+            $areas = $this->idsDeAreas($datos);
             $usuario = User::query()->create($this->atributos($datos));
             $usuario->syncRoles($datos['rol']);
-            $usuario->areas()->sync($this->idsDeAreas($datos));
+            $usuario->areas()->sync($areas);
+            $this->auditarAccesos($usuario, ['rol' => [], 'areas' => []], ['rol' => [$datos['rol']], 'areas' => $areas]);
 
             return (new UsuarioResource($usuario->load('areas')))
                 ->response()
@@ -73,9 +79,16 @@ class UsuarioController extends Controller
         );
 
         return DB::transaction(function () use ($datos, $usuario): JsonResponse {
+            $antes = [
+                'rol' => $usuario->getRoleNames()->values()->all(),
+                'areas' => $usuario->areas()->pluck('areas.id')->map(fn ($id) => (int) $id)->all(),
+            ];
+
             $usuario->update($this->atributos($datos, false));
             $usuario->syncRoles($datos['rol']);
-            $usuario->areas()->sync($this->idsDeAreas($datos));
+            $areas = $this->idsDeAreas($datos);
+            $usuario->areas()->sync($areas);
+            $this->auditarAccesos($usuario, $antes, ['rol' => [$datos['rol']], 'areas' => $areas]);
             UsuarioActualizado::dispatch($usuario->id);
 
             return (new UsuarioResource($usuario->load('areas')))->response();
@@ -148,5 +161,28 @@ class UsuarioController extends Controller
         return $datos['rol'] === Rol::Encargado->value
             ? array_map('intval', $datos['area_ids'] ?? [])
             : [];
+    }
+
+    /**
+     * Roles y áreas no son atributos del modelo: los observers no los ven, así
+     * que se auditorizan aquí, donde se sincronizan.
+     *
+     * @param  array{rol: list<string>, areas: list<int>}  $antes
+     * @param  array{rol: list<string>, areas: list<int>}  $despues
+     */
+    private function auditarAccesos(User $usuario, array $antes, array $despues): void
+    {
+        if ($antes === $despues) {
+            return;
+        }
+
+        Bitacora::auditar(
+            AccionBitacora::Actualizar,
+            ResultadoBitacora::Exito,
+            EntidadBitacora::Usuario,
+            $usuario->id,
+            auth()->user()?->name.' actualizó el rol o las áreas de '.$usuario->name,
+            ['antes' => $antes, 'despues' => $despues],
+        );
     }
 }

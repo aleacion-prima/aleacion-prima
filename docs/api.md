@@ -137,6 +137,16 @@ Middleware: `auth:sanctum` y `role:administrador`.
 
 Las notificaciones son de Laravel (canales `database` + `broadcast`). Se guardan en `notifications` y se emiten por el canal privado de cada administrador, `App.Models.User.{id}` (autorizado en `routes/channels.php`). La respuesta de `GET /api/notificaciones` va paginada (15 por página; `?no_leidas=1` filtra las no leídas) y cada elemento lleva solo la carga mínima: `id`, `tipo` (`stock_minimo`, `lote_por_confirmar`, `imprevisto`), `mensaje`, `codigo` (del lote o del insumo), `leida` y `fecha`. **Sin costos ni el modelo completo.** Los avisos se disparan desde listeners (`NotificarStockMinimo` sobre `StockMinimoAlcanzado`, `NotificarLotePorConfirmar` sobre `LoteActualizado` solo al pasar a `por_confirmar`); el de imprevisto (`ImprevistoRegistrado`) queda listo y lo engancha T-43.
 
+## Auditoría
+
+Middleware: `auth:sanctum`, `ability:panel` y `role:administrador`.
+
+| Método | Ruta            | Rol           | RF    |
+| ------ | --------------- | ------------- | ----- |
+| `GET`  | `/api/bitacora` | Administrador | RF-54 |
+
+`GET /api/bitacora` devuelve la bitácora general (inicios de sesión, cambios de usuarios, catálogos, módulos y cierres de sesión) paginada en 20 eventos por página, de más nuevo a más viejo. Filtros opcionales: `accion` (`crear`, `actualizar`, `eliminar`, `login`, `logout`, `cerrar_sesiones`, `cambiar_modulo`), `resultado` (`exito`, `error`), `entidad` (`usuario`, `producto`, `insumo`, `area`, `modulo`), `usuario` (id existente), `desde` y `hasta` (fechas sobre `registrado_en`) y `ocultar_logins=1`. Cada evento expone `id`, `accion`, `resultado`, `entidad`, `entidad_id`, `descripcion`, `usuario` (id y nombre), `fecha` ISO y `datos`; los cambios llevan `antes` y `despues` sin contraseñas, respuestas secretas, tokens ni códigos. La bitácora por lote se sigue consultando en `GET /api/lotes/{codigo}/bitacora`.
+
 ## Aplicación móvil
 
 Middleware: `auth:sanctum`, `role:encargado|administrador` y `ability:lotes:read`. La app solo lee: no tiene ninguna ruta de escritura.

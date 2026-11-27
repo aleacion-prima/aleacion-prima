@@ -141,6 +141,12 @@ Se recortan en este orden si el tiempo no alcanza: chat de cotizaciones, cliente
 | RF-46 | El sitio público debe mostrar el catálogo de productos con sus especificaciones técnicas y su disponibilidad en tiempo real, sin precios.               | Invitado |
 | RF-47 | El sitio público debe ofrecer un botón de cotización que muestre los datos de contacto del personal de ventas (correo, teléfono y horario de atención). | Invitado |
 
+### Auditoría
+
+| ID    | Descripción                                                                                                                                         | Actor         |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| RF-54 | El sistema debe registrar en una bitácora general los inicios de sesión y los cambios a usuarios, catálogos y módulos, con quién y cuándo los hizo. | Administrador |
+
 ## Requerimientos no funcionales
 
 | ID     | Categoría      | Descripción                                                                                                                                                                                                                                             |
@@ -182,7 +188,7 @@ Los objetivos específicos son los siete del anteproyecto, en su numeración ori
 | 2. Insumos, retornos y costo real por lote       | RF-10 a RF-24, RF-27, RF-32, RF-33, RF-49        |
 | 3. Imprevistos ligados al lote y al área         | RF-31, RF-37, RF-38                              |
 | 4. Pedidos de clientes (recortable)              | RF-39, RF-40, RF-42                              |
-| 5. Tablero, historial y reportes                 | RF-34 a RF-36, RF-41                             |
+| 5. Tablero, historial y reportes                 | RF-34 a RF-36, RF-41, RF-54                      |
 | 6. Consulta desde la aplicación móvil            | RF-04, RF-43 a RF-45                             |
 | 7. Sitio público con catálogo                    | RF-46, RF-47, RF-52                              |
 

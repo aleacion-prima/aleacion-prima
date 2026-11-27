@@ -47,16 +47,31 @@ class EscritorBitacoraFake implements EscritorBitacora
     }
 
     /**
-     * Tipos registrados, en orden de registro.
+     * Tipos de evento de lote registrados, en orden. Los eventos de auditoría
+     * no tienen tipo y por eso no aparecen aquí.
      *
      * @return list<string>
      */
     public function tipos(): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (array $doc): string => (string) $doc['tipo'],
-            $this->registros,
-        );
+            array_filter($this->registros, fn (array $doc): bool => $doc['tipo'] !== null),
+        ));
+    }
+
+    /**
+     * Acciones de auditoría registradas, en orden. Los eventos del lote no
+     * tienen acción y por eso no aparecen aquí.
+     *
+     * @return list<string>
+     */
+    public function acciones(): array
+    {
+        return array_values(array_map(
+            fn (array $doc): string => (string) $doc['accion'],
+            array_filter($this->registros, fn (array $doc): bool => ($doc['accion'] ?? null) !== null),
+        ));
     }
 
     /**
