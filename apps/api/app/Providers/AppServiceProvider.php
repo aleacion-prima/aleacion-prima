@@ -6,11 +6,13 @@ use App\Bitacora\EscritorBitacora;
 use App\Bitacora\EscritorBitacoraMongo;
 use App\Bitacora\LectorBitacora;
 use App\Bitacora\LectorBitacoraMongo;
+use App\Events\ImprevistoRegistrado;
 use App\Events\LoteActualizado;
 use App\Events\StockMinimoAlcanzado;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
+use App\Listeners\NotificarImprevisto;
 use App\Listeners\NotificarLotePorConfirmar;
 use App\Listeners\NotificarStockMinimo;
 use App\Models\User;
@@ -41,10 +43,10 @@ class AppServiceProvider extends ServiceProvider
     {
         JsonResource::withoutWrapping();
 
-        // Notificaciones en tiempo real a los administradores. El imprevisto
-        // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.
+        // Notificaciones en tiempo real a los administradores.
         Event::listen(StockMinimoAlcanzado::class, NotificarStockMinimo::class);
         Event::listen(LoteActualizado::class, NotificarLotePorConfirmar::class);
+        Event::listen(ImprevistoRegistrado::class, NotificarImprevisto::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición
