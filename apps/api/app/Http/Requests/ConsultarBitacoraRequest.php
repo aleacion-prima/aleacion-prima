@@ -26,7 +26,7 @@ class ConsultarBitacoraRequest extends FormRequest
             'entidad' => ['sometimes', Rule::enum(EntidadBitacora::class)],
             'usuario' => ['sometimes', 'integer', 'exists:users,id'],
             'desde' => ['sometimes', 'date'],
-            'hasta' => ['sometimes', 'date'],
+            'hasta' => ['sometimes', 'date', 'after_or_equal:desde'],
             'ocultar_logins' => ['sometimes', 'boolean'],
         ];
     }

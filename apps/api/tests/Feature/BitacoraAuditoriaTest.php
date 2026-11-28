@@ -134,6 +134,20 @@ it('registra crear, actualizar y eliminar cada catálogo', function (string $mod
     [Area::class, EntidadBitacora::Area, 'nombre'],
 ]);
 
+it('conserva el codigo de un catálogo en los cambios auditados', function () {
+    $admin = auditoriaAdmin();
+    Sanctum::actingAs($admin, ['*']);
+    $fake = Bitacora::fake();
+
+    $producto = Producto::factory()->create(['codigo' => 'PRO-ABC-1']);
+    $producto->update(['codigo' => 'PRO-XYZ-9']);
+
+    $actualizar = eventoDe($fake->registros, AccionBitacora::Actualizar, EntidadBitacora::Producto);
+
+    expect($actualizar['datos']['antes']['codigo'])->toBe('PRO-ABC-1')
+        ->and($actualizar['datos']['despues']['codigo'])->toBe('PRO-XYZ-9');
+});
+
 it('no registra una actualización sin cambios', function () {
     $admin = auditoriaAdmin();
     Sanctum::actingAs($admin, ['*']);
@@ -331,4 +345,16 @@ it('acota la bitácora general con los filtros y la paginación', function () {
     getJson('/api/bitacora?desde=2026-11-03&hasta=2026-11-03')->assertOk()->assertJsonCount(1, 'data');
     getJson('/api/bitacora?ocultar_logins=1')->assertOk()->assertJsonCount(2, 'data');
     getJson('/api/bitacora?accion=login&ocultar_logins=1')->assertOk()->assertJsonCount(0, 'data');
+});
+
+it('rechaza un rango con hasta anterior a desde', function () {
+    $admin = auditoriaAdmin();
+    LectorBitacoraFake::con([]);
+    Sanctum::actingAs($admin, ['*']);
+
+    getJson('/api/bitacora?desde=2026-11-05&hasta=2026-11-03')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('hasta');
+
+    getJson('/api/bitacora?desde=2026-11-03&hasta=2026-11-05')->assertOk();
 });

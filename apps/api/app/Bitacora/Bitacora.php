@@ -41,7 +41,6 @@ class Bitacora
         'password_confirmation',
         'respuesta_secreta',
         'remember_token',
-        'codigo',
         'token',
     ];
 
