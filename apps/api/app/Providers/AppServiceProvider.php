@@ -10,11 +10,17 @@ use App\Events\LoteActualizado;
 use App\Events\StockMinimoAlcanzado;
 use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosMongo;
+use App\Listeners\AuditarCierreSesion;
+use App\Listeners\AuditarInicioSesion;
+use App\Listeners\AuditarIntentoFallido;
 use App\Listeners\DifundirModulos;
 use App\Listeners\NotificarLotePorConfirmar;
 use App\Listeners\NotificarStockMinimo;
 use App\Models\User;
 use App\Support\Modulos;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -45,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
         // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.
         Event::listen(StockMinimoAlcanzado::class, NotificarStockMinimo::class);
         Event::listen(LoteActualizado::class, NotificarLotePorConfirmar::class);
+
+        // Auditoría de accesos: Auth::login dispara Login y logout dispara Logout;
+        // Failed se despacha desde LoginRequest porque Auth::validate no lo emite.
+        Event::listen(Login::class, AuditarInicioSesion::class);
+        Event::listen(Failed::class, AuditarIntentoFallido::class);
+        Event::listen(Logout::class, AuditarCierreSesion::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición

@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Bitacora\Bitacora;
+use App\Enums\AccionBitacora;
+use App\Enums\EntidadBitacora;
+use App\Enums\ResultadoBitacora;
 use App\Http\Requests\AreaRequest;
 use App\Http\Resources\AreaResource;
 use App\Models\Area;
@@ -54,9 +58,12 @@ class AreaController extends Controller
         $datos = $request->safe()->except('encargados');
         $datos['activo'] = $request->boolean('activo', true);
 
-        $area = DB::transaction(function () use ($datos, $request): Area {
+        $encargados = array_map('intval', $request->input('encargados', []));
+
+        $area = DB::transaction(function () use ($datos, $encargados): Area {
             $area = Area::create($datos);
-            $area->encargados()->sync($request->input('encargados', []));
+            $area->encargados()->sync($encargados);
+            $this->auditarEncargados($area, [], $encargados);
 
             return $area;
         });
@@ -72,10 +79,13 @@ class AreaController extends Controller
     public function update(AreaRequest $request, Area $area): AreaResource
     {
         DB::transaction(function () use ($request, $area): void {
+            $antes = $area->encargados()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
             $area->update($request->safe()->except('encargados'));
 
             if ($request->has('encargados')) {
-                $area->encargados()->sync($request->input('encargados'));
+                $despues = array_map('intval', $request->input('encargados'));
+                $area->encargados()->sync($despues);
+                $this->auditarEncargados($area, $antes, $despues);
             }
         });
 
@@ -97,5 +107,28 @@ class AreaController extends Controller
         $area->update(['activo' => false]);
 
         return response()->noContent();
+    }
+
+    /**
+     * La tabla pivote no la ve el observer del área: se audita en el punto donde
+     * se sincroniza.
+     *
+     * @param  list<int>  $antes
+     * @param  list<int>  $despues
+     */
+    private function auditarEncargados(Area $area, array $antes, array $despues): void
+    {
+        if ($antes === $despues) {
+            return;
+        }
+
+        Bitacora::auditar(
+            AccionBitacora::Actualizar,
+            ResultadoBitacora::Exito,
+            EntidadBitacora::Area,
+            $area->id,
+            auth()->user()?->name.' actualizó los encargados del área '.$area->nombre,
+            ['antes' => ['encargados' => $antes], 'despues' => ['encargados' => $despues]],
+        );
     }
 }

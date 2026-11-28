@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +41,10 @@ class LoginRequest extends FormRequest
         ];
 
         if (! Auth::validate($credenciales)) {
+            // Auth::validate() no dispara Failed (solo Auth::attempt lo hace) y
+            // aquí no podemos usar attempt: iniciaría sesión antes del 2FA.
+            event(new Failed('web', User::query()->where('email', $credenciales['email'])->first(), $credenciales));
+
             throw ValidationException::withMessages([
                 'credenciales' => __('auth.failed'),
             ]);

@@ -45,6 +45,10 @@ Al escribir el primer modelo de Mongo (la colección `bitacora`) se fijó lo que
   php artisan migrate --path=database/migrations/mongodb
   ```
 
+## Extensión a auditoría general (T-59)
+
+La colección `bitacora` ya no guarda solo eventos del lote: con el mismo punto de entrada y el mismo diferido después del commit se registran también altas, cambios y bajas de usuarios y catálogos, accesos (login, login fallido y logout), cierre de sesiones y cambios de módulos. Los eventos de auditoría no llevan `tipo`: llevan `accion`, `resultado`, `entidad` y `entidad_id`; el nombre del módulo y el resto del contexto van en `datos`. Los observers de modelos no ven roles, áreas ni encargados (son tablas pivote), así que esos cambios se registran en los controladores donde se sincronizan. Antes de armar el documento, `Bitacora::limpiarDatos()` quita de cualquier nivel de `datos` las claves sensibles (`password`, `password_confirmation`, `respuesta_secreta`, `remember_token`, `codigo` y `token`), de modo que los snapshots `antes`/`despues` nunca guarden secretos. Los tests siguen sin tocar Mongo: escriben con `Bitacora::fake()` y consultan con `LectorBitacoraFake::con([...])`.
+
 ## Alternativas descartadas
 
 - **Solo PostgreSQL con columnas JSONB para bitácora e imprevistos.** Técnicamente bastaría y evitaría RI-10 por completo. Se descartó porque el anteproyecto compromete MongoDB y el equipo quiere la experiencia con ella. A cambio, el alcance de Mongo se mantiene pequeño (dos colecciones, siempre referenciadas por id) para que migrar a JSONB sea barato si Mongo estorba.

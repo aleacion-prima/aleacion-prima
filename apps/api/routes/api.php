@@ -3,6 +3,7 @@
 use App\Http\Controllers\AjusteInsumoController;
 use App\Http\Controllers\AjusteLoteController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\BitacoraLoteController;
 use App\Http\Controllers\CatalogoPublicoController;
 use App\Http\Controllers\CierreLoteController;
@@ -93,6 +94,7 @@ Route::middleware(['auth:sanctum', 'activo'])->group(function () {
         });
 
         Route::middleware('role:administrador')->group(function () {
+            Route::get('/bitacora', [BitacoraController::class, 'index']);
             Route::get('/notificaciones', [NotificacionController::class, 'index']);
             Route::patch('/notificaciones/{id}/leida', [NotificacionController::class, 'leida'])
                 ->whereUuid('id');

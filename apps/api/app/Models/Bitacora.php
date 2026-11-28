@@ -6,7 +6,8 @@ use Illuminate\Support\Carbon;
 use MongoDB\Laravel\Eloquent\Model;
 
 /**
- * Bitácora de eventos del lote (colección `bitacora` en MongoDB).
+ * Bitácora general (colección `bitacora` en MongoDB): eventos del lote y
+ * auditoría de usuarios, catálogos, sesiones y módulos.
  *
  * Es un registro append-only: nunca se edita ni se borra. El único punto de
  * escritura es App\Bitacora\Bitacora::registrar(); por eso este modelo no
@@ -14,7 +15,11 @@ use MongoDB\Laravel\Eloquent\Model;
  *
  * @property int|null $lote_id
  * @property int|null $area_id
- * @property string $tipo
+ * @property string|null $tipo
+ * @property string|null $accion
+ * @property string|null $resultado
+ * @property string|null $entidad
+ * @property int|null $entidad_id
  * @property string $descripcion
  * @property array<string, mixed>|null $datos
  * @property int|null $user_id
@@ -41,6 +46,10 @@ class Bitacora extends Model
         'lote_id',
         'area_id',
         'tipo',
+        'accion',
+        'resultado',
+        'entidad',
+        'entidad_id',
         'descripcion',
         'datos',
         'user_id',

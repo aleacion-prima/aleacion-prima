@@ -2,6 +2,10 @@
 
 namespace App\Acceso;
 
+use App\Bitacora\Bitacora;
+use App\Enums\AccionBitacora;
+use App\Enums\EntidadBitacora;
+use App\Enums\ResultadoBitacora;
 use App\Events\UsuarioActualizado;
 use App\Models\User;
 use Carbon\Carbon;
@@ -95,6 +99,16 @@ class SesionesActivas
 
             // El panel escucha este evento en su canal privado y recibe 401 ya.
             UsuarioActualizado::dispatch($usuario->id);
+
+            Bitacora::auditar(
+                AccionBitacora::CerrarSesiones,
+                ResultadoBitacora::Exito,
+                EntidadBitacora::Usuario,
+                $usuario->id,
+                auth()->user()?->name." cerró una sesión de {$usuario->name}",
+                ['cantidad' => 1, 'sesiones' => [['tipo' => $tipo, 'id' => $id]]],
+                $this->idEjecutor(),
+            );
         }
 
         return $borrado;
@@ -106,17 +120,41 @@ class SesionesActivas
      */
     public function revocarTodas(User $usuario, ?string $exceptoSesionId): void
     {
-        DB::table('sessions')
+        $consulta = DB::table('sessions')
             ->where('user_id', $usuario->id)
-            ->when($exceptoSesionId !== null, fn ($consulta) => $consulta->where('id', '!=', $exceptoSesionId))
-            ->delete();
+            ->when($exceptoSesionId !== null, fn ($consulta) => $consulta->where('id', '!=', $exceptoSesionId));
 
+        $sesiones = $consulta->pluck('id')->all();
+        $tokens = $usuario->tokens()->pluck('id')->all();
+
+        DB::table('sessions')->whereIn('id', $sesiones)->delete();
         $usuario->tokens()->delete();
 
         // Siempre cierra sesiones del panel: invalidamos el "recordarme" en todos
         // los dispositivos y avisamos al panel para que reciba 401 de inmediato.
         $this->rotarRemember($usuario);
         UsuarioActualizado::dispatch($usuario->id);
+
+        Bitacora::auditar(
+            AccionBitacora::CerrarSesiones,
+            ResultadoBitacora::Exito,
+            EntidadBitacora::Usuario,
+            $usuario->id,
+            auth()->user()?->name." cerró todas las sesiones de {$usuario->name}",
+            [
+                'cantidad' => count($sesiones) + count($tokens),
+                'sesiones' => $sesiones,
+                'tokens' => $tokens,
+            ],
+            $this->idEjecutor(),
+        );
+    }
+
+    private function idEjecutor(): ?int
+    {
+        $id = auth()->id();
+
+        return is_int($id) ? $id : null;
     }
 
     /**
