@@ -9,10 +9,12 @@ use App\Models\Area;
 use App\Models\Lote;
 use App\Models\LoteArea;
 use App\Models\User;
+use App\Notifications\ImprevistoRegistrado as NotificacionImprevisto;
 use Carbon\CarbonImmutable;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
@@ -280,6 +282,42 @@ it('avisa con LoteActualizado al registrar y al resolver, para que el semáforo 
 
     Event::assertDispatchedTimes(LoteActualizado::class, 2);
     Event::assertDispatched(LoteActualizado::class, fn (LoteActualizado $evento) => $evento->lote->is($lote));
+});
+
+it('avisa a los administradores activos al registrar un imprevisto', function () {
+    Notification::fake();
+    $activo = entrarParaImprevistos(Rol::Administrador);
+    $inactivo = User::factory()->create(['activo' => false]);
+    $inactivo->assignRole(Rol::Administrador);
+    $ventas = User::factory()->create();
+    $ventas->assignRole(Rol::Ventas);
+    $lote = loteParaImprevistos();
+
+    postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'FUS')), cuerpoDeImprevisto())
+        ->assertCreated();
+
+    Notification::assertSentTo(
+        $activo,
+        NotificacionImprevisto::class,
+        function (NotificacionImprevisto $notificacion) use ($activo): bool {
+            $mensaje = $notificacion->toArray($activo)['mensaje'];
+
+            return str_contains($mensaje, 'Falla de máquina')
+                && ! str_contains($mensaje, 'falla_maquina');
+        },
+    );
+    Notification::assertNotSentTo([$inactivo, $ventas], NotificacionImprevisto::class);
+});
+
+it('no avisa cuando el imprevisto se registra ya resuelto', function () {
+    Notification::fake();
+    entrarParaImprevistos(Rol::Administrador);
+    $lote = loteParaImprevistos();
+
+    postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'FUS')), cuerpoDeImprevisto(['resuelto' => true]))
+        ->assertCreated();
+
+    Notification::assertNothingSent();
 });
 
 it('no llega a Mongo real en los tests', function () {
