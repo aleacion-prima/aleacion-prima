@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoLote;
+use App\Enums\Semaforo;
 use Database\Factories\LoteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property EstadoLote $estado
+ * @property Semaforo|null $semaforo_notificado
  */
 #[Fillable(['producto_id', 'pedido_id', 'cantidad_objetivo'])]
 class Lote extends Model
@@ -32,6 +34,7 @@ class Lote extends Model
     {
         return [
             'estado' => EstadoLote::class,
+            'semaforo_notificado' => Semaforo::class,
             'cantidad_objetivo' => 'integer',
             'piezas_terminadas' => 'integer',
             'costo_material' => 'decimal:4',

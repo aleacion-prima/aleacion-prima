@@ -12,6 +12,7 @@ use App\Imprevistos\AlmacenImprevistos;
 use App\Imprevistos\AlmacenImprevistosMongo;
 use App\Listeners\DifundirModulos;
 use App\Listeners\NotificarLotePorConfirmar;
+use App\Listeners\NotificarLoteRojo;
 use App\Listeners\NotificarStockMinimo;
 use App\Models\User;
 use App\Support\Modulos;
@@ -45,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         // (ImprevistoRegistrado) lo dispara T-43 cuando exista su evento.
         Event::listen(StockMinimoAlcanzado::class, NotificarStockMinimo::class);
         Event::listen(LoteActualizado::class, NotificarLotePorConfirmar::class);
+        Event::listen(LoteActualizado::class, NotificarLoteRojo::class);
 
         // Política de contraseñas del proyecto: mínimo 8, letras, mayúsculas y
         // minúsculas, y números. Se usa en la recuperación y en el alta/edición

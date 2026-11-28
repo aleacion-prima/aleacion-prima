@@ -46,7 +46,9 @@ it('avisa a los administradores cuando un insumo llega al stock mínimo', functi
 it('avisa cuando un lote pasa a por confirmar', function () {
     Notification::fake();
     $admin = admin();
-    $lote = Lote::factory()->create(['estado' => EstadoLote::PorConfirmar]);
+    // refresh() para que el lote traiga su costo persistido (default 0), como
+    // llega siempre un LoteActualizado real: el semáforo evalúa el costo.
+    $lote = Lote::factory()->create(['estado' => EstadoLote::PorConfirmar])->refresh();
 
     event(new LoteActualizado($lote));
 
@@ -56,7 +58,7 @@ it('avisa cuando un lote pasa a por confirmar', function () {
 it('no avisa por confirmar en otros estados del lote', function () {
     Notification::fake();
     admin();
-    $lote = Lote::factory()->create(['estado' => EstadoLote::EnProceso]);
+    $lote = Lote::factory()->create(['estado' => EstadoLote::EnProceso])->refresh();
 
     event(new LoteActualizado($lote));
 
