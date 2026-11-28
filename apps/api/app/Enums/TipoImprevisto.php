@@ -10,4 +10,14 @@ enum TipoImprevisto: string
     case RetrasoMaterial = 'retraso_material';
     case PiezaDefectuosa = 'pieza_defectuosa';
     case Otro = 'otro';
+
+    public function etiqueta(): string
+    {
+        return match ($this) {
+            self::FallaMaquina => 'Falla de máquina',
+            self::RetrasoMaterial => 'Retraso de material',
+            self::PiezaDefectuosa => 'Pieza defectuosa',
+            self::Otro => 'Otro',
+        };
+    }
 }

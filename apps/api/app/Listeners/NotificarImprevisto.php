@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Enums\Rol;
+use App\Enums\TipoImprevisto;
 use App\Events\ImprevistoRegistrado;
 use App\Models\User;
 use App\Notifications\ImprevistoRegistrado as NotificacionImprevisto;
@@ -23,7 +24,8 @@ class NotificarImprevisto
 
         $admins = User::query()->role(Rol::Administrador)->where('activo', true)->get();
 
-        $mensaje = "Imprevisto ({$evento->tipo}) en el lote {$evento->codigoLote}";
+        $etiqueta = TipoImprevisto::from($evento->tipo)->etiqueta();
+        $mensaje = "Imprevisto ({$etiqueta}) en el lote {$evento->codigoLote}";
 
         Notification::send($admins, new NotificacionImprevisto($evento->codigoLote, $mensaje));
     }

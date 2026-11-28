@@ -296,7 +296,16 @@ it('avisa a los administradores activos al registrar un imprevisto', function ()
     postJson(rutaDeImprevistos($lote, paradaParaImprevistos($lote, 'FUS')), cuerpoDeImprevisto())
         ->assertCreated();
 
-    Notification::assertSentTo($activo, NotificacionImprevisto::class);
+    Notification::assertSentTo(
+        $activo,
+        NotificacionImprevisto::class,
+        function (NotificacionImprevisto $notificacion) use ($activo): bool {
+            $mensaje = $notificacion->toArray($activo)['mensaje'];
+
+            return str_contains($mensaje, 'Falla de máquina')
+                && ! str_contains($mensaje, 'falla_maquina');
+        },
+    );
     Notification::assertNotSentTo([$inactivo, $ventas], NotificacionImprevisto::class);
 });
 
